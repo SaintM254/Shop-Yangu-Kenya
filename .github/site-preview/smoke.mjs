@@ -135,6 +135,20 @@ for (const page of PAGES) {
       if (h1 !== 1) fail(`${page.name}@${width}: expected 1 <h1>, found ${h1}`);
     }
 
+    /* The landing page ends at the screens: the detail lives in spec.html. */
+    if (page.name === 'home') {
+      const rows = await tab.locator('.menulist__row').count();
+      if (rows !== 11) fail(`home: screens list shows ${rows} rows, expected 11`);
+      for (const gone of ['#deploy', '#money', '#data', '#import']) {
+        if (await tab.locator(gone).count()) fail(`home: ${gone} section is still on the page`);
+      }
+      const lastSectionId = await tab.evaluate(() => {
+        const secs = [...document.querySelectorAll('main > section')];
+        return secs.length ? secs[secs.length - 1].id : '(none)';
+      });
+      if (lastSectionId !== 'screens') fail(`home: last section is ${lastSectionId}, expected screens`);
+    }
+
     /* Every internal link on the page must resolve. */
     const links = await tab.evaluate(() =>
       [...document.querySelectorAll('a[href]')]
