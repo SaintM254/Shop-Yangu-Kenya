@@ -196,17 +196,32 @@ for (const page of PAGES) {
       /* The hero is a real photograph of a shop counter, with the headline
          beside it, per the landing reference. */
       const hero = await tab.evaluate(() => {
-        const img = document.querySelector('.hero__photo img');
+        const box = document.querySelector('.hero__photo');
+        const img = box && box.querySelector('img');
         if (!img) return null;
-        const r = img.getBoundingClientRect();
-        const h1 = document.querySelector('.hero__title').getBoundingClientRect();
-        return { w: Math.round(r.width), h: Math.round(r.height), complete: img.complete && img.naturalWidth > 0, beside: h1.right < r.left + 40 };
+        const r = box.getBoundingClientRect();
+        const copy = document.querySelector('.hero__copy').getBoundingClientRect();
+        return {
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          complete: img.complete && img.naturalWidth > 0,
+          /* the photograph is the right-hand column, so it starts at least
+             half the viewport across and overlaps the copy's own column */
+          startsRight: r.left > window.innerWidth * 0.4,
+          overlaps: r.left < copy.right,
+          tall: r.height >= copy.height * 0.9,
+        };
       });
       if (!hero) fail('home: the hero has no photograph');
       else {
         if (!hero.complete) fail('home: the hero photograph did not load');
         if (hero.w < 200 || hero.h < 120) fail(`home: the hero photograph is ${hero.w}x${hero.h}`);
-        if (width >= 1000 && !hero.beside) fail('home: the headline does not sit beside the hero photograph');
+        if (width >= 1000 && !(hero.startsRight && hero.overlaps && hero.tall)) {
+          fail(
+            `home: the hero photograph is not the right-hand column of the hero ` +
+            `(w ${hero.w}, h ${hero.h}, startsRight ${hero.startsRight}, overlaps ${hero.overlaps}, tall ${hero.tall})`
+          );
+        }
       }
     }
 
@@ -252,6 +267,15 @@ for (const page of PAGES) {
         .filter((h) => h && !/^(https?:|mailto:|tel:|data:)/.test(h))
     );
     for (const href of [...new Set(links)]) {
+      /* An anchor is not a file: "#main" asks the document for an id. Checking
+         it with a request would ask the server for /#main and get a 404. */
+      if (href.startsWith('#')) {
+        const id = href.slice(1);
+        if (id && !(await tab.evaluate((i) => !!document.getElementById(i), id))) {
+          fail(`${page.name}@${width}: ${href} points at no element on the page`);
+        }
+        continue;
+      }
       const url = new URL(href, `${BASE}${page.path}`).toString();
       const r = await tab.request.get(url);
       if (!r.ok()) fail(`${page.name}@${width}: ${href} → ${r.status()}`);
@@ -267,9 +291,14 @@ for (const page of PAGES) {
     }
 
     /* Fonts and stylesheets must never be blocked or 404. A miss while
-       checking the 404 page is the point of that page. */
+       checking the 404 page is the point of that page: the browser logs one
+       bare "Failed to load resource" for the address that 404'd, with no URL
+       to filter on, so on that page alone the console message is allowed —
+       every request failure is still checked, below. */
     const realErrors = errors.filter(
-      (e) => !/favicon\.ico/.test(e) && !(page.name === '404' && /\/no-such-counter\//.test(e))
+      (e) =>
+        !/favicon\.ico/.test(e) &&
+        !(page.name === '404' && (/\/no-such-counter\//.test(e) || /^console: Failed to load resource/.test(e)))
     );
     if (realErrors.length) fail(`${page.name}@${width}: ${realErrors.slice(0, 3).join(' | ')}`);
 
