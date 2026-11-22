@@ -63,18 +63,30 @@ const ROUTE_IDS = Object.keys(ROUTES);
    app must not assume the domain root. Everything below is built from this. */
 const SITE_ROOT = (() => {
   if (location.protocol === 'file:') return '';
-  /* the folder the app is in is <root><route>/, so take the route off */
-  const parts = location.pathname.split('/').filter(Boolean);
+  /* The last folder in the address is this screen's own folder — /stock,
+     /sales — and everything before it is where the site is mounted. At a
+     domain root that leaves '/', under GitHub Pages '/Shop-Yangu-Kenya/'. */
+  const dir = location.pathname.replace(/\/[^/]*$/, '/');
+  const parts = dir.split('/').filter(Boolean);
   parts.pop();
-  return '/' + parts.slice(0, -1).concat(['']).join('/');
+  return '/' + parts.join('/') + (parts.length ? '/' : '');
 })();
+
+/* The folder name of the screen we opened — the fallback when the mount
+   point cannot be worked out (a single folder, e.g. /stock/ on its own). */
+const HERE = (location.pathname.replace(/\/+$/, '').split('/').pop() || '').toLowerCase();
+const routeFromFolder = (folder) => ROUTE_IDS.find((id) => ROUTES[id] === '/' + folder) || null;
 
 const idForPath = (p) => {
   let clean = String(p || '').replace(/\/+$/, '').replace(/\/index\.html$/, '');
-  if (SITE_ROOT && clean.indexOf(SITE_ROOT) === 0) clean = clean.slice(SITE_ROOT.length - 1);
+  if (SITE_ROOT !== '/' && clean.indexOf(SITE_ROOT) === 0) clean = clean.slice(SITE_ROOT.length - 1);
   clean = clean.toLowerCase();
   const hit = ROUTE_IDS.find((id) => ROUTES[id] === clean);
-  return hit || null;
+  if (hit) return hit;
+  /* An address the mount point cannot explain: read the last folder. A
+     screen's own folder is named after its route, so it is the same answer. */
+  const folder = clean.split('/').filter(Boolean).pop();
+  return routeFromFolder(folder);
 };
 
 /* A hash link is still an address, just a shorter one; accept both. */
@@ -256,6 +268,16 @@ function paintNav() {
   $('#drawerWho').textContent = S.me.name + ' · ' + (isOwner() ? 'Owner' : 'Sales');
   $('#roleSwitchLabel').textContent = 'Viewing as ' + (isOwner() ? 'Owner' : 'Sales');
 }
+
+/* The mark in the rail and the phone bar is the way home inside the app.
+   It navigates to the dashboard without leaving the app or touching the
+   session — signing out is the button in the rail foot, and only that. */
+document.addEventListener('click', (e) => {
+  const home = e.target.closest('[data-home]');
+  if (!home) return;
+  e.preventDefault();
+  go('dashboard');
+});
 
 /* switching role, so the shop can see both sides */
 document.addEventListener('click', (e) => {

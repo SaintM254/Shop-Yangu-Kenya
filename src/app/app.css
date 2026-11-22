@@ -48,12 +48,14 @@ svg.ic.lg{width:24px;height:24px}
   border-bottom:1px solid var(--sand);padding:10px 14px;
   display:flex;align-items:center;gap:10px;
 }
-.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand{display:flex;align-items:center;gap:9px;min-width:0;color:inherit;text-decoration:none}
+/* The mark on its own: no tile, no plate. In the phone bar it sits on the
+   cream, so it is drawn in the shop's blue. */
 .brandmark{
-  width:34px;height:34px;border-radius:10px;background:var(--syk);color:#fff;flex:none;
+  width:24px;height:28px;color:var(--syk);flex:none;
   display:flex;align-items:center;justify-content:center;
 }
-.brandmark svg.ic{width:19px;height:19px}
+.brandmark svg.ic{width:24px;height:28px;stroke:none;fill:currentColor}
 .brandname{font-size:15px;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brandsub{font-size:10.5px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar .spacer{flex:1}
@@ -109,7 +111,7 @@ svg.ic.lg{width:24px;height:24px}
     background:var(--syk-dark);color:var(--cream);padding:18px 12px;overflow:auto;
   }
   .nav .navhead{padding:2px 6px 16px;color:#fff;display:flex;align-items:center;gap:10px}
-  .nav .navhead .brandmark{background:rgba(255,255,255,.13)}
+  .nav .navhead .brandmark{color:var(--cream)}
   .shell{display:block}
 }
 
@@ -476,8 +478,17 @@ body.printing{background:#fff}
 body.printing #printSheet{display:block}
 body.printing .app,body.printing .toastwrap,body.printing .navdrawer,body.printing .sheet{display:none !important}
 
+/* the mark at the head of the printed sheet */
+.pmarkwrap{display:flex;justify-content:center;margin-bottom:7px}
+.pmark{width:14mm;height:16mm;fill:#023246;stroke:none;color:#023246}
+
 @media print{
   @page{margin:14mm}
+  /* A receipt prints to the till roll. The paper size is an @page rule, which
+     cannot be conditional on a class, so pos.js writes one for the length of
+     the print — three lines of CSS, no second stylesheet. */
+  body[data-print="receipt"] .psheet{max-width:72mm;padding:0}
+  body[data-print="receipt"] .psheet table{font-size:9.5px}
   #printSheet{display:block}
   body.printing .app,body.printing .toastwrap,body.printing .navdrawer,body.printing .sheet{display:none !important}
   body .app{display:none !important}
@@ -523,10 +534,8 @@ img.logo {
 }
 
 .railbrand__mark {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.12);
+  width: 26px;
+  height: 30px;
   display: grid;
   place-items: center;
   flex: none;
@@ -534,8 +543,8 @@ img.logo {
 }
 
 .railbrand__mark svg {
-  width: 21px;
-  height: 24px;
+  width: 26px;
+  height: 30px;
 }
 
 .railbrand__text {
@@ -892,3 +901,22 @@ th.n {
     display: none !important;
   }
 }
+
+/* ---------------------------------------------------- editable user names
+   In Settings a person's name is an input, not a line of text. It looks like
+   the text until it is touched: same size, same weight, no box, and the box
+   appears on hover and focus, so the list still reads as a list. */
+
+.field--name{
+  border:1px solid transparent;background:transparent;padding:2px 6px;margin-left:-6px;
+  font-size:14px;font-weight:600;color:var(--ink);width:100%;max-width:22rem;
+  border-radius:var(--r-input);height:auto;
+}
+.field--name:hover{border-color:var(--sand);background:var(--paper)}
+.field--name:focus{border-color:var(--syk);background:var(--paper);outline:none}
+
+/* The mark at the head of the receipt the till shows: the same artwork that
+   goes on the printed slip and into the PDF, at the size a receipt holds. */
+.rcptmark{display:flex;justify-content:center;margin:9px 0 6px}
+.rcptmark svg{width:38px;height:43px;fill:var(--syk-dark);stroke:none;color:var(--syk-dark)}
+@media print{ .rcptmark svg{width:11mm;height:12.5mm} }

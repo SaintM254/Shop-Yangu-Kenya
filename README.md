@@ -108,7 +108,8 @@ its `index.html`, and that is what it does.
 | The shop's look | `src/app/app.css` (shares the tokens in `src/styles.css`) |
 | PDF exports | `src/app/pdf.js` + the payloads in `src/app/exports.js` |
 | Excel exports | `src/app/excel.js` (a real `.xlsx`, zipped in the browser) |
-| The logo | `Images/Icon.svg` is the source; `src/logo/mark.svg` is the recoloured mark the site and the PDFs use |
+| The logo | `Images/Icon.svg` is the source; `src/logo/mark.svg` is the recoloured mark the site and the PDFs use. `favicon.svg` is white on nothing, for the browser tab; `apple-touch-icon.png` is the one place with a plate, because a home screen has no background of its own |
+| The hero | `Images/Hero Image.jpg`, cropped and re-encoded by `tools/make-hero.mjs` into `src/hero.jpg` (1400 wide, ~118 kB) so a phone never downloads the 746 kB original |
 | The prototype (kept for reference) | `shop-yangu-kenya.html` — no longer published |
 
 The price is read from `plan.price_kes` in `src/content.json` — change it to `1200` and
@@ -176,6 +177,26 @@ the browser from the shop's own data — no server, no print dialog:
 | **PDF** | `src/app/pdf.js` writes the PDF byte by byte | A4, cream, one rule colour, the logo top-left, a summary band, a clean table, page numbers. Long lists break across pages properly |
 | **Excel** | `src/app/excel.js` zips the workbook itself | A real `.xlsx`: frozen styled header, money as numbers Excel can add, print setup, one sheet per section |
 
+A **receipt** is the exception, on purpose. It is not a report shrunk to fit a roll: the
+same writer has a second layout that draws an **80mm thermal slip** — one column, centred,
+top-down, as long as the sale needs and no longer. `src/app/pdf.js` picks it from
+`sheet: 'receipt'`, and the page box is written as 226.77pt wide (80mm) rather than A4.
+Printing a receipt from the till does the same thing in the browser: `pos.js` writes an
+`@page{size:80mm auto}` rule for the length of the print, so the dialog comes up on the
+roll, not on A4. Reports still print A4.
+
+The mark sits on the paper itself, in the shop's navy — **no tinted plate behind it**, in
+the PDF, in the browser tab (`favicon.svg` is the white mark with no background) and in the
+app. `node tools/make-logo.mjs` regenerates every logo asset from `Images/Icon.svg`.
+
+### Arrows say which way the file goes
+
+| Icon | Means | Where |
+|---|---|---|
+| arrow down into a tray | **download** — a file comes to you | templates, and every button that saves a file |
+| arrow up out of a tray | **upload** — a file goes in | importing a sheet |
+| arrow leaving a box | **export** — the shop's data goes out | every export menu |
+
 They sit on top of `exports.js`, which turns the live data into rows. When Postgres arrives
 that is the only file that has to learn where the rows come from — and `src/app/backend.js`
 is already the seam for it (see below).
@@ -197,7 +218,15 @@ first paint, `save()` writes changes back, and `persist()` is already called fro
 ## Conventions the product follows everywhere
 
 - **Dates are DD/MM/YY** — `20/11/26`, never a four-digit year, on receipts, lists,
-  ledgers, exports and the site footer alike.
+  ledgers, exports, the import templates and the site footer alike. The importer reads
+  that shape, and `YYYY-MM-DD` for sheets Excel has already rewritten.
+- **Codes are generated, not demanded.** Leave a product's `sku` or a sale's `receipt_no`
+  blank in an import and the app numbers it (`GRC-001`, `R-2101`) instead of rejecting the
+  row. A code a shop typed is never overwritten.
+- **The import template and the importer come from one schema.** `SCHEMAS` in
+  `src/app/import.js` is the only list of columns; the workbook, the guide sheet, the CSV
+  and the reader are all generated from it, so they cannot drift apart. The template
+  downloads as a real `.xlsx` with a second "How to fill it" sheet, and as a CSV.
 - **The customer is on the receipt.** The till has a Customer card: search the list, add
   someone new on the spot, or type a name for a walk-in. A walk-in keeps no balance, so it
   can never take credit — the credit sheet asks for a named customer instead.

@@ -54,15 +54,15 @@ const EXPORT_DEFS = {
     file: 'stock',
     sheet: 'Stock',
     columns: [
-      { label: 'Product', w: 210, type: 'strong' },
-      { label: 'SKU', w: 92 },
-      { label: 'Category', w: 100 },
-      { label: 'On hand', w: 64, align: 'right', type: 'number' },
-      { label: 'Reorder at', w: 68, align: 'right', type: 'number' },
-      { label: 'Cost', w: 84, align: 'right', type: 'money' },
-      { label: 'Selling', w: 88, align: 'right', type: 'money' },
-      { label: 'Value at cost', w: 104, align: 'right', type: 'money' },
-      { label: 'Status', w: 84 },
+      { label: 'Product', max: 200, type: 'strong' },
+      { label: 'SKU', max: 74 },
+      { label: 'Category', max: 84 },
+      { label: 'On hand', max: 54, align: 'right', type: 'number' },
+      { label: 'Reorder', max: 54, align: 'right', type: 'number' },
+      { label: 'Cost', max: 48, align: 'right', type: 'money' },
+      { label: 'Selling', max: 52, align: 'right', type: 'money' },
+      { label: 'Stock value', max: 72, align: 'right', type: 'money' },
+      { label: 'Status', max: 76 },
     ],
     meta() {
       const cost = sum(S.products, (p) => p.cost * p.qty);
@@ -417,40 +417,47 @@ function exportExcel(kind) {
 
 /* ---- one receipt ------------------------------------------------------- */
 
+/* A receipt as a till slip: 80mm wide, as long as the sale needs, so it
+   prints on the thermal printer at the counter and reads top-down. The
+   report writer is a different designer on purpose — a table scaled to a
+   roll is unreadable, so this hands `PDF` a receipt-shaped document. */
 function receiptPdf(sale) {
   const c = cust(sale.customer);
   const who = sale.customer_name || (c ? c.name : 'Walk-in customer');
   const vat = Math.round(sale.total * 16 / 116);
-  const rows = sale.items.map((it) => [it.name, it.qty, it.price, it.qty * it.price]);
-  const paid = sale.paid.map((p) => 'Paid by ' + p.m + ': ' + kes(p.amt)).join('   ');
-  const payload = {
-    kind: 'receipt',
-    title: 'Sales receipt',
-    subtitle: sale.no + '  ·  ' + dmy(new Date(sale.at)) + ' ' + clock(new Date(sale.at)),
-    stamp: 'Served by ' + sale.cashier,
-    columns: [
-      { label: 'Item', w: 260, type: 'strong' },
-      { label: 'Qty', w: 50, align: 'right', type: 'number' },
-      { label: 'Price', w: 100, align: 'right', type: 'money' },
-      { label: 'Amount', w: 110, align: 'right', type: 'money' },
+  const paid = sale.paid.reduce((a, p) => a + p.amt, 0);
+  const paidLines = sale.paid.map((p) => ({ label: 'Paid by ' + p.m, value: kes(p.amt) }));
+  if (sale.credit) paidLines.push({ label: 'On credit', value: kes(sale.credit), tone: 'credit' });
+
+  const file = PDF.build({
+    sheet: 'receipt',
+    shop: S.shop.name,
+    branch: S.shop.branch,
+    phone: S.shop.phone,
+    kra: S.shop.kra,
+    receiptNo: sale.no,
+    dateLine: dmy(new Date(sale.at)) + '  ·  ' + clock(new Date(sale.at)),
+    customer: who,
+    cashier: sale.cashier,
+    lines: sale.items.map((it) => ({
+      name: it.name,
+      qty: it.qty,
+      price: kes(it.price),
+      amount: kes(it.qty * it.price),
+    })),
+    amounts: [
+      { label: 'Subtotal', value: kes(sale.total) },
+      { label: 'VAT 16% included', value: kes(vat) },
+      { label: 'TOTAL', value: kes(sale.total), strong: true, rule: true },
+      ...paidLines,
+      ...(paid !== sale.total && !sale.credit ? [{ label: 'Change', value: kes(paid - sale.total) }] : []),
     ],
-    rows: rows.map((r) => r.map((v) => (typeof v === 'number' ? String(Math.round(v)) : v))),
-    meta: [
-      ['Customer', who],
-      ['Total', kes(sale.total)],
-      ['VAT included', kes(vat)],
-      ['Paid', kes(sum(sale.paid, (p) => p.amt))],
-    ],
-    note: paid +
-      (sale.credit ? '   ·   On credit: ' + kes(sale.credit) : '') +
-      '   ·   KRA eTIMS ' + sale.etims.sig + '-' + sale.no + ' — verify at etims.kra.go.ke',
-    totals: [
-      ['VAT 16% included', kes(vat)],
-      ['Total', kes(sale.total), true],
-    ],
-    ...exportShop(),
-  };
-  const file = PDF.build({ ...payload, logo: logoSource() });
+    credit: sale.credit ? kes(sale.credit) : '',
+    sig: sale.etims.sig + '-' + sale.no,
+    verify: 'Verify at etims.kra.go.ke',
+    thanks: 'Asante. Karibu tena.',
+    logo: logoSource(),
+  });
   downloadBytes('receipt-' + sale.no + '.pdf', file, 'application/pdf');
 }
 

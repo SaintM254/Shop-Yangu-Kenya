@@ -78,7 +78,10 @@ function openProduct(id) {
       '<div class="formrow"><label class="lbl" for="pName">Name</label>' +
       '<input class="field" id="pName" value="' + esc(p ? p.name : '') + '" placeholder="e.g. Sugar 2kg" /></div>' +
       '<div class="formrow"><label class="lbl" for="pSku">Code / barcode</label>' +
-      '<input class="field" id="pSku" value="' + esc(p ? p.sku : '') + '" placeholder="GRC-021" /></div>' +
+      '<input class="field" id="pSku" value="' + esc(p ? p.sku : '') + '" placeholder="' +
+        (p ? 'GRC-021' : 'Leave blank and one is made for you') + '" />' +
+      (p ? '' : '<div class="hint" style="margin-top:5px">A code is generated from the category, like GRC-021. Type your own barcode instead if you scan it.</div>') +
+      '</div>' +
       '<div class="formrow"><label class="lbl" for="pCat">Category</label>' +
       '<select class="field" id="pCat">' + S.cats.map(c => '<option' + (p && p.cat === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px">' +
@@ -139,7 +142,7 @@ function saveProduct(p) {
   if (!name) { toast('A product needs a name.', 'bad'); return; }
   if (price <= 0) { toast('A product needs a selling price.', 'bad'); return; }
   const data = {
-    name, sku: $('#pSku').value.trim() || 'SKU-' + Math.floor(Math.random() * 9000 + 1000),
+    name, sku: $('#pSku').value.trim() || nextSku($('#pCat').value),
     cat: $('#pCat').value, cost: Number($('#pCost').value) || 0, price,
     qty: Math.max(0, parseInt($('#pQty').value, 10) || 0),
     reorder: Math.max(0, parseInt($('#pReorder').value, 10) || 0),

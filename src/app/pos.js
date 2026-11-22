@@ -440,6 +440,7 @@ function showReceipt(sale, change) {
   $('#receiptCard').hidden = false;
   $('#receiptNo').textContent = 'No. ' + sale.no + ' · ' + dmy(new Date(sale.at)) + ' ' + clock(new Date(sale.at));
   $('#receiptBody').innerHTML =
+    '<div class="rcptmark" aria-hidden="true"><svg viewBox="0 0 636 722"><use href="#i-logo"/></svg></div>' +
     '<div style="text-align:center">' +
     '<div class="shopname">' + esc(S.shop.name) + '</div>' +
     '<div class="hint">' + esc(S.shop.branch) + ' · ' + esc(S.shop.phone) + '<br>PIN ' + esc(S.shop.kra) + '</div>' +
@@ -470,7 +471,11 @@ $('#walkInBtn').onclick = () => {
 
 /* everything printable goes through the same branded sheet */
 function printDoc(inner, title) {
+  /* The mark goes on the paper too. It is drawn as vector, in the shop's
+     navy, at the size a thermal printer can hold: 14mm tall on an 80mm roll. */
+  const mark = '<svg class="pmark" viewBox="0 0 636 722" aria-hidden="true"><use href="#i-logo"/></svg>';
   $('#printSheet').innerHTML = '<div class="psheet">' +
+    '<div class="pmarkwrap">' + mark + '</div>' +
     '<div class="phead"><div><div class="pname">' + esc(S.shop.name) + '</div>' +
     '<div class="pmeta" style="text-align:left;margin-top:3px">' + esc(S.shop.branch) + ' · ' + esc(S.shop.phone) +
     ' · PIN ' + esc(S.shop.kra) + '</div></div>' +
@@ -478,10 +483,31 @@ function printDoc(inner, title) {
     inner +
     '<div class="pfoot"><span>' + esc(S.shop.name) + ' · Shop Yangu Kenya</span>' +
     '<span>KRA eTIMS registered · etims.kra.go.ke</span></div></div>';
+  /* A receipt is a till slip, so the paper is the roll: 80mm wide, no
+     forced page height (the slip is as long as the sale). Everything else
+     prints to A4 through the same sheet. */
+  const isReceipt = /receipt/i.test(title);
   document.body.classList.add('printing');
+  document.body.dataset.print = isReceipt ? 'receipt' : 'page';
+  /* An 80mm roll is 72mm of ink. The browser is told the paper size, so the
+     dialog comes up already on the till printer's roll rather than on A4. */
+  let page = document.getElementById('printPage');
+  if (isReceipt) {
+    if (!page) {
+      page = document.createElement('style');
+      page.id = 'printPage';
+      document.head.appendChild(page);
+    }
+    page.textContent = '@page{size:80mm auto;margin:3mm}';
+  } else if (page) {
+    page.remove();
+  }
   setTimeout(() => {
     window.print();
-    setTimeout(() => document.body.classList.remove('printing'), 400);
+    setTimeout(() => {
+      document.body.classList.remove('printing');
+      delete document.body.dataset.print;
+    }, 400);
   }, 60);
 }
 

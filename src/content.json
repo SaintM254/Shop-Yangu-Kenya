@@ -27,11 +27,7 @@
     "secondary_cta": {
       "label": "See what it does",
       "href": "#what"
-    },
-    "notes": [
-      "Works on the phone already in your pocket",
-      "Set up in an afternoon — nothing to install"
-    ]
+    }
   },
   "stats": [
     {
@@ -216,7 +212,7 @@
       }
     ],
     "rules": [
-      "Dates: accept YYYY-MM-DD, dd/mm/yyyy (the Kenyan convention — never read as mm/dd) and bare Excel serial integers.",
+      "Dates: written DD/MM/YY, as every screen and report prints them — never read as mm/dd. YYYY-MM-DD and bare Excel serial integers are accepted too.",
       "Reject anything else by row number with the value shown. Never guess, never silently swap day and month.",
       "A sale dated in the future is rejected; an expiry date in the future is of course fine.",
       "An imported sale keeps its own date — it lands in that quarter's report and never in today's takings.",

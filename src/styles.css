@@ -140,6 +140,8 @@ a:hover {
   max-width: var(--wrap);
   margin-inline: auto;
   padding-inline: var(--gutter);
+  /* A grid/flex child cannot be widened by an unwrappable line inside it. */
+  min-width: 0;
 }
 
 .skip {
@@ -200,18 +202,17 @@ a:hover {
 }
 
 .brand__mark {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r-input);
-  background: var(--syk);
-  color: var(--cream);
+  width: 30px;
+  height: 34px;
   display: grid;
   place-items: center;
   flex: none;
+  color: var(--syk);
 }
 
+/* The footer sits on the dark band, so the same mark is drawn in cream. It
+   is the artwork itself — no plate behind it in either place. */
 .brand__mark--light {
-  background: rgba(255, 248, 225, 0.12);
   color: var(--cream);
 }
 
@@ -357,14 +358,112 @@ a:hover {
 
 /* ------------------------------------------------------------------ hero */
 
+/* The hero. On a phone the photograph sits under the words, cropped to a
+   band so the page still gets to the point quickly. From 900px it is the
+   right half of the screen, running from under the header to the strip, and
+   the words sit on the cream at its left edge — one vertical rhythm with the
+   header rather than a band the reader has to step over.
+
+   The sticky header sits above the photograph, so at 900px and up the hero
+   is pulled up behind it by exactly the header's height.
+
+   The photograph's own left edge is feathered with a cream gradient rather
+   than cut with a rule: the two halves are one surface, so the headline is
+   never straddling a border. */
 .hero {
   position: relative;
-  padding: 56px 0 64px;
-  background:
-    radial-gradient(1100px 460px at 88% -12%, rgba(40, 112, 148, 0.13), transparent 62%),
-    radial-gradient(760px 380px at 4% 110%, rgba(231, 221, 181, 0.5), transparent 60%),
-    var(--cream);
+  padding: 40px 0 44px;
+  background: var(--cream);
   overflow: hidden;
+}
+
+.hero__photo {
+  position: relative;
+  height: 210px;
+  margin-bottom: 26px;
+  overflow: hidden;
+}
+
+.hero__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 62% 50%;
+}
+
+/* Fade the bottom of the band into the page on a phone. */
+.hero__photo::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--cream));
+}
+
+.hero__in {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero__copy {
+  min-width: 0;
+  max-width: 34rem;
+}
+
+/* the header's own height, so the hero can start behind it */
+:root {
+  --hdr-h: 67px;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    padding: 0;
+    margin-top: calc(var(--hdr-h) * -1);
+    padding-top: var(--hdr-h);
+    min-height: 520px;
+    display: flex;
+    align-items: center;
+  }
+
+  .hero__photo {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 56%;
+    height: 100%;
+    margin: 0;
+  }
+
+  .hero__photo img {
+    object-position: 58% 42%;
+  }
+
+  /* Two gradients: a long one that dissolves the photograph into the cream
+     under the words, and a short one that keeps the very top clean. */
+  .hero__photo::after {
+    inset: 0;
+    height: auto;
+    background:
+      linear-gradient(to right, var(--cream) 0%, rgba(255, 248, 225, 0.92) 12%, rgba(255, 248, 225, 0) 46%),
+      linear-gradient(to bottom, rgba(255, 248, 225, 0.35), transparent 22%);
+  }
+
+  .hero__in {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1080px) {
+  .hero {
+    min-height: 620px;
+  }
+
+  .hero__copy {
+    max-width: 40rem;
+  }
 }
 
 .hero::after {
@@ -373,22 +472,6 @@ a:hover {
   inset: auto 0 0;
   height: 1px;
   background: var(--sand);
-}
-
-.hero__in {
-  display: grid;
-  gap: 56px;
-  align-items: center;
-}
-
-@media (min-width: 980px) {
-  .hero {
-    padding: 84px 0 92px;
-  }
-  .hero__in {
-    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-    gap: 64px;
-  }
 }
 
 
@@ -415,26 +498,6 @@ a:hover {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 28px;
-}
-
-.hero__notes {
-  list-style: none;
-  display: grid;
-  gap: 8px;
-  margin-top: 26px;
-  font-size: 13.5px;
-  color: var(--ink-muted);
-}
-
-.hero__notes li {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.hero__notes .ic {
-  color: var(--forest);
-  margin-top: 2px;
 }
 
 /* hero art: dashboard mock + receipt */
@@ -1244,6 +1307,10 @@ a:hover {
 
 .doc {
   display: grid;
+  /* One column below 980px, and it must be allowed to be narrower than its
+     contents: an implicit `auto` track takes its minimum from the widest
+     unwrappable line of SQL on the page, which pushes the page sideways. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 32px;
   min-width: 0;
 }
@@ -1461,6 +1528,17 @@ a:hover {
   min-width: 420px;
 }
 
+/* Four columns do not fit a phone; the wrapper still scrolls, but the table is
+   allowed to be narrower so the box itself never overflows the page. */
+@media (max-width: 699px) {
+  .prose table {
+    min-width: 0;
+  }
+  .prose thead th {
+    white-space: normal;
+  }
+}
+
 .prose thead th {
   background: var(--cream-deep);
   text-align: left;
@@ -1545,6 +1623,15 @@ a:hover {
   color: #dbe8ee;
   white-space: pre;
   tab-size: 2;
+}
+
+/* A 94-character line of SQL cannot scroll on a phone without taking the
+   page with it; below 700px it wraps, keeping the shape readable. */
+@media (max-width: 699px) {
+  .codeblock code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
 }
 
 /* --------------------------------------------------------------- print */
@@ -2116,23 +2203,11 @@ a:hover {
    It is not a line icon, so it must not inherit the 1.75 stroke. */
 
 .brand__mark svg {
-  width: 19px;
-  height: 22px;
+  width: 30px;
+  height: 34px;
   display: block;
   stroke: none;
   fill: currentColor;
-}
-
-.brand__mark {
-  color: var(--syk);
-  background: var(--cream);
-  border: 1px solid var(--sand);
-}
-
-.brand__mark--light {
-  background: var(--cream);
-  border-color: transparent;
-  color: var(--syk);
 }
 
 /* The app's body class. It exists so a page can be told apart in a stylesheet
@@ -2260,4 +2335,56 @@ a:hover {
 /* The spec page's own body class, mirroring .page-auth and .page-app. */
 .page-doc {
   background: var(--cream);
+}
+
+/* ------------------------------------------------------- the counter band
+   The photograph in the hero shows the shop; this shows the screen. It sits
+   on the dark band so the two mocks read as objects on a counter, and so the
+   page alternates cream / dark instead of running three cream sections
+   together. */
+
+.counter {
+  display: grid;
+  gap: 36px;
+  align-items: center;
+}
+
+.counter__copy {
+  min-width: 0;
+  max-width: 34rem;
+}
+
+.counter__list {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 248, 225, 0.78);
+}
+
+.counter__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.counter__list .ic {
+  color: var(--cream);
+  margin-top: 2px;
+  flex: none;
+}
+
+@media (min-width: 900px) {
+  .counter {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 56px;
+  }
+}
+
+.sec--dark .counter .mock,
+.sec--dark .counter .receipt {
+  background: var(--paper);
+  border-color: transparent;
 }
