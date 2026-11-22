@@ -50,6 +50,10 @@ const failures = [];
 const fail = (msg) => {
   failures.push(msg);
   note(`FAIL ${msg}`);
+  /* Raise it as it happens, not only in the summary at the end: if a later
+     section throws hard, the failures found before it must still reach the
+     run's Checks tab, where they can actually be read. */
+  console.log(`::error title=Live site check::${msg.replace(/\r?\n/g, ' ').slice(0, 900)}`);
 };
 
 let browser;
