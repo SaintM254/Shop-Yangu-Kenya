@@ -494,6 +494,7 @@ try {
 
 await browser.close().catch(() => {});
 
+
 /* Annotations survive to the run's Checks tab even though the raw log lives in
    blob storage, which makes a failure readable from the API and the UI. */
 for (const f of failures) {
