@@ -1,0 +1,2952 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#023246" />
+<title>Shop Yangu Kenya — wholesale &amp; retail management</title>
+<!--
+  Shop Yangu Kenya — an interactive prototype.
+
+  A separate product from Mau Crest Hub. Nothing from that repository is
+  imported or changed: this is one self-contained file. What it does borrow,
+  deliberately, is that system's design language, because it is a good one —
+  Public Sans, the same flat surfaces with no shadows anywhere, 10/16/20/999
+  radii, pill buttons, real lucide line icons, tabular figures.
+
+  Shop Yangu Kenya's own accent is the cerulean blue #287094 from the supplied
+  swatches, on the deep navy #023246 rather than Mau Crest's forest green.
+
+  Every number below is sample data held in memory. Reloading resets it.
+-->
+<style>
+  :root{
+    /* Mirror of Mau Crest Hub's own tokens (src/index.css). */
+    --cream:#FFF8E1; --paper:#FFFFFF; --cream-deep:#F5EBC8; --sand:#E7DDB5;
+    --forest:#1F4D2E; --forest-dark:#163A22; --forest-tint:#E3EFDF;
+    --gold:#B7892B; --gold-tint:#F6E7BF;
+    --deep-blue:#1D4E7A; --blue-tint:#DCE8F3;
+    --ink:#1E2A22; --ink-muted:#596658;
+    --danger:#A8321F; --danger-tint:#F8DFD9;
+    --warning:#8F5200; --warning-tint:#FBE8C2;
+
+    /* Shop Yangu Kenya's own accent, from the supplied swatches. */
+    --syk:#287094;        /* medium cerulean blue */
+    --syk-dark:#023246;   /* deep navy */
+    --syk-tint:#E7F0F5;
+    --syk-line:#D4D4CE;
+
+    --r-input:10px; --r-panel:16px; --r-dialog:20px; --r-pill:999px;
+    --sans:'Public Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none !important}
+  html{font-size:16px}
+  body{
+    background:var(--cream);color:var(--ink);font-family:var(--sans);
+    line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  /* No shadows anywhere, by the same rule as Mau Crest. */
+  svg.ic{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;
+         stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  svg.ic.sm{width:16px;height:16px}
+  svg.ic.lg{width:24px;height:24px}
+  .num{font-variant-numeric:tabular-nums}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  /* ================= layout: mobile first ================= */
+  .app{min-height:100dvh;display:flex;flex-direction:column}
+  .topbar{
+    position:sticky;top:0;z-index:40;background:var(--paper);
+    border-bottom:1px solid var(--sand);padding:10px 14px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .brand{display:flex;align-items:center;gap:9px;min-width:0}
+  .brandmark{
+    width:34px;height:34px;border-radius:10px;background:var(--syk);color:#fff;flex:none;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brandmark svg.ic{width:19px;height:19px}
+  .brandname{font-size:15px;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brandsub{font-size:10.5px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .spacer{flex:1}
+  .iconbtn{
+    width:40px;height:40px;border-radius:var(--r-pill);border:1px solid var(--sand);
+    background:var(--cream);color:var(--ink);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex:none;position:relative;
+  }
+  .iconbtn:hover{background:var(--cream-deep)}
+  .iconbtn .dotbadge{
+    position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:999px;
+    background:var(--danger);border:1.5px solid var(--paper);
+  }
+
+  .shell{display:flex;flex:1;min-height:0;min-width:0}
+
+  /* side navigation: a drawer on a phone, a rail from 900px */
+  .nav{display:none}
+  .navdrawer{
+    position:fixed;inset:0;z-index:60;display:none;
+  }
+  .navdrawer.open{display:block}
+  .navdrawer .scrim{position:absolute;inset:0;background:rgba(2,50,70,.45)}
+  .navpanel{
+    position:absolute;inset:0 auto 0 0;width:min(84vw,320px);background:var(--syk-dark);
+    color:var(--cream);padding:16px 12px calc(16px + var(--safe-b));
+    display:flex;flex-direction:column;gap:2px;overflow:auto;
+  }
+  .navpanel .navhead{display:flex;align-items:center;justify-content:space-between;
+    padding:2px 6px 14px;color:#fff}
+  .navpanel .navhead .who{font-size:12px;color:rgba(255,255,255,.66)}
+  .navpanel .navhead strong{display:block;font-size:14.5px}
+  .navpanel .iconbtn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff}
+  .navgroup{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+            color:rgba(255,255,255,.45);padding:14px 10px 6px}
+  .navlink{
+    display:flex;align-items:center;gap:11px;padding:11px 10px;border-radius:10px;
+    color:rgba(255,255,255,.82);font-size:14px;font-weight:500;cursor:pointer;border:0;
+    background:transparent;width:100%;text-align:left;font-family:inherit;
+  }
+  .navlink svg.ic{width:18px;height:18px;opacity:.9}
+  .navlink:hover{background:rgba(255,255,255,.08);color:#fff}
+  .nav .navlink{width:100%;text-align:left}
+  .navlink[aria-current="page"]{background:rgba(255,255,255,.14);color:#fff;font-weight:600}
+  .plan{margin-top:auto;background:rgba(255,255,255,.07);border-radius:12px;padding:11px 12px;font-size:12px;line-height:1.45}
+  .plan b{display:block;font-size:13px;color:#fff;margin-bottom:1px}
+
+  @media(min-width:900px){
+    .app{display:grid;grid-template-columns:248px 1fr;min-height:100dvh}
+    .topbar{display:none}
+    .nav{
+      display:flex;position:sticky;top:0;height:100dvh;flex-direction:column;gap:2px;
+      background:var(--syk-dark);color:var(--cream);padding:18px 12px;overflow:auto;
+    }
+    .nav .navhead{padding:2px 6px 16px;color:#fff;display:flex;align-items:center;gap:10px}
+    .nav .navhead .brandmark{background:rgba(255,255,255,.13)}
+    .shell{display:block}
+  }
+
+  main{flex:1;min-width:0;max-width:100%;padding:14px 14px calc(78px + var(--safe-b))}
+  .screen{min-width:0}
+  @media(min-width:900px){main{padding:22px 26px 40px}}
+
+  /* bottom tab bar, phones only */
+  .tabbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--paper);
+    border-top:1px solid var(--sand);display:flex;
+    padding:6px 4px calc(6px + var(--safe-b));
+  }
+  .tabbar button{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;
+    color:var(--ink-muted);font-family:inherit;font-size:10.5px;font-weight:500;padding:5px 2px;
+    border-radius:10px;cursor:pointer;min-height:48px;
+  }
+  .tabbar button[aria-current="page"]{color:var(--syk);font-weight:600}
+  .tabbar button[aria-current="page"] svg.ic{stroke-width:2.25}
+  @media(min-width:900px){.tabbar{display:none}}
+
+  /* ================= primitives ================= */
+  .card{background:var(--paper);border:1px solid var(--sand);border-radius:var(--r-panel);padding:15px}
+  .card + .card{margin-top:12px}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:11px}
+  .card-head h2{font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .card-head .sub{font-size:11.5px;color:var(--ink-muted);margin-top:1px}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    min-height:44px;padding:9px 17px;border-radius:var(--r-pill);border:1px solid var(--syk);
+    background:var(--syk);color:#fff;font:inherit;font-size:14px;font-weight:600;
+    cursor:pointer;white-space:nowrap;text-align:center;transition:background .15s,border-color .15s;
+  }
+  .btn:hover{background:var(--syk-dark);border-color:var(--syk-dark)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.secondary{background:var(--paper);color:var(--ink);border-color:var(--sand)}
+  .btn.secondary:hover{background:var(--cream);border-color:var(--sand)}
+  .btn.danger{background:var(--paper);color:var(--danger);border-color:rgba(168,50,31,.45)}
+  .btn.danger:hover{background:var(--danger-tint)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--syk);padding:6px 10px;min-height:36px}
+  .btn.ghost:hover{background:var(--syk-tint)}
+  .btn.sm{min-height:36px;padding:6px 13px;font-size:13px}
+  .btn.block{width:100%;white-space:normal;line-height:1.25;padding:12px 16px}
+  .btn.gold{background:var(--gold-tint);color:#6E4F10;border-color:#E3CD98}
+  .btn.gold:hover{background:#F0DCA8;border-color:#D9BE83}
+
+  label.lbl{display:block;font-size:12.5px;font-weight:500;margin-bottom:5px}
+  .field{
+    width:100%;min-height:46px;padding:10px 13px;border-radius:var(--r-input);
+    border:1px solid var(--sand);background:var(--cream);font:inherit;font-size:15px;color:var(--ink);
+  }
+  .field:focus{outline:none;border-color:var(--syk);background:var(--paper)}
+  .field.big{font-size:22px;font-weight:700;text-align:center;min-height:56px}
+  .field.err{border-color:var(--danger);background:var(--danger-tint)}
+  .hint{font-size:11.5px;color:var(--ink-muted);margin-top:4px}
+  .errmsg{font-size:12px;color:var(--danger);margin-top:4px;display:flex;gap:5px;align-items:flex-start}
+  .errmsg svg.ic{width:14px;height:14px;margin-top:1px}
+  .formrow + .formrow{margin-top:11px}
+  @media(min-width:640px){.form2{display:grid;grid-template-columns:1fr 1fr;gap:11px}.formrow + .formrow{margin-top:0}}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--r-pill);
+        font-size:11px;font-weight:600;white-space:nowrap}
+  .pill .dot{width:6px;height:6px;border-radius:999px;background:currentColor}
+  .pill.ok{background:var(--forest-tint);color:var(--forest)}
+  .pill.low{background:var(--warning-tint);color:var(--warning)}
+  .pill.out{background:var(--danger-tint);color:var(--danger)}
+  .pill.info{background:var(--syk-tint);color:var(--syk)}
+  .pill.neutral{background:var(--cream-deep);color:var(--ink-muted)}
+
+  /* money: red for down, green for up — as asked */
+  .up{color:var(--forest)} .down{color:var(--danger)}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600}
+  .delta svg.ic{width:14px;height:14px}
+
+  /* ================= dashboard ================= */
+  .pagehead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .pagehead h1{font-size:21px;font-weight:700;letter-spacing:-.025em;line-height:1.15}
+  .pagehead .sub{font-size:12.5px;color:var(--ink-muted);margin-top:2px}
+  @media(min-width:900px){.pagehead h1{font-size:25px}}
+
+  /* the payment goal card from the reference */
+  .goal{
+    background:var(--paper);border:1px solid var(--sand);border-radius:var(--r-dialog);
+    padding:16px 16px 14px;position:relative;overflow:hidden;
+  }
+  .goal .ghead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .goal .ghead h2{font-size:16px;font-weight:700;letter-spacing:-.02em}
+  .goal .ghead .sub{font-size:11.5px;color:var(--ink-muted);margin-top:1px}
+  .goal .go{
+    width:36px;height:36px;border-radius:999px;border:1px solid var(--sand);background:var(--cream);
+    display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;flex:none;
+  }
+  .goal .gbody{text-align:center;margin-top:6px}
+  .goal .glabel{font-size:11.5px;color:var(--ink-muted);font-weight:500}
+  .goal .gamount{font-size:32px;font-weight:700;letter-spacing:-.035em;line-height:1.1;margin-top:1px}
+  .goal .gamount .cents{font-size:20px;color:var(--ink-muted)}
+  .goal .spark{height:96px;margin:6px -4px 0}
+  .goal .spark svg{width:100%;height:100%;display:block;overflow:visible}
+  .goal .gactions{display:flex;gap:9px;margin-top:8px}
+  .goal .gactions .btn{flex:1}
+  .goal .gbadge{position:absolute;top:14px;left:16px;display:none}
+
+  .statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:12px;min-width:0}
+  .statgrid > *{min-width:0}
+  /* the grid decides for itself: as many cards as fit, never squeezed */
+  .statgrid{grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+  .stat .v{font-size:clamp(17px,1.6vw,22px)}
+  .stat{background:var(--paper);border:1px solid var(--sand);border-radius:var(--r-panel);padding:13px 14px}
+  .stat .k{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);white-space:nowrap;
+           display:flex;align-items:center;gap:6px}
+  .stat .k svg.ic{width:14px;height:14px}
+  .stat .v{font-weight:700;letter-spacing:-.03em;margin-top:5px;line-height:1.15;white-space:nowrap;
+           overflow:hidden;text-overflow:ellipsis}
+  .stat .v small{font-size:12px;font-weight:600;color:var(--ink-muted);letter-spacing:0}
+  .stat .f{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:5px;font-size:11px;color:var(--ink-muted)}
+
+  .cols{display:grid;gap:12px;margin-top:12px;min-width:0}
+  .cols > *{min-width:0}
+  @media(min-width:1000px){.cols.two{grid-template-columns:1.35fr 1fr}}
+
+  /* bar chart, drawn as divs so it stays crisp and needs no library */
+  .bars{display:flex;align-items:flex-end;gap:5px;height:170px;margin-top:6px}
+  .bars .col{flex:1;display:flex;flex-direction:column;height:100%;min-width:0}
+  .bars .pair{flex:1;display:flex;align-items:flex-end;gap:2px;min-height:0}
+  .bars .bar{flex:1;background:var(--syk);border-radius:3px 3px 0 0;min-height:2px}
+  .bars .bar.prev{background:var(--syk-tint);border:1px solid #C9DDE9;border-bottom:0;border-radius:3px 3px 0 0}
+  .bars .x{font-size:9.5px;text-align:center;color:var(--ink-muted);margin-top:5px;white-space:nowrap}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:11.5px;color:var(--ink-muted)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+  /* tables: cards on a phone, a table from 760px */
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tablewrap table{width:100%;border-collapse:collapse;font-size:13px}
+  .tablewrap th{
+    text-align:left;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-muted);background:var(--cream-deep);padding:7px 9px;border-bottom:1px solid var(--sand);white-space:nowrap;
+  }
+  .tablewrap th:first-child{border-radius:8px 0 0 0}
+  .tablewrap th:last-child{border-radius:0 8px 0 0}
+  .tablewrap td{padding:9px;border-bottom:1px solid var(--sand);vertical-align:middle}
+  .tablewrap tr:last-child td{border-bottom:0}
+  .tablewrap td.num,.tablewrap th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tablewrap tbody tr:hover{background:var(--cream)}
+  @media(min-width:760px){.tablewrap table{min-width:520px}}
+  table.t{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+  table.t th{
+    text-align:left;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-muted);background:var(--cream-deep);padding:8px 10px;border-bottom:1px solid var(--sand);
+    white-space:nowrap;position:sticky;top:0;
+  }
+  table.t td{padding:10px;border-bottom:1px solid var(--sand);vertical-align:middle}
+  table.t tr:last-child td{border-bottom:0}
+  table.t td.r,table.t th.r{text-align:right;font-variant-numeric:tabular-nums}
+  table.t tbody tr:hover{background:var(--cream)}
+  .cards-mobile{display:block}
+  .tablewrap.desk{display:none}
+  @media(min-width:760px){.cards-mobile{display:none}.tablewrap.desk{display:block}}
+
+  .rowcard{border:1px solid var(--sand);border-radius:12px;padding:11px 12px;background:var(--paper)}
+  .rowcard + .rowcard{margin-top:8px}
+  .rowcard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .rowcard .ttl{font-size:14px;font-weight:600;line-height:1.25}
+  .rowcard .meta{font-size:11.5px;color:var(--ink-muted);margin-top:2px}
+  .rowcard .amt{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rowcard .bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:9px}
+  .rowcard .bottom .btns{display:flex;gap:6px;align-items:center;flex:none}
+  .rowcard .bottom .stepper{max-width:190px}
+
+  /* ================= point of sale ================= */
+  .pos{display:grid;gap:12px;min-width:0}
+  .pos > *{min-width:0}
+  @media(min-width:1000px){.pos{grid-template-columns:1.25fr .9fr;align-items:start}}
+  .searchbox{position:relative}
+  .searchbox svg.ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-muted)}
+  .searchbox .field{padding-left:38px}
+  .quickgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+  .quickgrid button{
+    min-height:44px;border-radius:var(--r-pill);border:1px solid var(--sand);background:var(--cream);
+    font:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);
+  }
+  .quickgrid button:hover{background:var(--cream-deep)}
+  .bigfield{position:relative}
+  .bigfield .unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;
+                  font-weight:600;color:var(--ink-muted);pointer-events:none}
+  /* payment: a part row per method, so nothing is squeezed */
+  .paypart{border:1px solid var(--sand);border-radius:12px;padding:10px 11px;background:var(--paper)}
+  .paypart + .paypart{margin-top:8px}
+  .paypart .prow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .paypart .plabel{font-size:12px;font-weight:600;color:var(--ink-muted);display:flex;align-items:center;gap:6px}
+  .paypart .segmented{background:var(--cream)}
+  .paypart .segmented button{display:flex;align-items:center;justify-content:center;gap:4px;min-height:34px;font-size:12px}
+  .paypart .segmented button svg.ic{width:14px;height:14px;opacity:.8}
+  .paypart .segmented button[aria-pressed="true"]{background:var(--syk);border-color:var(--syk);color:#fff}
+  .paypart .segmented button[aria-pressed="true"] svg.ic{opacity:1}
+  .paypart .amtrow{display:flex;gap:7px;align-items:center}
+  .paypart .amtrow .field{min-height:44px;font-size:16px;font-weight:600}
+  .paypart .del{width:38px;height:38px;flex:none;border-radius:9px;border:1px solid var(--sand);
+    background:var(--paper);color:var(--danger);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .totals{background:var(--cream);border:1px solid var(--sand);border-radius:12px;padding:11px 13px;margin-top:11px}
+  .totals .line{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+  .totals .line.total{font-size:17px;font-weight:700;border-top:1px solid var(--sand);margin-top:6px;padding-top:8px}
+  .totals .line.neg{color:var(--danger)}
+  .splitline{display:grid;grid-template-columns:1fr 110px 40px;gap:7px;align-items:center;margin-top:7px}
+  .splitline .field{min-height:40px}
+  .splitline .del{width:40px;height:40px;border-radius:10px;border:1px solid var(--sand);background:var(--paper);
+                   color:var(--danger);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .receipt{
+    background:var(--paper);border:1px dashed var(--sand);border-radius:12px;padding:14px;
+    font-size:12px;line-height:1.6;
+  }
+  .receipt .shopname{font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .receipt .rline{display:flex;justify-content:space-between;gap:8px}
+  .receipt hr{border:0;border-top:1px dashed var(--sand);margin:8px 0}
+  .receipt .etims{display:flex;gap:6px;align-items:flex-start;margin-top:9px;padding-top:8px;border-top:1px dashed var(--sand);
+                  font-size:10.5px;color:var(--ink-muted)}
+
+  /* ================= inventory ================= */
+  .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--sand);border-radius:var(--r-input);
+           overflow:hidden;background:var(--cream);min-height:52px}
+  .stepper button{
+    width:52px;min-height:52px;border:0;background:transparent;color:var(--syk);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .stepper button:hover{background:var(--cream-deep)}
+  .stepper button svg.ic{width:22px;height:22px;stroke-width:2.25}
+  .stepper input{
+    flex:1;min-width:0;border:0;background:transparent;text-align:center;font:inherit;
+    font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);padding:6px 0;
+  }
+  .stepper input:focus{outline:none}
+  .stepper .u{font-size:12px;color:var(--ink-muted);padding-right:12px;font-weight:600}
+
+  .dropzone{
+    border:2px dashed var(--sand);border-radius:var(--r-panel);background:var(--cream);
+    padding:22px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  .dropzone:hover,.dropzone.over{border-color:var(--syk);background:var(--syk-tint)}
+  .dropzone .big{width:44px;height:44px;border-radius:999px;background:var(--paper);border:1px solid var(--sand);
+                 display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--syk)}
+
+  .progress{height:8px;border-radius:999px;background:var(--cream-deep);overflow:hidden;margin-top:10px}
+  .progress span{display:block;height:100%;background:var(--syk);border-radius:999px;transition:width .2s}
+
+  /* ================= dialogs / sheets ================= */
+  .sheet{
+    position:fixed;inset:0;z-index:70;display:none;
+  }
+  .sheet.open{display:block}
+  .sheet .scrim{position:absolute;inset:0;background:rgba(2,50,70,.5)}
+  .sheet .panel{
+    position:absolute;left:0;right:0;bottom:0;background:var(--paper);
+    border-radius:22px 22px 0 0;max-height:92dvh;display:flex;flex-direction:column;
+    padding:6px 16px calc(16px + var(--safe-b));overflow:hidden;
+  }
+  .sheet .shead,.sheet .sfoot{flex:none}
+  .sheet .sbody{flex:1 1 auto;min-height:0}
+  .sheet .grab{width:38px;height:4px;border-radius:999px;background:var(--sand);margin:8px auto 10px}
+  .sheet .shead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .sheet .shead h2{font-size:17px;font-weight:700;letter-spacing:-.02em}
+  .sheet .shead .sub{font-size:12px;color:var(--ink-muted);margin-top:1px}
+  .sheet .sbody{overflow:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .sheet .sfoot{display:flex;gap:9px;padding-top:12px;border-top:1px solid var(--sand);margin-top:12px}
+  .sheet .sfoot .btn{flex:1}
+  @media(min-width:760px){
+    .sheet .panel{
+      left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);
+      width:min(560px,92vw);border-radius:var(--r-dialog);max-height:86vh;padding:20px;
+    }
+    .sheet .panel[data-wide]{width:min(700px,94vw)}
+    .sheet .grab{display:none}
+  }
+
+  .toastwrap{position:fixed;left:0;right:0;bottom:calc(86px + var(--safe-b));z-index:90;
+             display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 14px}
+  @media(min-width:900px){.toastwrap{bottom:24px}}
+  /* a sheet owns the bottom of a phone screen, so toasts move to the top */
+  @media(max-width:759px){.sheet.open ~ .toastwrap{top:calc(12px + env(safe-area-inset-top,0px));bottom:auto}}
+  .toast{
+    background:var(--syk-dark);color:#fff;border-radius:var(--r-pill);padding:10px 16px;
+    font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;max-width:100%;
+  }
+  .toast.bad{background:var(--danger)}
+  .toast.good{background:var(--forest)}
+
+  .empty{text-align:center;padding:30px 16px;color:var(--ink-muted)}
+  .empty .big{width:48px;height:48px;border-radius:999px;background:var(--cream);border:1px solid var(--sand);
+              display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--ink-muted)}
+  .empty b{display:block;color:var(--ink);font-size:14.5px;font-weight:600;margin-bottom:3px}
+  .empty p{font-size:12.5px;max-width:34ch;margin:0 auto 12px}
+
+  .segmented{display:flex;gap:4px;background:var(--cream);border:1px solid var(--sand);border-radius:var(--r-pill);padding:3px}
+  .segmented button{
+    flex:1;min-height:36px;border:0;background:transparent;border-radius:var(--r-pill);
+    font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-muted);cursor:pointer;padding:0 10px;
+  }
+  .segmented button[aria-pressed="true"]{background:var(--paper);color:var(--ink);border:1px solid var(--sand)}
+
+  .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    border:1px solid var(--sand);background:var(--paper);border-radius:var(--r-pill);
+    padding:7px 13px;font:inherit;font-size:12.5px;font-weight:500;color:var(--ink-muted);
+    white-space:nowrap;cursor:pointer;flex:none;min-height:36px;
+  }
+  .chip[aria-pressed="true"]{background:var(--syk);border-color:var(--syk);color:#fff;font-weight:600}
+
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
+  .kv dt{color:var(--ink-muted);font-size:12.5px}
+  .kv dd{text-align:right;font-weight:500}
+
+  /* settings rows */
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;
+          border-bottom:1px solid var(--sand)}
+  .setrow:last-child{border-bottom:0}
+  .setrow .t{font-size:13.5px;font-weight:500}
+  .setrow .d{font-size:11.5px;color:var(--ink-muted);margin-top:1px;max-width:46ch}
+
+  .toggle{width:46px;height:28px;border-radius:999px;background:var(--sand);border:0;cursor:pointer;
+          position:relative;flex:none;transition:background .15s}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:999px;
+                 background:var(--paper);transition:transform .15s}
+  .toggle[aria-checked="true"]{background:var(--forest)}
+  .toggle[aria-checked="true"]::after{transform:translateX(18px)}
+
+  .planbox{background:linear-gradient(180deg,var(--syk-tint),var(--paper));border:1px solid #C9DDE9;
+           border-radius:var(--r-panel);padding:15px}
+  .planbox .price{font-size:28px;font-weight:700;letter-spacing:-.03em}
+  .planbox .price small{font-size:13px;font-weight:600;color:var(--ink-muted);letter-spacing:0}
+
+  .screen{display:none}
+  .screen.active{display:block}
+
+  /* a branded sheet, built for the printer and for Save as PDF */
+  #printSheet{display:none}
+  .psheet{padding:24px;max-width:820px;margin:0 auto;font-size:12.5px;color:#1E2A22}
+  .psheet .phead{display:flex;justify-content:space-between;gap:20px;
+    border-bottom:2px solid var(--syk);padding-bottom:12px;margin-bottom:14px}
+  .psheet .pname{font-size:19px;font-weight:700;letter-spacing:-.02em;color:var(--syk-dark)}
+  .psheet .pmeta{text-align:right;font-size:11px;color:var(--ink-muted);line-height:1.6}
+  .psheet h3{font-size:13px;font-weight:700;margin:16px 0 6px;letter-spacing:.04em;text-transform:uppercase;color:var(--syk)}
+  .psheet table{width:100%;border-collapse:collapse;font-size:12px}
+  .psheet th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-muted);
+    border-bottom:1px solid var(--sand);padding:6px 8px 6px 0}
+  .psheet td{padding:6px 8px 6px 0;border-bottom:1px solid #EFE7C9;vertical-align:top}
+  .psheet td.n,.psheet th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .psheet .pfoot{margin-top:18px;padding-top:10px;border-top:1px solid var(--sand);
+    display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-muted)}
+  .psheet .ptotal{display:flex;justify-content:space-between;font-weight:700;font-size:14px;
+    border-top:1px solid var(--sand);margin-top:8px;padding-top:8px}
+
+  /* the same sheet, shown on screen while it is being prepared for printing */
+  body.printing{background:#fff}
+  body.printing #printSheet{display:block}
+  body.printing .app,body.printing .toastwrap,body.printing .navdrawer,body.printing .sheet{display:none !important}
+
+  @media print{
+    @page{margin:14mm}
+    #printSheet{display:block}
+    body.printing .app,body.printing .toastwrap,body.printing .navdrawer,body.printing .sheet{display:none !important}
+    body .app{display:none !important}
+    body{background:#fff;margin:0}
+    .psheet{max-width:none;padding:0}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol><symbol id="i-shopping-cart" viewBox="0 0 24 24"><path d="m2.05 2.05 1.099-.028a1 1 0 0 1 1.008.815l2.69 14.347A1 1 0 0 0 7.83 18H18"/><path d="M4.563 5h16.435a1 1 0 0 1 .981 1.204l-1.026 6.226A2 2 0 0 1 18.962 14H6.25"/><circle cx="18" cy="20" r="2"/><circle cx="8" cy="20" r="2"/></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol><symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol><symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol><symbol id="i-arrow-down-left" viewBox="0 0 24 24"><path d="M17 7 7 17"/><path d="M17 17H7V7"/></symbol><symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol><symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></symbol><symbol id="i-boxes" viewBox="0 0 24 24"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></symbol><symbol id="i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></symbol><symbol id="i-credit-card" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line /><path d="M6 14h2"/></symbol><symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol><symbol id="i-calendar-days" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-file-spreadsheet" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></symbol><symbol id="i-store" viewBox="0 0 24 24"><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/></symbol><symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol><symbol id="i-landmark" viewBox="0 0 24 24"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></symbol><symbol id="i-banknote" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol><symbol id="i-arrow-right-left" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-log-out" viewBox="0 0 24 24"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></symbol><symbol id="i-user-round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line /><line /></symbol><symbol id="i-scan-line" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol><symbol id="i-funnel" viewBox="0 0 24 24"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></symbol><symbol id="i-percent" viewBox="0 0 24 24"><line /><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol><symbol id="i-badge-check" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-arrow-left-right" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-calculator" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line /><line /><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol></svg>
+
+<div class="app">
+  <!-- ============ side navigation, 900px and up ============ -->
+  <nav class="nav" id="rail" aria-label="Main"></nav>
+
+  <!-- ============ phone top bar ============ -->
+  <div class="topbar">
+    <button class="iconbtn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
+      <svg class="ic"><use href="#i-menu"/></svg>
+    </button>
+    <div class="brand">
+      <div class="brandmark"><svg class="ic"><use href="#i-store"/></svg></div>
+      <div style="min-width:0">
+        <div class="brandname" id="topShopName">Shop Yangu Kenya</div>
+        <div class="brandsub" id="topRole">Owner</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="bellBtn" aria-label="Notifications">
+      <svg class="ic"><use href="#i-bell"/></svg>
+      <span class="dotbadge" id="bellDot"></span>
+    </button>
+  </div>
+
+  <div class="shell">
+    <main id="main">
+      <!-- ================================================== DASHBOARD -->
+      <section class="screen active" id="s-dashboard" data-title="Dashboard">
+        <div class="pagehead">
+          <div>
+            <h1 id="greeting">Karibu, Wanjiku</h1>
+            <p class="sub" id="todayLine">Thursday, 20 November 2026 · Mombasa Branch</p>
+          </div>
+          <div class="row" style="display:flex;gap:8px">
+            <button class="btn secondary sm" data-role-switch>
+              <svg class="ic sm"><use href="#i-user-round"/></svg>
+              <span id="roleSwitchLabel">Viewing as Owner</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="cols two" style="margin-top:0">
+          <div>
+            <!-- the payment goal card, as in the reference -->
+            <div class="goal">
+              <div class="ghead">
+                <div>
+                  <h2>Payment Goal</h2>
+                  <div class="sub">Total amount goal</div>
+                </div>
+                <button class="go" aria-label="Open the goal">
+                  <svg class="ic sm"><use href="#i-arrow-up-right"/></svg>
+                </button>
+              </div>
+              <div class="gbody">
+                <div class="glabel">Total Balance</div>
+                <div class="gamount num" id="goalAmount">Ksh 32,678<span class="cents">.90</span></div>
+              </div>
+              <div class="spark" id="goalSpark"></div>
+              <div class="gactions">
+                <button class="btn" data-goto="pos">
+                  Sell
+                  <svg class="ic sm"><use href="#i-arrow-up-right"/></svg>
+                </button>
+                <button class="btn secondary" data-goto="purchases">
+                  Receive
+                  <svg class="ic sm"><use href="#i-arrow-down-left"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="statgrid">
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-shopping-cart"/></svg>Sales today</div>
+                <div class="v num" id="statSales">Ksh 48,250</div>
+                <div class="f"><span class="delta up"><svg class="ic"><use href="#i-trending-up"/></svg>12.4%</span> vs yesterday</div>
+              </div>
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-wallet"/></svg>Gross profit</div>
+                <div class="v num" id="statProfit">Ksh 9,140</div>
+                <div class="f"><span class="delta down"><svg class="ic"><use href="#i-trending-down"/></svg>3.1%</span> vs yesterday</div>
+              </div>
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-receipt"/></svg>Receipts</div>
+                <div class="v num" id="statReceipts">37</div>
+                <div class="f">Average Ksh 1,304</div>
+              </div>
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-credit-card"/></svg>Owed to you</div>
+                <div class="v num" id="statOwed">Ksh 61,400</div>
+                <div class="f"><span class="delta down"><svg class="ic"><use href="#i-trending-down"/></svg>8.2%</span> overdue</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>This week</h2>
+                  <div class="sub">Sales against last week</div>
+                </div>
+                <span class="pill info">7 days</span>
+              </div>
+              <div class="bars" id="weekBars"></div>
+              <div class="legend">
+                <span><i style="background:var(--syk)"></i>This week</span>
+                <span><i style="background:var(--syk-tint);border:1px solid #C9DDE9"></i>Last week</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Needs attention</h2>
+                  <div class="sub">Stock and credit</div>
+                </div>
+              </div>
+              <div id="attention"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cols two">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Recent receipts</h2>
+                <div class="sub">The last six sales</div>
+              </div>
+              <button class="btn ghost sm" data-goto="pos">Open till</button>
+            </div>
+            <div id="recentSales"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Top movers</h2>
+                <div class="sub">By value sold this week</div>
+              </div>
+            </div>
+            <div id="topMovers"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== POINT OF SALE -->
+      <section class="screen" id="s-pos" data-title="Point of sale">
+        <div class="pagehead">
+          <div>
+            <h1>Point of sale</h1>
+            <p class="sub">Sell, split the payment, print a KRA-valid receipt.</p>
+          </div>
+          <span class="pill info" id="posBranch">Mombasa Branch</span>
+        </div>
+
+        <div class="pos">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>New sale</h2>
+                <div class="sub">Search the shelf, or pick a fast mover</div>
+              </div>
+            </div>
+            <div class="searchbox">
+              <svg class="ic"><use href="#i-search"/></svg>
+              <input class="field" id="posSearch" placeholder="Search by product or barcode" autocomplete="off" />
+            </div>
+            <div class="chips" style="margin-top:9px" id="posChips"></div>
+            <div id="posResults" style="margin-top:11px"></div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Basket</h2>
+                  <div class="sub" id="basketCount">Nothing in it yet</div>
+                </div>
+                <button class="btn ghost sm" id="clearBasket">Clear</button>
+              </div>
+              <div id="basket"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Payment</h2>
+                  <div class="sub">Split it across up to three methods</div>
+                </div>
+              </div>
+              <div class="paygrid" id="payMethods"></div>
+              <div id="payDetail" style="margin-top:10px"></div>
+
+              <div class="totals">
+                <div class="line"><span>Subtotal</span><span class="num" id="tSub">Ksh 0</span></div>
+                <div class="line"><span>VAT 16% (included)</span><span class="num" id="tVat">Ksh 0</span></div>
+                <div class="line total"><span>Total</span><span class="num" id="tTotal">Ksh 0</span></div>
+                <div class="line" id="tChangeRow" hidden><span>Change</span><span class="num" id="tChange">Ksh 0</span></div>
+                <div class="line neg" id="tCreditRow" hidden><span>Goes to credit</span><span class="num" id="tCredit">Ksh 0</span></div>
+              </div>
+
+              <button class="btn block" style="margin-top:11px;min-height:52px;font-size:16px" id="completeSale" disabled>
+                <svg class="ic"><use href="#i-circle-check"/></svg>
+                Complete sale
+              </button>
+              <p class="hint" style="text-align:center">
+                A negative balance is allowed — the customer goes into credit and it is carried forward.
+              </p>
+            </div>
+
+            <div class="card" id="receiptCard" hidden>
+              <div class="card-head">
+                <div>
+                  <h2>Receipt</h2>
+                  <div class="sub" id="receiptNo">No. —</div>
+                </div>
+                <div style="display:flex;gap:7px" class="no-print">
+                  <button class="btn secondary sm" id="printReceipt">
+                    <svg class="ic sm"><use href="#i-printer"/></svg>Print
+                  </button>
+                  <button class="btn secondary sm" id="pdfReceipt">
+                    <svg class="ic sm"><use href="#i-file-text"/></svg>PDF
+                  </button>
+                </div>
+              </div>
+              <div class="receipt" id="receiptBody"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== INVENTORY -->
+      <section class="screen" id="s-inventory" data-title="Stock">
+        <div class="pagehead">
+          <div>
+            <h1>Stock</h1>
+            <p class="sub">What is on the shelf, what it cost, and what to reorder.</p>
+          </div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <button class="btn secondary sm" id="importBtn">
+              <svg class="ic sm"><use href="#i-upload"/></svg>Import
+            </button>
+            <button class="btn sm" data-add-product>
+              <svg class="ic sm"><use href="#i-plus"/></svg>Add product
+            </button>
+          </div>
+        </div>
+
+        <div class="statgrid" style="margin-top:0">
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-boxes"/></svg>Products</div>
+            <div class="v num" id="invCount">0</div>
+            <div class="f">On the price list</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-banknote"/></svg>Stock value</div>
+            <div class="v num" id="invValue">Ksh 0</div>
+            <div class="f">At cost price</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-alert"/></svg>Low stock</div>
+            <div class="v num" id="invLow">0</div>
+            <div class="f">At or under reorder level</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-truck"/></svg>Out of stock</div>
+            <div class="v num" id="invOut">0</div>
+            <div class="f">Cannot be sold today</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="chips" id="invChips" style="margin-bottom:11px"></div>
+          <div class="searchbox" style="margin-bottom:11px">
+            <svg class="ic"><use href="#i-search"/></svg>
+            <input class="field" id="invSearch" placeholder="Search stock" autocomplete="off" />
+          </div>
+          <div id="invList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== PURCHASES -->
+      <section class="screen" id="s-purchases" data-title="Purchases">
+        <div class="pagehead">
+          <div>
+            <h1>Purchases</h1>
+            <p class="sub">Stock coming in from suppliers, and what it is owed.</p>
+          </div>
+          <button class="btn sm" data-new-po>
+            <svg class="ic sm"><use href="#i-plus"/></svg>New purchase order
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Purchase orders</h2>
+              <div class="sub">Draft, ordered, received</div>
+            </div>
+            <span class="pill neutral" id="poCount">0 orders</span>
+          </div>
+          <div id="poList"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Suppliers</h2>
+              <div class="sub">Who you buy from</div>
+            </div>
+          </div>
+          <div id="supplierList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== SALES LIST -->
+      <section class="screen" id="s-sales" data-title="Sales">
+        <div class="pagehead">
+          <div>
+            <h1>Sales</h1>
+            <p class="sub">Every receipt, newest first.</p>
+          </div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <button class="btn secondary sm" data-export="sales">
+              <svg class="ic sm"><use href="#i-share"/></svg>Export
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="chips" id="salesChips" style="margin-bottom:11px"></div>
+          <div id="salesList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== CUSTOMERS -->
+      <section class="screen" id="s-customers" data-title="Customers">
+        <div class="pagehead">
+          <div>
+            <h1>Customers</h1>
+            <p class="sub">Balances, credit limits and payment history.</p>
+          </div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <button class="btn secondary sm" data-export="customers">
+              <svg class="ic sm"><use href="#i-share"/></svg>Export
+            </button>
+            <button class="btn sm" data-add-customer>
+              <svg class="ic sm"><use href="#i-plus"/></svg>Add
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="searchbox" style="margin-bottom:11px">
+            <svg class="ic"><use href="#i-search"/></svg>
+            <input class="field" id="custSearch" placeholder="Search customers" autocomplete="off" />
+          </div>
+          <div id="custList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== MIGRATION -->
+      <section class="screen" id="s-migration" data-title="Import records">
+        <div class="pagehead">
+          <div>
+            <h1>Import your records</h1>
+            <p class="sub">Bring your old stock, customers and sales across from Excel.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Before you start</h2>
+              <div class="sub">Three things make an import go through cleanly</div>
+            </div>
+          </div>
+          <ol style="font-size:13px;line-height:1.7;padding-left:18px;color:var(--ink)">
+            <li>Use the template for the sheet you are importing — the column names must match.</li>
+            <li>Write dates as <b>YYYY-MM-DD</b> (2026-04-01). Anything else is reported, not guessed.</li>
+            <li>Import the oldest records first: stock, then customers, then sales.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Templates</h2>
+              <div class="sub">Each one carries the exact columns the importer expects</div>
+            </div>
+          </div>
+          <div style="display:grid;gap:9px">
+            <div class="setrow">
+              <div><div class="t">Products / stock</div><div class="d">11 columns — opening quantity and cost</div></div>
+              <button class="btn secondary sm" data-template="products">
+                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+              </button>
+            </div>
+            <div class="setrow">
+              <div><div class="t">Customers</div><div class="d">6 columns — opening balance and credit limit</div></div>
+              <button class="btn secondary sm" data-template="customers">
+                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+              </button>
+            </div>
+            <div class="setrow">
+              <div><div class="t">Sales history</div><div class="d">10 columns — dated receipts, including paid and credit</div></div>
+              <button class="btn secondary sm" data-template="sales">
+                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+              </button>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:10px">
+            Excel opens these as a normal workbook with a coloured header row. If you edit them, keep the
+            header row exactly as it is and delete the sample row before saving your own data.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Import a sheet</h2>
+              <div class="sub">A CSV file — what Excel's "Save as" produces</div>
+            </div>
+          </div>
+          <div class="segmented" id="importTarget" style="margin-bottom:11px">
+            <button aria-pressed="true" data-target="products">Products</button>
+            <button aria-pressed="false" data-target="customers">Customers</button>
+            <button aria-pressed="false" data-target="sales">Sales</button>
+          </div>
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose a CSV file">
+            <div class="big"><svg class="ic"><use href="#i-upload"/></svg></div>
+            <div style="font-weight:600;font-size:14px">Tap to choose a file, or drop it here</div>
+            <div class="hint">Up to about 5,000 rows. In Excel: File → Save as → CSV UTF-8, then drop it here.
+              Nothing is written until you press Import.</div>
+          </div>
+          <div id="importReport" style="margin-top:12px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Date-sensitive rules</h2>
+              <div class="sub">How the importer treats an old record</div>
+            </div>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Sales dated before today</div><div class="d">Kept on their own date, so last quarter's reports still balance. They never appear as today's takings.</div></div>
+            <span class="pill ok">Kept</span>
+          </div>
+          <div class="setrow">
+            <div><div class="t">A date in the future</div><div class="d">Rejected and reported by row number — a sale cannot happen tomorrow.</div></div>
+            <span class="pill out">Rejected</span>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Stock already counted</div><div class="d">Opening quantity replaces the count only if you tick "overwrite" in the import report.</div></div>
+            <span class="pill low">Asks first</span>
+          </div>
+          <div class="setrow">
+            <div><div class="t">A duplicate receipt number</div><div class="d">Skipped, never doubled — the receipt already exists.</div></div>
+            <span class="pill neutral">Skipped</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== REPORTS -->
+      <section class="screen" id="s-reports" data-title="Reports">
+        <div class="pagehead">
+          <div>
+            <h1>Reports</h1>
+            <p class="sub">Money in, money out, and what is left.</p>
+          </div>
+          <button class="btn secondary sm" data-export="report">
+            <svg class="ic sm"><use href="#i-share"/></svg>Export
+          </button>
+        </div>
+        <div class="card">
+          <div class="chips" id="reportChips" style="margin-bottom:11px"></div>
+          <div id="reportTable"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== E-TIMS -->
+      <section class="screen" id="s-etims" data-title="KRA eTIMS">
+        <div class="pagehead">
+          <div>
+            <h1>KRA eTIMS</h1>
+            <p class="sub">Every sale signed and transmitted the way KRA requires.</p>
+          </div>
+          <span class="pill ok"><span class="dot"></span>Connected</span>
+        </div>
+
+        <div class="statgrid" style="margin-top:0">
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-badge-check"/></svg>Transmitted today</div>
+            <div class="v num" id="etimsSent">37</div>
+            <div class="f">Of 37 receipts</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-wifi-off"/></svg>Waiting to send</div>
+            <div class="v num" id="etimsQueue">0</div>
+            <div class="f">Held safely offline</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-percent"/></svg>VAT collected</div>
+            <div class="v num" id="etimsVat">Ksh 6,655</div>
+            <div class="f">16% on this month's sales</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-calendar-days"/></svg>Next filing</div>
+            <div class="v num" style="font-size:18px">20 Dec 2026</div>
+            <div class="f">Monthly, before the 20th</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="card-head">
+            <div>
+              <h2>Device and PIN</h2>
+              <div class="sub">Registered against this shop</div>
+            </div>
+            <span class="pill info">Sandbox</span>
+          </div>
+          <dl class="kv">
+            <dt>Business name</dt><dd id="etimsShop">Shop Yangu Kenya</dd>
+            <dt>KRA PIN</dt><dd class="num">P051234567X</dd>
+            <dt>Device serial</dt><dd class="num">KRA-ETIMS-0004821</dd>
+            <dt>Last successful transmission</dt><dd id="etimsLast">Today, 14:12</dd>
+            <dt>Signature</dt><dd class="num">RSA-2048, rotated monthly</dd>
+          </dl>
+          <button class="btn secondary block" style="margin-top:12px" id="etimsTest">
+            <svg class="ic sm"><use href="#i-scan-line"/></svg>Send a test transmission
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Recent transmissions</h2>
+              <div class="sub">Signed receipts, newest first</div>
+            </div>
+          </div>
+          <div id="etimsList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== SETTINGS -->
+      <section class="screen" id="s-settings" data-title="Settings">
+        <div class="pagehead">
+          <div>
+            <h1>Settings</h1>
+            <p class="sub">The shop, the people, and the plan.</p>
+          </div>
+        </div>
+
+        <div class="planbox">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div>
+              <div style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--syk)">Current plan</div>
+              <div class="price num"><span data-plan-price>Ksh 1,500</span><small> / month</small></div>
+              <div class="hint">One shop · unlimited products, receipts and users</div>
+            </div>
+            <span class="pill ok"><span class="dot"></span>Active</span>
+          </div>
+          <div class="progress" style="margin-top:12px"><span style="width:53%"></span></div>
+          <div class="hint" style="margin-top:6px">14 of 30 days used · renews 4 December 2026</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="card-head"><div><h2>Shop profile</h2><div class="sub">Printed on every receipt and export</div></div></div>
+          <div class="formrow"><label class="lbl" for="setShop">Shop name</label>
+            <input class="field" id="setShop" value="Shop Yangu Kenya" /></div>
+          <div class="formrow"><label class="lbl" for="setBranch">Branch</label>
+            <input class="field" id="setBranch" value="Mombasa Branch" /></div>
+          <div class="formrow"><label class="lbl" for="setPhone">Phone on receipts</label>
+            <input class="field" id="setPhone" value="0722 000 111" /></div>
+          <div class="formrow"><label class="lbl" for="setKra">KRA PIN</label>
+            <input class="field" id="setKra" value="P051234567X" /></div>
+          <button class="btn block" style="margin-top:14px" data-save-settings>Save profile</button>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>Users and roles</h2><div class="sub">Owner and Sales</div></div>
+            <button class="btn ghost sm" data-add-user><svg class="ic sm"><use href="#i-plus"/></svg>Add</button></div>
+          <div id="userList"></div>
+          <p class="hint" style="margin-top:10px">
+            The owner sees everything. Sales can take payments, look up stock and prices, and see their own
+            receipts — not costs, profit, reports, eTIMS settings or the user list.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>Preferences</h2><div class="sub">How the till behaves</div></div></div>
+          <div class="setrow">
+            <div><div class="t">Allow credit (negative balance)</div>
+              <div class="d">A sale can be part-paid, and the rest carried on the customer's account.</div></div>
+            <button class="toggle" data-toggle="allowCredit" aria-checked="true" aria-label="Allow credit"></button>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Ask for a customer on every sale</div>
+              <div class="d">Off means a walk-in customer is used and no balance is kept.</div></div>
+            <button class="toggle" data-toggle="askCustomer" aria-checked="false" aria-label="Ask for a customer"></button>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Send receipts by SMS</div>
+              <div class="d">Includes the eTIMS signature, so the customer keeps a valid receipt.</div></div>
+            <button class="toggle" data-toggle="smsReceipt" aria-checked="true" aria-label="Send SMS receipts"></button>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Keep selling offline</div>
+              <div class="d">Sales are held on the device and transmitted when the signal returns.</div></div>
+            <button class="toggle" data-toggle="offline" aria-checked="true" aria-label="Keep selling offline"></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>Your data</h2><div class="sub">Export anything, any time</div></div></div>
+          <div class="setrow">
+            <div><div class="t">Everything, as a spreadsheet</div><div class="d">Products, customers, sales and purchases</div></div>
+            <button class="btn secondary sm" data-export="all"><svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel</button>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Sales summary, as a PDF</div><div class="d">With your shop name and eTIMS details</div></div>
+            <button class="btn secondary sm" data-export="pdf"><svg class="ic sm"><use href="#i-file-text"/></svg>PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== AUDIT -->
+      <section class="screen" id="s-audit" data-title="Audit log">
+        <div class="pagehead">
+          <div>
+            <h1>Audit log</h1>
+            <p class="sub">Who did what, and when. Nothing here can be edited.</p>
+          </div>
+          <button class="btn secondary sm" data-export="audit">
+            <svg class="ic sm"><use href="#i-share"/></svg>Export
+          </button>
+        </div>
+        <div class="card">
+          <div class="chips" id="auditChips" style="margin-bottom:11px"></div>
+          <div id="auditList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ phone tab bar ============ -->
+  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+</div>
+
+<!-- ============ drawer for phones ============ -->
+<div class="navdrawer" id="drawer" aria-hidden="true">
+  <div class="scrim" data-close-drawer></div>
+  <div class="navpanel" role="dialog" aria-modal="true" aria-label="Menu">
+    <div class="navhead">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="brandmark"><svg class="ic"><use href="#i-store"/></svg></div>
+        <div>
+          <strong id="drawerShopName">Shop Yangu Kenya</strong>
+          <span class="who" id="drawerWho">Owner</span>
+        </div>
+      </div>
+      <button class="iconbtn" data-close-drawer aria-label="Close menu">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div id="drawerLinks" style="display:flex;flex-direction:column;gap:2px"></div>
+    <div class="plan">
+      <b>Plan: Malipo ya mwezi</b>
+      <span data-plan-line>Ksh 1,500 / month</span> · 14 days left
+    </div>
+  </div>
+</div>
+
+<!-- ============ sheet host ============ -->
+<div class="sheet" id="sheet" aria-hidden="true">
+  <div class="scrim" data-close-sheet></div>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="grab"></div>
+    <div class="shead">
+      <div>
+        <h2 id="sheetTitle">Title</h2>
+        <p class="sub" id="sheetSub"></p>
+      </div>
+      <button class="iconbtn" data-close-sheet aria-label="Close">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="sbody" id="sheetBody"></div>
+    <div class="sfoot" id="sheetFoot"></div>
+  </div>
+</div>
+
+<div class="toastwrap" id="toasts" aria-live="polite"></div>
+<div id="printSheet"></div>
+<input type="file" id="filePicker" accept=".csv,text/csv" hidden />
+<script>const XLSX_B64 = {products:"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",customers:"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",sales:"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"};</script>
+<script>
+/* ============================================================ utilities */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const icon = (n, cls = '') => '<svg class="ic ' + cls + '"><use href="#i-' + n + '"/></svg>';
+
+const fmt = n => {
+  const v = Math.round((Number(n) || 0));
+  return 'Ksh ' + v.toLocaleString('en-KE');
+};
+const fmt2 = n => {
+  const v = Number(n) || 0;
+  const whole = Math.trunc(v), cents = Math.round(Math.abs(v - whole) * 100);
+  return 'Ksh ' + whole.toLocaleString('en-KE') + '.' + String(cents).padStart(2, '0');
+};
+const num = n => (Number(n) || 0).toLocaleString('en-KE');
+const pct = (a, b) => (b ? ((a - b) / b) * 100 : 0);
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const pad = n => String(n).padStart(2, '0');
+const dmy = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const now = () => new Date(2026, 10, 20, 14, 26, 0); /* a fixed "today" for the prototype */
+const today = () => { const n = now(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const longDate = d => DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONS[d.getMonth()] + ' ' + d.getFullYear();
+const clock = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+
+/* ============================================================ sample data */
+const SEED = () => ({
+  shop: { name: 'Shop Yangu Kenya', branch: 'Mombasa Branch', phone: '0722 000 111', kra: 'P051234567X', plan: 1500 },
+  me: { name: 'Wanjiku Kamau', role: 'owner' },
+  settings: { allowCredit: true, askCustomer: false, smsReceipt: true, offline: true },
+  users: [
+    { id: 'u1', name: 'Wanjiku Kamau', phone: '0722 000 111', role: 'owner', active: true, last: 'Today, 14:26' },
+    { id: 'u2', name: 'Otieno Were', phone: '0733 442 118', role: 'sales', active: true, last: 'Today, 13:58' },
+    { id: 'u3', name: 'Fatuma Ali', phone: '0711 909 233', role: 'sales', active: true, last: 'Yesterday, 18:04' },
+    { id: 'u4', name: 'Peter Mwangi', phone: '0700 221 664', role: 'sales', active: false, last: '2 weeks ago' }
+  ],
+  cats: ['Drinks', 'Grocery', 'Household', 'Personal care', 'Hardware'],
+  products: [
+    { id: 'p01', sku: 'GRC-001', name: 'Sugar 2kg', cat: 'Grocery', unit: 'packet', cost: 205, price: 240, qty: 68, reorder: 24, exp: '' },
+    { id: 'p02', sku: 'GRC-002', name: 'Pishori rice 2kg', cat: 'Grocery', unit: 'packet', cost: 268, price: 320, qty: 41, reorder: 20, exp: '2027-08-31' },
+    { id: 'p03', sku: 'GRC-003', name: 'Maize flour 2kg', cat: 'Grocery', unit: 'packet', cost: 163, price: 190, qty: 12, reorder: 30, exp: '2027-02-28' },
+    { id: 'p04', sku: 'GRC-004', name: 'Cooking oil 1L', cat: 'Grocery', unit: 'bottle', cost: 245, price: 285, qty: 33, reorder: 18, exp: '2027-06-30' },
+    { id: 'p05', sku: 'DRK-001', name: 'Soda 350ml', cat: 'Drinks', unit: 'bottle', cost: 38, price: 50, qty: 144, reorder: 60, exp: '2027-01-31' },
+    { id: 'p06', sku: 'DRK-002', name: 'Bottled water 1L', cat: 'Drinks', unit: 'bottle', cost: 42, price: 60, qty: 96, reorder: 48, exp: '2027-04-30' },
+    { id: 'p07', sku: 'DRK-003', name: 'Fresh milk 500ml', cat: 'Drinks', unit: 'packet', cost: 48, price: 60, qty: 8, reorder: 36, exp: '2026-11-26' },
+    { id: 'p08', sku: 'DRK-004', name: 'Tea leaves 250g', cat: 'Drinks', unit: 'packet', cost: 112, price: 140, qty: 54, reorder: 20, exp: '2027-09-30' },
+    { id: 'p09', sku: 'HHD-001', name: 'Bar soap 800g', cat: 'Household', unit: 'bar', cost: 198, price: 240, qty: 37, reorder: 15, exp: '' },
+    { id: 'p10', sku: 'HHD-002', name: 'Washing powder 500g', cat: 'Household', unit: 'packet', cost: 146, price: 180, qty: 5, reorder: 20, exp: '' },
+    { id: 'p11', sku: 'HHD-003', name: 'Jik 750ml', cat: 'Household', unit: 'bottle', cost: 96, price: 125, qty: 22, reorder: 12, exp: '2027-03-31' },
+    { id: 'p12', sku: 'HHD-004', name: 'Matches, box of 10', cat: 'Household', unit: 'box', cost: 42, price: 60, qty: 0, reorder: 10, exp: '' },
+    { id: 'p13', sku: 'PRC-001', name: 'Toothpaste 100ml', cat: 'Personal care', unit: 'tube', cost: 132, price: 165, qty: 29, reorder: 12, exp: '2027-11-30' },
+    { id: 'p14', sku: 'PRC-002', name: 'Toilet paper, 4 rolls', cat: 'Personal care', unit: 'pack', cost: 118, price: 150, qty: 44, reorder: 18, exp: '' },
+    { id: 'p15', sku: 'PRC-003', name: 'Sanitary pads, 10s', cat: 'Personal care', unit: 'pack', cost: 92, price: 120, qty: 17, reorder: 20, exp: '2027-05-31' },
+    { id: 'p16', sku: 'HDW-001', name: 'Cement 32.5, 50kg', cat: 'Hardware', unit: 'bag', cost: 690, price: 780, qty: 24, reorder: 10, exp: '' },
+    { id: 'p17', sku: 'HDW-002', name: 'Padlock 50mm', cat: 'Hardware', unit: 'piece', cost: 178, price: 240, qty: 11, reorder: 6, exp: '' },
+    { id: 'p18', sku: 'HDW-003', name: 'Nails 3 inch, 1kg', cat: 'Hardware', unit: 'kg', cost: 148, price: 200, qty: 19, reorder: 8, exp: '' },
+    { id: 'p19', sku: 'HDW-004', name: 'LED bulb 9W', cat: 'Hardware', unit: 'piece', cost: 122, price: 180, qty: 26, reorder: 10, exp: '' },
+    { id: 'p20', sku: 'GRC-005', name: 'Salt 1kg', cat: 'Grocery', unit: 'packet', cost: 22, price: 30, qty: 88, reorder: 30, exp: '' }
+  ],
+  suppliers: [
+    { id: 's1', name: 'Kwa Nguvu Distributors', phone: '0722 341 900', terms: '30 days', owed: 18400 },
+    { id: 's2', name: 'Coast Beverages Ltd', phone: '0733 118 220', terms: '7 days', owed: 6300 },
+    { id: 's3', name: 'Bahari Wholesale', phone: '0711 762 004', terms: 'Cash on delivery', owed: 0 },
+    { id: 's4', name: 'Pwani Hardware Supply', phone: '0700 552 871', terms: '14 days', owed: 9750 }
+  ],
+  pos: [
+    { no: 'PO-1042', supplier: 's1', at: '2026-11-12', status: 'received', total: 18400, lines: 6 },
+    { no: 'PO-1043', supplier: 's2', at: '2026-11-16', status: 'received', total: 6300, lines: 3 },
+    { no: 'PO-1044', supplier: 's4', at: '2026-11-18', status: 'ordered', total: 9750, lines: 4 },
+    { no: 'PO-1045', supplier: 's3', at: '2026-11-20', status: 'draft', total: 4150, lines: 5 }
+  ],
+  customers: [
+    { id: 'c1', name: 'Mama Zawadi Kiosk', phone: '0722 118 044', limit: 20000, bal: 8650, since: '2024-03-11' },
+    { id: 'c2', name: 'Hotel Bahari', phone: '0733 900 551', limit: 40000, bal: 21400, since: '2023-08-02' },
+    { id: 'c3', name: 'Juma Mwinyi', phone: '0711 442 907', limit: 5000, bal: 1280, since: '2025-01-19' },
+    { id: 'c4', name: 'Star Mini Market', phone: '0700 663 112', limit: 30000, bal: 18300, since: '2022-11-30' },
+    { id: 'c5', name: 'Aisha Bakery', phone: '0745 221 380', limit: 15000, bal: 0, since: '2025-06-04' },
+    { id: 'c6', name: 'Walk-in customer', phone: '', limit: 0, bal: 0, since: '2024-01-01' }
+  ],
+  sales: [],   /* filled by seedSales() */
+  ledger: [],  /* credit payments received */
+  expenses: [
+    { id: 'e1', at: '2026-11-20', what: 'Electricity, KPLC token', amt: 1500, cat: 'Utilities' },
+    { id: 'e2', at: '2026-11-19', what: 'Boda delivery to Hotel Bahari', amt: 300, cat: 'Transport' },
+    { id: 'e3', at: '2026-11-18', what: 'Casual labour, 2 days', amt: 1600, cat: 'Wages' },
+    { id: 'e4', at: '2026-11-15', what: 'Shop licence renewal', amt: 2400, cat: 'Licences' },
+    { id: 'e5', at: '2026-11-13', what: 'Airtime and data', amt: 500, cat: 'Utilities' }
+  ],
+  audit: []
+});
+
+const S = SEED();
+
+/* a week of sales at wholesale volume, so the charts and lists have something real */
+(function seedSales() {
+  const fast = ['p01', 'p03', 'p04', 'p05', 'p06', 'p07', 'p09', 'p10', 'p14', 'p16', 'p20', 'p02'];
+  const buyers = ['c1', 'c2', 'c3', 'c4', 'c6', 'c6', 'c6', 'c5'];
+  let n = 3800;
+  for (let d = 13; d >= 0; d--) {
+    const day = addDays(today(), -d);
+    /* shops buy in the morning; a quiet Sunday */
+    const base = day.getDay() === 0 ? 11 : 21;
+    const count = base + ((d * 5) % 7);
+    for (let i = 0; i < count; i++) {
+      const at = new Date(day);
+      at.setHours(7 + ((i * 5 + d) % 11), (i * 13 + d * 7) % 60, 0, 0);
+      const items = [];
+      const picks = 1 + ((i + d) % 4);
+      for (let k = 0; k < picks; k++) {
+        const p = S.products.find(x => x.id === fast[(i * 3 + k * 5 + d) % fast.length]);
+        const bulk = p.cost > 400 ? 1 : p.cost > 150 ? 2 : 6;
+        const q = bulk * (1 + ((i + k * 3) % 4));
+        items.push({ id: p.id, name: p.name, qty: q, price: p.price, cost: p.cost, unit: p.unit });
+      }
+      const total = items.reduce((s, it) => s + it.price * it.qty, 0);
+      const credit = (i % 7 === 3);
+      const cust = credit ? buyers[i % 4] : buyers[4 + (i % 4)];
+      const paidAmt = credit ? Math.round(total * 0.62) : total;
+      S.sales.push({
+        no: 'R-' + (++n), at: at.toISOString(), items, total,
+        paid: paidAmt ? [{ m: i % 3 === 0 ? 'Cash' : i % 3 === 1 ? 'M-Pesa' : 'Card', amt: paidAmt }] : [],
+        credit: credit ? total - paidAmt : 0, customer: cust,
+        cashier: ['Otieno Were', 'Fatima Ali', 'Wanjiku Kamau'][(i + d) % 3],
+        etims: { status: 'sent', sig: 'KRA' + (721000 + n) }
+      });
+    }
+  }
+  S.sales.sort((a, b) => new Date(b.at) - new Date(a.at));
+})();
+
+/* derived helpers */
+const prod = id => S.products.find(p => p.id === id);
+const cust = id => S.customers.find(c => c.id === id);
+const sup  = id => S.suppliers.find(x => x.id === id);
+const salesToday = () => S.sales.filter(s => ymd(new Date(s.at)) === ymd(today()));
+const salesOn = d => S.sales.filter(s => ymd(new Date(s.at)) === d);
+const sum = (a, f) => a.reduce((t, x) => t + (f ? f(x) : x), 0);
+const costOf = s => sum(s.items, it => (it.cost || 0) * it.qty);
+const isOwner = () => S.me.role === 'owner';
+const can = what => {
+  if (isOwner()) return true;
+  return ['pos', 'mysales', 'stock', 'purchases'].includes(what);
+};
+
+/* ============================================================ toasts */
+function toast(msg, kind) {
+  const t = el('div', 'toast ' + (kind || ''));
+  t.innerHTML = (kind === 'bad' ? icon('alert') : icon('circle-check')) + '<span>' + esc(msg) + '</span>';
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .25s'; }, 2600);
+  setTimeout(() => t.remove(), 3000);
+}
+
+/* ============================================================ sheets */
+function sheet(opts) {
+  $('#sheetTitle').textContent = opts.title || '';
+  $('#sheetSub').textContent = opts.sub || '';
+  $('#sheetSub').hidden = !opts.sub;
+  $('#sheetBody').innerHTML = opts.body || '';
+  const foot = $('#sheetFoot');
+  foot.innerHTML = '';
+  (opts.actions || []).forEach(a => {
+    const b = el('button', 'btn ' + (a.kind === undefined ? 'secondary' : a.kind), a.label);
+    if (a.id) b.id = a.id;
+    if (a.ghost) b.className = 'btn ghost';
+    b.onclick = () => a.onClick && a.onClick();
+    foot.appendChild(b);
+  });
+  foot.hidden = !(opts.actions || []).length;
+  const panel = $('.sheet .panel');
+  if (opts.wide) panel.setAttribute('data-wide', ''); else panel.removeAttribute('data-wide');
+  $('#sheet').classList.add('open');
+  $('#sheet').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  if (opts.onMount) setTimeout(() => opts.onMount(), 0);
+}
+function closeSheet() {
+  $('#sheet').classList.remove('open');
+  $('#sheet').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-close-sheet]')) closeSheet();
+  if (e.target.closest('[data-close-drawer]')) closeDrawer();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSheet(); closeDrawer(); } });
+
+function openDrawer() {
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  $('#drawer').classList.remove('open');
+  $('#drawer').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+$('#menuBtn').onclick = openDrawer;
+$('#bellBtn').onclick = () => {
+  sheet({
+    title: 'Notifications', sub: '3 things worth a look',
+    body: `<div class="setrow"><div><div class="t">${icon('alert', 'sm')} Maize flour 2kg is low</div><div class="d">12 left, reorder level is 30.</div></div><button class="btn secondary sm" data-goto="inventory">Stock</button></div>
+      <div class="setrow"><div><div class="t">${icon('calendar-days', 'sm')} KRA filing due 20 Dec</div><div class="d">One month of sales is ready to file.</div></div><button class="btn secondary sm" data-goto="etims">eTIMS</button></div>
+      <div class="setrow"><div><div class="t">${icon('credit-card', 'sm')} Hotel Bahari is over 60% of its limit</div><div class="d">Ksh 21,400 of 40,000 used.</div></div><button class="btn secondary sm" data-goto="customers">Open</button></div>`
+  });
+};
+
+/* ============================================================ navigation */
+const NAV = [
+  { group: 'Overview', items: [['dashboard', 'layout-dashboard', 'Dashboard', 'dashboard']] },
+  { group: 'Selling', items: [
+    ['pos', 'shopping-cart', 'Point of sale', 'pos'],
+    ['sales', 'receipt', 'Sales', 'mysales']
+  ]},
+  { group: 'Stock', items: [
+    ['inventory', 'package', 'Stock', 'stock'],
+    ['purchases', 'truck', 'Purchases', 'purchases']
+  ]},
+  { group: 'Money', items: [
+    ['customers', 'users', 'Customers', 'customers'],
+    ['reports', 'chart-column', 'Reports', 'reports']
+  ]},
+  { group: 'System', items: [
+    ['etims', 'badge-check', 'KRA eTIMS', 'etims'],
+    ['migration', 'file-spreadsheet', 'Import records', 'import'],
+    ['settings', 'settings', 'Settings', 'settings'],
+    ['audit', 'landmark', 'Audit log', 'audit']
+  ]}
+];
+const TABS = [
+  ['dashboard', 'layout-dashboard', 'Home'],
+  ['pos', 'shopping-cart', 'Sell'],
+  ['inventory', 'package', 'Stock'],
+  ['customers', 'users', 'Customers'],
+  ['reports', 'chart-column', 'Reports']
+];
+
+function navFor(role) {
+  const allow = role === 'owner'
+    ? ['dashboard', 'pos', 'sales', 'inventory', 'purchases', 'customers', 'reports', 'etims', 'migration', 'settings', 'audit']
+    : ['dashboard', 'pos', 'sales', 'inventory', 'purchases'];
+  return NAV.map(g => ({ group: g.group, items: g.items.filter(i => allow.includes(i[0])) })).filter(g => g.items.length);
+}
+
+let route = 'dashboard';
+function go(id) {
+  if (!$(('#s-' + id))) id = 'dashboard';
+  const allowed = navFor(S.me.role).some(g => g.items.some(i => i[0] === id));
+  if (!allowed) { toast('That section is for the owner.', 'bad'); return; }
+  route = id;
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + id));
+  paintNav();
+  if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+  window.scrollTo({ top: 0 });
+  RENDER[id] && RENDER[id]();
+}
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-goto]');
+  if (g) { closeDrawer(); go(g.dataset.goto); }
+});
+
+function paintNav() {
+  const groups = navFor(S.me.role);
+  const rail = $('#rail');
+  rail.innerHTML = '<div class="navhead"><div class="brandmark">' + icon('store') + '</div>' +
+    '<div style="min-width:0"><strong style="display:block;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+    esc(S.shop.name) + '</strong><span style="font-size:11px;color:rgba(255,255,255,.62)">' + esc(S.shop.branch) + '</span></div></div>';
+  groups.forEach(g => {
+    rail.appendChild(el('div', 'navgroup', esc(g.group)));
+    g.items.forEach(([id, ic, label]) => {
+      const a = el('button', 'navlink');
+      a.innerHTML = icon(ic) + '<span>' + esc(label) + '</span>';
+      if (id === route) a.setAttribute('aria-current', 'page');
+      a.onclick = () => go(id);
+      rail.appendChild(a);
+    });
+  });
+  const foot = el('div', 'plan');
+  foot.innerHTML = '<b>' + esc(S.me.name) + '</b>' + (isOwner() ? 'Owner · everything' : 'Sales · till and stock') +
+    '<br><span style="opacity:.75" data-plan-line>' + fmt(S.shop.plan) + ' / month · 14 days left</span>';
+  rail.appendChild(foot);
+
+  const tabs = TABS.filter(t => navFor(S.me.role).some(g => g.items.some(i => i[0] === t[0])));
+  $('#tabbar').innerHTML = '';
+  tabs.forEach(([id, ic, label]) => {
+    const b = el('button');
+    b.innerHTML = icon(ic) + '<span>' + label + '</span>';
+    if (id === route) b.setAttribute('aria-current', 'page');
+    b.onclick = () => go(id);
+    $('#tabbar').appendChild(b);
+  });
+
+  $('#drawerLinks').innerHTML = '';
+  groups.forEach(g => {
+    $('#drawerLinks').appendChild(el('div', 'navgroup', esc(g.group)));
+    g.items.forEach(([id, ic, label]) => {
+      const a = el('button', 'navlink');
+      a.innerHTML = icon(ic) + '<span>' + esc(label) + '</span>';
+      if (id === route) a.setAttribute('aria-current', 'page');
+      a.onclick = () => { closeDrawer(); go(id); };
+      $('#drawerLinks').appendChild(a);
+    });
+  });
+  $('#topShopName').textContent = S.shop.name;
+  $('#topRole').textContent = isOwner() ? 'Owner' : 'Sales';
+  $('#drawerShopName').textContent = S.shop.name;
+  $('#drawerWho').textContent = S.me.name + ' · ' + (isOwner() ? 'Owner' : 'Sales');
+  $('#roleSwitchLabel').textContent = 'Viewing as ' + (isOwner() ? 'Owner' : 'Sales');
+}
+
+/* switching role, so the prototype can show both */
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-role-switch]')) return;
+  if (S.me.role === 'owner') { S.me.role = 'sales'; S.me.name = 'Otieno Were'; toast('Now viewing as sales. Reports, costs and settings are hidden.'); }
+  else { S.me.role = 'owner'; S.me.name = 'Wanjiku Kamau'; toast('Back to the owner view.'); }
+  paintNav();
+  go(navFor(S.me.role).some(g => g.items.some(i => i[0] === route)) ? route : 'pos');
+});/* ============================================================ dashboard */
+const GOAL = 60000;
+
+function sparkline(vals, w = 320, h = 92) {
+  const max = Math.max.apply(null, vals) * 1.12 || 1, min = Math.min.apply(null, vals) * 0.8;
+  const span = max - min || 1;
+  const pts = vals.map((v, i) => [
+    (i / (vals.length - 1)) * w,
+    h - ((v - min) / span) * (h - 12) - 6
+  ]);
+  /* a gentle cubic through the points, so it reads as a trend not a saw */
+  let line = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    line += ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) +
+            ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+  }
+  const area = line + ' L' + w + ' ' + h + ' L0 ' + h + ' Z';
+  const last = pts[pts.length - 1];
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs><linearGradient id="gsyk" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#287094" stop-opacity=".22"/>' +
+    '<stop offset="1" stop-color="#287094" stop-opacity="0"/></linearGradient></defs>' +
+    '<path d="' + area + '" fill="url(#gsyk)"/>' +
+    '<path d="' + line + '" fill="none" stroke="#287094" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="3.6" fill="#fff" stroke="#287094" stroke-width="2.25"/>' +
+    '</svg>';
+}
+
+function dayTotals(n) {
+  const out = [];
+  for (let d = n - 1; d >= 0; d--) {
+    const key = ymd(addDays(today(), -d));
+    out.push(sum(salesOn(key), s => s.total));
+  }
+  return out;
+}
+
+function renderDashboard() {
+  const t = salesToday();
+  const yesterday = sum(salesOn(ymd(addDays(today(), -1))), s => s.total);
+  const todayTotal = sum(t, s => s.total);
+  const profit = sum(t, s => s.amount || (s.total - costOf(s)));
+  const yProfit = sum(salesOn(ymd(addDays(today(), -1))), s => s.total - costOf(s));
+  const owed = sum(S.customers, c => c.bal);
+
+  /* a sales user gets their own day, not the shop's profit */
+  const owner = isOwner();
+  ['#statProfit', '#statOwed'].forEach(sel => {
+    const card = $(sel).closest('.stat');
+    card.hidden = !owner;
+  });
+  if (!owner) {
+    $('#goalAmount').closest('.goal').querySelector('h2').textContent = 'My sales today';
+    $('#goalAmount').closest('.goal').querySelector('.sub').textContent = 'Your own receipts';
+  }
+  const pre = $('.pagehead h1');
+  $('#greeting').textContent = (owner ? 'Karibu, ' : 'Habari, ') + S.me.name.split(' ')[0];
+  $('#todayLine').textContent = longDate(now()) + ' · ' + S.shop.branch;
+  $('#goalAmount').innerHTML = fmt2(todayTotal).replace(/\.(\d\d)$/, '<span class="cents">.$1</span>');
+  $('#goalSpark').innerHTML = sparkline(dayTotals(7));
+
+  const dSales = pct(todayTotal, yesterday);
+  $('#statSales').textContent = fmt(todayTotal);
+  $('#statProfit').textContent = fmt(profit);
+  $('#statReceipts').textContent = t.length;
+  $('#statOwed').textContent = fmt(owed);
+
+  const salesFoot = $('#statSales').parentNode.querySelector('.f');
+  salesFoot.innerHTML = deltaChip(dSales) + ' vs yesterday';
+  const profFoot = $('#statProfit').parentNode.querySelector('.f');
+  profFoot.innerHTML = deltaChip(pct(profit, yProfit)) + ' vs yesterday';
+  $('#statReceipts').parentNode.querySelector('.f').textContent =
+    'Average ' + fmt(t.length ? todayTotal / t.length : 0);
+  $('#statOwed').parentNode.querySelector('.f').innerHTML =
+    deltaChip(-8.2) + ' overdue';
+
+  /* week bars, this week against last */
+  const thisWeek = dayTotals(7), lastWeek = [];
+  for (let d = 13; d >= 7; d--) lastWeek.push(sum(salesOn(ymd(addDays(today(), -d))), s => s.total));
+  const peak = Math.max.apply(null, thisWeek.concat(lastWeek)) || 1;
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  $('#weekBars').innerHTML = thisWeek.map((v, i) => {
+    const h1 = Math.max(2, (v / peak) * 100), h2 = Math.max(2, (lastWeek[i] / peak) * 100);
+    return '<div class="col" title="' + labels[i] + ': ' + fmt(v) + ' this week, ' + fmt(lastWeek[i]) + ' last week">' +
+      '<div class="pair">' +
+      '<div class="bar prev" style="height:' + h2.toFixed(1) + '%"></div>' +
+      '<div class="bar" style="height:' + h1.toFixed(1) + '%"></div>' +
+      '</div><div class="x">' + labels[i] + '</div></div>';
+  }).join('');
+
+  /* needs attention */
+  const low = S.products.filter(p => p.qty > 0 && p.qty <= p.reorder);
+  const out = S.products.filter(p => p.qty === 0);
+  const overLimit = S.customers.filter(c => c.limit && c.bal > c.limit * 0.6);
+  $('#attention').innerHTML =
+    rowAlert('package', low.length + ' low on stock', low.map(p => p.name).slice(0, 2).join(', ') || 'All good', 'inventory', 'low') +
+    rowAlert('alert', out.length + ' out of stock', out.map(p => p.name).slice(0, 2).join(', ') || 'Nothing missing', 'inventory', 'out') +
+    rowAlert('credit-card', overLimit.length + (overLimit.length === 1 ? ' customer is' : ' customers are') + ' near their limit', overLimit.map(c => c.name).slice(0, 2).join(', '), 'customers', 'low');
+
+  /* recent receipts */
+  $('#recentSales').innerHTML = S.sales.slice(0, 6).map(s => {
+    const c = cust(s.customer);
+    return '<div class="setrow"><div><div class="t">' + esc(s.no) + ' · ' + fmt(s.total) + '</div>' +
+      '<div class="d">' + esc(c ? c.name : 'Walk-in') + ' · ' + clock(new Date(s.at)) + ' · ' + esc(s.cashier.split(' ')[0]) + '</div></div>' +
+      (s.credit ? '<span class="pill low">' + fmt(s.credit) + ' credit</span>' : '<span class="pill ok">Paid</span>') + '</div>';
+  }).join('');
+
+  /* top movers */
+  const tallies = {};
+  S.sales.forEach(s => s.items.forEach(it => {
+    tallies[it.id] = tallies[it.id] || { name: it.name, qty: 0, value: 0 };
+    tallies[it.id].qty += it.qty;
+    tallies[it.id].value += it.qty * it.price;
+  }));
+  const top = Object.values(tallies).sort((a, b) => b.value - a.value).slice(0, 5);
+  const topMax = top[0] ? top[0].value : 1;
+  $('#topMovers').innerHTML = top.map(m =>
+    '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px">' +
+    '<span>' + esc(m.name) + '</span><span class="num" style="font-weight:600">' + fmt(m.value) + '</span></div>' +
+    '<div class="progress" style="margin-top:5px"><span style="width:' + ((m.value / topMax) * 100).toFixed(0) + '%"></span></div>' +
+    '<div class="hint">' + m.qty + ' sold</div></div>').join('');
+}
+
+function deltaChip(p) {
+  const up = p >= 0;
+  /* the brief's rule: red for a fall, green for a rise */
+  return '<span class="delta ' + (up ? 'up' : 'down') + '">' + icon(up ? 'trending-up' : 'trending-down') +
+    Math.abs(p).toFixed(1) + '%</span>';
+}
+function rowAlert(ic, title, sub, dest, kind) {
+  return '<div class="setrow"><div style="display:flex;gap:10px;align-items:flex-start">' +
+    '<span class="pill ' + kind + '" style="padding:5px">' + icon(ic, 'sm') + '</span>' +
+    '<div><div class="t">' + esc(title) + '</div><div class="d">' + esc(sub) + '</div></div></div>' +
+    '<button class="btn ghost sm" data-goto="' + dest + '">View</button></div>';
+}
+
+/* ============================================================ point of sale */
+const PAY_METHODS = [['Cash', 'banknote'], ['M-Pesa', 'smartphone'], ['Card', 'credit-card']];
+let basket = [];
+let pay = [{ m: 'Cash', amt: '' }];
+
+function renderPOS() {
+  $('#posChips').innerHTML = S.cats.map(c => {
+    return '<button class="chip" data-poscat="' + esc(c) + '">' + esc(c) + '</button>';
+  }).join('');
+  renderPOSResults('');
+  renderBasket();
+  renderPay();
+}
+
+function renderPOSResults(q) {
+  const term = (q || '').toLowerCase().trim();
+  let list = S.products.filter(p => !term || p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term));
+  if (term) list = list.slice(0, 6);
+  else list = S.products.filter(p => ['p05', 'p06', 'p01', 'p03', 'p09', 'p14'].includes(p.id));
+  if (!list.length) {
+    $('#posResults').innerHTML = '<div class="empty"><b>Nothing matches that</b><p>Check the spelling, or scan the barcode on the pack.</p></div>';
+    return;
+  }
+  $('#posResults').innerHTML = list.map(p => {
+    const out = p.qty === 0;
+    return '<div class="setrow"><div style="min-width:0">' +
+      '<div class="t">' + esc(p.name) + '</div>' +
+      '<div class="d">' + esc(p.sku) + ' · ' + fmt(p.price) + ' per ' + esc(p.unit) +
+      (out ? ' · <span style="color:var(--danger)">out of stock</span>' : ' · ' + p.qty + ' left') + '</div></div>' +
+      '<button class="btn secondary sm" data-add="' + p.id + '"' + (out ? ' disabled' : '') + '>' +
+      icon('plus', 'sm') + 'Add</button></div>';
+  }).join('');
+}
+
+function renderBasket() {
+  const b = $('#basket');
+  if (!basket.length) {
+    b.innerHTML = '<div class="empty">' + '<div class="big">' + icon('shopping-cart') + '</div>' +
+      '<b>Basket is empty</b><p>Search for a product above, or tap one of the fast movers.</p></div>';
+    $('#basketCount').textContent = 'Nothing in it yet';
+  } else {
+    const n = sum(basket, it => it.qty);
+    $('#basketCount').textContent = n + (n === 1 ? ' item' : ' items') + ' · ' + fmt(basketTotal());
+    b.innerHTML = basket.map((it, i) =>
+      '<div class="rowcard"><div class="top"><div style="min-width:0"><div class="ttl">' + esc(it.name) + '</div>' +
+      '<div class="meta">' + fmt(it.price) + ' each' + (it.cost ? '' : '') + '</div></div>' +
+      '<div class="amt">' + fmt(it.price * it.qty) + '</div></div>' +
+      '<div class="bottom"><div class="stepper">' +
+      '<button data-qty="' + i + ':-1" aria-label="One fewer">' + icon('minus', 'sm') + '</button>' +
+      '<input class="num" value="' + it.qty + '" inputmode="numeric" data-qtyinput="' + i + '" aria-label="Quantity" />' +
+      '<button data-qty="' + i + ':1" aria-label="One more">' + icon('plus', 'sm') + '</button>' +
+      '</div>' +
+      '<div class="btns"><button class="btn danger sm" data-remove="' + i + '" aria-label="Remove from basket">' + icon('trash', 'sm') + '</button></div></div></div>'
+    ).join('');
+  }
+  updateTotals();
+}
+const basketTotal = () => sum(basket, it => it.price * it.qty);
+
+function addToBasket(id) {
+  const p = prod(id);
+  const line = basket.find(b => b.id === id);
+  if (line) line.qty += 1;
+  else basket.push({ id: p.id, name: p.name, price: p.price, cost: p.cost, unit: p.unit, qty: 1 });
+  renderBasket();
+  $('#posSearch').value = '';
+  renderPOSResults('');
+}
+
+function updateTotals() {
+  const total = basketTotal();
+  const vat = total * 16 / 116;
+  $('#tSub').textContent = fmt(total - vat);
+  $('#tVat').textContent = fmt(vat);
+  $('#tTotal').textContent = fmt(total);
+
+  const paid = sum(pay, p => Number(p.amt) || 0);
+  const diff = paid - total;
+  const changeRow = $('#tChangeRow'), creditRow = $('#tCreditRow');
+  changeRow.hidden = !(diff > 0.5);
+  creditRow.hidden = !(diff < -0.5);
+  if (diff > 0.5) $('#tChange').textContent = fmt(diff);
+  if (diff < -0.5) $('#tCredit').textContent = fmt(-diff);
+
+  $('#completeSale').disabled = !basket.length;
+  const label = $('#completeSale');
+  if (basket.length && diff < -0.5) {
+    label.innerHTML = icon('circle-check') + 'Complete and hold ' + fmt(-diff) + ' on credit';
+  } else {
+    label.innerHTML = icon('circle-check') + 'Complete sale';
+  }
+}
+
+function renderPay() {
+  const total = basketTotal();
+  const paidSoFar = sum(pay, p => Number(p.amt) || 0);
+  const unpaid = total - paidSoFar;
+
+  $('#payMethods').innerHTML = pay.map((p, i) => {
+    const isLast = i === pay.length - 1;
+    const rest = total - sum(pay, (x, k) => (k === i ? 0 : Number(x.amt) || 0));
+    return '<div class="paypart">' +
+      '<div class="prow"><span class="plabel">' + icon('wallet', 'sm') +
+        (pay.length > 1 ? 'Part ' + (i + 1) + ' of ' + pay.length : 'How are they paying?') + '</span>' +
+        (pay.length > 1 ? '<button class="del" style="width:30px;height:30px" data-delpay="' + i + '" aria-label="Remove this part">' + icon('x', 'sm') + '</button>' : '') +
+      '</div>' +
+      '<div class="segmented">' + PAY_METHODS.map(([m, ic]) =>
+        '<button data-method="' + i + ':' + m + '" aria-pressed="' + (p.m === m) + '">' + icon(ic) + m + '</button>').join('') +
+      '</div>' +
+      '<div class="amtrow" style="margin-top:8px">' +
+        '<input class="field num" inputmode="decimal" placeholder="' + (total ? fmt(Math.max(0, rest)) : 'Amount') + '" data-payamt="' + i + '" value="' + (p.amt === '' ? '' : p.amt) + '" aria-label="Amount for ' + p.m + '" />' +
+        '<button class="btn secondary sm" style="flex:none" data-fill="' + i + '">' + (isLast && rest > 0 ? 'Rest' : 'Fill') + '</button>' +
+      '</div>' +
+      (isLast && pay.length === 1 ? '<div class="hint">Leave it blank to take the exact amount.</div>' : '') +
+    '</div>';
+  }).join('') + (pay.length < 3 ? '<button class="btn ghost sm" style="margin-top:9px" id="addSplit">' + icon('arrow-right-left', 'sm') + 'Split payment</button>' : '');
+
+  const add = $('#addSplit');
+  if (add) add.onclick = () => {
+    const used = pay.map(p => p.m);
+    const next = PAY_METHODS.map(x => x[0]).find(m => !used.includes(m)) || 'Cash';
+    /* move whatever is still unpaid into the new part */
+    const owed = Math.max(0, basketTotal() - sum(pay, p => Number(p.amt) || 0));
+    if (pay.length === 1 && pay[0].amt === '' ) pay[0].amt = '';
+    pay.push({ m: next, amt: owed ? String(Math.round(owed)) : '' });
+    renderPay(); updateTotals();
+  };
+}
+
+document.addEventListener('input', e => {
+  const q = e.target;
+  if (q.id === 'posSearch') renderPOSResults(q.value);
+  if (q.dataset.payamt != null) {
+    pay[Number(q.dataset.payamt)].amt = q.value.replace(/[^\d.]/g, '');
+    updateTotals();
+  }
+  if (q.dataset.qtyinput != null) {
+    const i = Number(q.dataset.qtyinput);
+    let v = parseInt(q.value.replace(/[^\d]/g, ''), 10);
+    if (isNaN(v)) v = 0;
+    basket[i].qty = Math.max(1, Math.min(9999, v));
+    updateTotals();
+    $('#basketCount').textContent = sum(basket, it => it.qty) + ' items · ' + fmt(basketTotal());
+    const amtEl = $('.rowcard:nth-child(' + (i + 1) + ') .amt');
+    if (amtEl) amtEl.textContent = fmt(basket[i].price * basket[i].qty);
+  }
+});
+
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('[data-poscat]')) {
+    renderPOSResults(t.closest('[data-poscat]').dataset.poscat);
+    $$('#posChips .chip').forEach(c => c.setAttribute('aria-pressed', c === t.closest('[data-poscat]')));
+  }
+  const add = t.closest('[data-add]');
+  if (add) addToBasket(add.dataset.add);
+
+  const st = t.closest('[data-qty]');
+  if (st) {
+    const [i, d] = st.dataset.qty.split(':').map(Number);
+    basket[i].qty += d;
+    if (basket[i].qty <= 0) basket.splice(i, 1);
+    renderBasket();
+  }
+  const rm = t.closest('[data-remove]');
+  if (rm) { basket.splice(Number(rm.dataset.remove), 1); renderBasket(); }
+
+  const md = t.closest('[data-method]');
+  if (md) {
+    const [i, m] = md.dataset.method.split(':');
+    pay[Number(i)].m = m;
+    renderPay();
+  }
+  const fill = t.closest('[data-fill]');
+  if (fill) {
+    const i = Number(fill.dataset.fill);
+    const others = sum(pay, (p, k) => (k === i ? 0 : Number(p.amt) || 0));
+    const rest = basketTotal() - others;
+    pay[i].amt = rest > 0 ? String(Math.round(rest)) : '';
+    renderPay(); updateTotals();
+  }
+  const dl = t.closest('[data-delpay]');
+  if (dl) { pay.splice(Number(dl.dataset.delpay), 1); renderPay(); updateTotals(); }
+});
+
+$('#clearBasket').onclick = () => { basket = []; pay = [{ m: 'Cash', amt: '' }]; renderBasket(); renderPay(); };
+
+/* ---- completing a sale, including a credit balance ---- */
+function completeSale() {
+  if (!basket.length) return;
+  const total = basketTotal();
+  /* one method with nothing typed in means "the exact amount" */
+  if (pay.length === 1 && (pay[0].amt === '' || pay[0].amt == null)) pay[0].amt = String(total);
+  const paidBits = pay.filter(p => Number(p.amt) > 0);
+  const paid = sum(paidBits, p => Number(p.amt));
+  const diff = paid - total;
+  const change = diff > 0.5 ? diff : 0;
+  const credit = diff < -0.5 ? -diff : 0;
+
+  if (credit > 0 && !S.settings.allowCredit) {
+    toast('Credit sales are switched off in settings.', 'bad'); return;
+  }
+  if (credit > 0) {
+    const customer = cust('c6');
+    const pick = S.customers.filter(c => c.id !== 'c6');
+    sheet({
+      title: 'Who is taking the credit?',
+      sub: fmt(credit) + ' will be added to their balance.',
+      body: '<div id="creditPick">' + pick.map(c =>
+        '<button class="rowcard" style="width:100%;text-align:left;cursor:pointer;background:var(--paper);border:1px solid var(--sand)" data-credit="' + c.id + '">' +
+        '<div class="top"><div><div class="ttl">' + esc(c.name) + '</div><div class="meta">' + esc(c.phone) + ' · limit ' + fmt(c.limit) + '</div></div>' +
+        '<div class="amt">' + fmt(c.bal) + '</div></div></button>').join('') + '</div>',
+      actions: [{ label: 'Cancel' }]
+    });
+    $('#sheetBody').onclick = ev => {
+      const b = ev.target.closest('[data-credit]');
+      if (!b) return;
+      const c = cust(b.dataset.credit);
+      c.bal += credit;
+      finishSale(total, paidBits, change, credit, c.id);
+      closeSheet();
+    };
+    return;
+  }
+  finishSale(total, paidBits, change, 0, 'c6');
+}
+
+function finishSale(total, paidBits, change, credit, customerId) {
+  const no = 'R-' + (3807 + S.sales.length);
+  const sale = {
+    no, at: now().toISOString(),
+    items: basket.map(b => ({ id: b.id, name: b.name, qty: b.qty, price: b.price, cost: b.cost, unit: b.unit })),
+    total, paid: paidBits.map(p => ({ m: p.m, amt: Number(p.amt) })),
+    credit, customer: customerId, cashier: S.me.name,
+    etims: { status: 'sent', sig: 'KRA' + (721000 + S.sales.length) }
+  };
+  basket.forEach(b => { const p = prod(b.id); if (p) p.qty = Math.max(0, p.qty - b.qty); });
+  S.sales.unshift(sale);
+  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Completed sale ' + no, detail: fmt(total) + (credit ? ', ' + fmt(credit) + ' on credit' : '') });
+
+  basket = []; pay = [{ m: 'Cash', amt: '' }];
+  renderBasket(); renderPay();
+  showReceipt(sale, change);
+  toast('Sale ' + no + ' completed' + (credit ? ', ' + fmt(credit) + ' on credit' : ''), 'good');
+  if (route === 'dashboard') renderDashboard();
+}
+
+function showReceipt(sale, change) {
+  shownSale = sale;
+  const c = cust(sale.customer);
+  $('#receiptCard').hidden = false;
+  $('#receiptNo').textContent = 'No. ' + sale.no + ' · ' + dmy(new Date(sale.at)) + ' ' + clock(new Date(sale.at));
+  $('#receiptBody').innerHTML =
+    '<div style="text-align:center">' +
+    '<div class="shopname">' + esc(S.shop.name) + '</div>' +
+    '<div class="hint">' + esc(S.shop.branch) + ' · ' + esc(S.shop.phone) + '<br>PIN ' + esc(S.shop.kra) + '</div>' +
+    '</div><hr>' +
+    '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Receipt</span><span class="num">' + esc(sale.no) + '</span></div>' +
+    '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Cashier</span><span>' + esc(sale.cashier) + '</span></div>' +
+    '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Customer</span><span>' + esc(c ? c.name : 'Walk-in') + '</span></div>' +
+    '<hr>' +
+    sale.items.map(it => '<div class="rline" style="margin-bottom:4px"><span>' + esc(it.name) + '<br><span class="hint">' + it.qty + ' × ' + fmt(it.price) + '</span></span>' +
+      '<span class="num">' + fmt(it.qty * it.price) + '</span></div>').join('') +
+    '<hr>' +
+    '<div class="rline" style="font-weight:700;font-size:15px"><span>Total</span><span class="num">' + fmt(sale.total) + '</span></div>' +
+    '<div class="rline" style="font-size:12px;color:var(--ink-muted)"><span>VAT 16% included</span><span class="num">' + fmt(sale.total * 16 / 116) + '</span></div>' +
+    sale.paid.map(p => '<div class="rline" style="font-size:12px"><span>Paid · ' + esc(p.m) + '</span><span class="num">' + fmt(p.amt) + '</span></div>').join('') +
+    (change > 0 ? '<div class="rline" style="font-size:12px"><span>Change</span><span class="num">' + fmt(change) + '</span></div>' : '') +
+    (sale.credit > 0 ? '<div class="rline" style="color:var(--danger);font-size:12px"><span>On credit</span><span class="num">' + fmt(sale.credit) + '</span></div>' : '') +
+    '<div class="etims">' + icon('badge-check', 'sm') +
+    '<div><b>KRA eTIMS</b><br>Signature ' + esc(sale.etims.sig) + '<br>Invoice ' + esc(sale.etims.sig) + '-' + esc(sale.no) +
+    '<br><span style="opacity:.75">Verify at etims.kra.go.ke</span></div></div>' +
+    '<div style="text-align:center;margin-top:9px" class="hint">Asante kwa kununua nasi.</div>';
+}
+
+$('#completeSale').onclick = completeSale;
+
+/* everything printable goes through the same branded sheet */
+function printDoc(inner, title) {
+  $('#printSheet').innerHTML = '<div class="psheet">' +
+    '<div class="phead"><div><div class="pname">' + esc(S.shop.name) + '</div>' +
+    '<div class="pmeta" style="text-align:left;margin-top:3px">' + esc(S.shop.branch) + ' · ' + esc(S.shop.phone) +
+    ' · PIN ' + esc(S.shop.kra) + '</div></div>' +
+    '<div class="pmeta">' + esc(title) + '<br>' + dmy(now()) + ' ' + clock(now()) + '<br>Printed by ' + esc(S.me.name) + '</div></div>' +
+    inner +
+    '<div class="pfoot"><span>' + esc(S.shop.name) + ' · Shop Yangu Kenya</span>' +
+    '<span>KRA eTIMS registered · etims.kra.go.ke</span></div></div>';
+  document.body.classList.add('printing');
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => document.body.classList.remove('printing'), 400);
+  }, 60);
+}
+
+function receiptDoc(s) {
+  const c = cust(s.customer);
+  const vat = s.total * 16 / 116;
+  return '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-muted);margin-bottom:10px">' +
+    '<span>Receipt <b style="color:var(--ink)">' + esc(s.no) + '</b></span>' +
+    '<span>' + dmy(new Date(s.at)) + ' ' + clock(new Date(s.at)) + ' · ' + esc(s.cashier) + '</span></div>' +
+    '<table><thead><tr><th>Item</th><th class="n">Qty</th><th class="n">Price</th><th class="n">Amount</th></tr></thead><tbody>' +
+    s.items.map(it => '<tr><td>' + esc(it.name) + '</td><td class="n">' + it.qty + '</td>' +
+      '<td class="n">' + fmt(it.price) + '</td><td class="n">' + fmt(it.qty * it.price) + '</td></tr>').join('') +
+    '</tbody></table>' +
+    '<div class="ptotal"><span>Total</span><span class="num">' + fmt2(s.total) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-muted);margin-top:4px">' +
+    '<span>VAT 16% included</span><span class="num">' + fmt2(vat) + '</span></div>' +
+    s.paid.map(p => '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-top:2px">' +
+      '<span>Paid · ' + esc(p.m) + '</span><span class="num">' + fmt2(p.amt) + '</span></div>').join('') +
+    (s.credit > 0 ? '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-top:2px;color:var(--danger)">' +
+      '<span>On credit, ' + esc((c || {}).name || '') + '</span><span class="num">' + fmt2(s.credit) + '</span></div>' : '') +
+    '<h3>KRA eTIMS</h3>' +
+    '<div style="font-size:11px;color:var(--ink-muted);line-height:1.7">Invoice ' + esc(s.etims.sig) + '-' + esc(s.no) +
+    ' · signature ' + esc(s.etims.sig) + '<br>Verify this receipt at etims.kra.go.ke. Asante kwa kununua nasi.</div>';
+}
+
+let shownSale = null;
+$('#printReceipt').onclick = () => { if (shownSale) printDoc(receiptDoc(shownSale), 'Sales receipt'); };
+$('#pdfReceipt').onclick = () => {
+  if (!shownSale) return;
+  toast('Opening the print sheet — choose "Save as PDF".');
+  setTimeout(() => printDoc(receiptDoc(shownSale), 'Sales receipt'), 300);
+};/* ============================================================ stock */
+let invFilter = 'All', invTerm = '';
+
+function stockBadge(p) {
+  if (p.qty === 0) return '<span class="pill out"><span class="dot"></span>Out</span>';
+  if (p.qty <= p.reorder) return '<span class="pill low"><span class="dot"></span>Low</span>';
+  return '<span class="pill ok"><span class="dot"></span>In stock</span>';
+}
+function expBadge(p) {
+  if (!p.exp) return '';
+  const days = Math.round((new Date(p.exp) - today()) / 86400000);
+  if (days < 0) return '<span class="pill out">Expired</span>';
+  if (days <= 30) return '<span class="pill low">Expires in ' + days + ' days</span>';
+  return '';
+}
+
+function renderInventory() {
+  const list = S.products;
+  $('#invCount').textContent = list.length;
+  $('#invValue').closest('.stat').hidden = !isOwner();
+  $('#invValue').textContent = fmt(sum(list, p => p.cost * p.qty));
+  $('#invLow').textContent = list.filter(p => p.qty > 0 && p.qty <= p.reorder).length;
+  $('#invOut').textContent = list.filter(p => p.qty === 0).length;
+
+  $('#invChips').innerHTML = ['All'].concat(S.cats, ['Low stock']).map(c =>
+    '<button class="chip" data-invcat="' + esc(c) + '" aria-pressed="' + (invFilter === c) + '">' + esc(c) + '</button>').join('');
+  renderInvList();
+}
+
+function renderInvList() {
+  let list = S.products.filter(p => {
+    const t = invTerm.toLowerCase();
+    const okTerm = !t || p.name.toLowerCase().includes(t) || p.sku.toLowerCase().includes(t);
+    const okCat = invFilter === 'All' || (invFilter === 'Low stock' ? p.qty <= p.reorder : p.cat === invFilter);
+    return okTerm && okCat;
+  });
+  if (!list.length) { $('#invList').innerHTML = '<div class="empty"><b>Nothing here</b><p>No product matches that filter.</p></div>'; return; }
+
+  const rows = list.map(p =>
+    '<tr data-open="' + p.id + '" style="cursor:pointer">' +
+    '<td><b>' + esc(p.name) + '</b><div class="hint">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div></td>' +
+    '<td class="num">' + p.qty + ' <span class="hint">' + esc(p.unit) + 's</span></td>' +
+    (isOwner() ? '<td class="num">' + fmt(p.cost) + '</td>' : '') +
+    '<td class="num">' + fmt(p.price) + '</td>' +
+    (isOwner() ? '<td class="num">' + fmt(p.price - p.cost) + '</td>' : '') +
+    '<td>' + stockBadge(p) + (p.exp ? ' <span class="hint">' + (expBadge(p) || 'exp ' + p.exp) + '</span>' : '') + '</td>' +
+    '</tr>').join('');
+
+  $('#invList').innerHTML =
+    '<div class="tablewrap desk"><table><thead><tr><th>Product</th><th>Qty</th>' +
+    (isOwner() ? '<th>Cost</th>' : '') + '<th>Price</th>' + (isOwner() ? '<th>Margin</th>' : '') + '<th>Status</th></tr></thead>' +
+    '<tbody>' + rows.replace(/<tr data-open="([^"]+)"/g, '<tr data-openrows="$1"') + '</tbody></table></div>' +
+    '<div class="cards-mobile">' + list.map(p =>
+      '<div class="rowcard"><div class="top"><div style="min-width:0"><div class="ttl">' + esc(p.name) + '</div>' +
+      '<div class="meta">' + esc(p.sku) + ' · ' + fmt(p.price) + ' per ' + esc(p.unit) +
+      (isOwner() ? ' · cost ' + fmt(p.cost) : '') + '</div></div>' +
+      '<div class="amt">' + p.qty + '<small style="font-size:10px;color:var(--ink-muted)"> ' + esc(p.unit) + '</small></div></div>' +
+      '<div class="bottom">' + stockBadge(p) + (expBadge(p) ? ' ' + expBadge(p) : '') +
+      '<button class="btn secondary sm" data-edit="' + p.id + '">' + icon('pencil', 'sm') + 'Adjust</button></div></div>').join('') + '</div>';
+}
+
+$('#invSearch').addEventListener('input', e => { invTerm = e.target.value; renderInvList(); });
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-invcat]');
+  if (c) { invFilter = c.dataset.invcat; renderInventory(); }
+  const ed = e.target.closest('[data-edit]') || e.target.closest('[data-openrows]');
+  if (ed) openProduct(ed.dataset.edit || ed.dataset.openrows);
+  if (e.target.closest('[data-add-product]')) openProduct(null);
+});
+
+/* ---- the stock editor: touch friendly, one product ---- */
+function openProduct(id) {
+  const p = id ? prod(id) : null;
+  sheet({
+    title: p ? p.name : 'New product',
+    sub: p ? p.sku + ' · ' + p.cat : 'It will appear on the till straight away',
+    body:
+      '<div class="formrow"><label class="lbl" for="pName">Name</label>' +
+      '<input class="field" id="pName" value="' + esc(p ? p.name : '') + '" placeholder="e.g. Sugar 2kg" /></div>' +
+      '<div class="formrow"><label class="lbl" for="pSku">Code / barcode</label>' +
+      '<input class="field" id="pSku" value="' + esc(p ? p.sku : '') + '" placeholder="GRC-021" /></div>' +
+      '<div class="formrow"><label class="lbl" for="pCat">Category</label>' +
+      '<select class="field" id="pCat">' + S.cats.map(c => '<option' + (p && p.cat === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px">' +
+      '<div><label class="lbl" for="pCost">Cost price</label><input class="field num" id="pCost" inputmode="decimal" value="' + (p ? p.cost : '') + '" /></div>' +
+      '<div><label class="lbl" for="pPrice">Selling price</label><input class="field num" id="pPrice" inputmode="decimal" value="' + (p ? p.price : '') + '" /></div>' +
+      '</div>' +
+      '<div class="formrow" style="margin-top:11px"><label class="lbl" for="pQty">Quantity on the shelf</label>' +
+      '<div class="stepper" style="height:52px">' +
+      '<button data-step="pQty:-1" aria-label="One fewer">' + icon('minus') + '</button>' +
+      '<input class="num" id="pQty" inputmode="numeric" value="' + (p ? p.qty : '0') + '" />' +
+      '<span class="u">' + esc(p ? p.unit + 's' : '') + '</span>' +
+      '<button data-step="pQty:1" aria-label="One more">' + icon('plus') + '</button></div>' +
+      '<div class="chips" style="margin-top:9px;padding:2px 1px">' + [1, 6, 12, 24, 48].map(n =>
+        '<button class="chip" data-addqty="' + n + '">+' + n + '</button>').join('') + '</div></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px">' +
+      '<div><label class="lbl" for="pReorder">Reorder at</label><input class="field num" id="pReorder" inputmode="numeric" value="' + (p ? p.reorder : 10) + '" /></div>' +
+      '<div><label class="lbl" for="pExp">Expiry, if any</label><input class="field" id="pExp" type="date" value="' + (p ? p.exp : '') + '" /></div>' +
+      '</div>' +
+      '<p class="hint" style="margin-top:9px">Quantity is what is physically on the shelf after this count. It replaces the old figure, so a stock-take is just a new number.</p>',
+    actions: [
+      { label: p ? 'Save changes' : 'Add product', kind: '', onClick: () => saveProduct(p) },
+      ...(p ? [{ label: 'Remove', ghost: true, onClick: () => {
+        sheet({
+          title: 'Remove ' + p.name + '?', sub: 'This cannot be undone',
+          body: '<p style="font-size:13px">The product leaves the price list. Any receipt that already includes it keeps its own copy, so old sales still add up.</p>',
+          actions: [
+            { label: 'Keep it' },
+            { label: 'Remove', onClick: () => {
+              S.products = S.products.filter(x => x.id !== p.id);
+              S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Removed ' + p.name, detail: 'Was ' + fmt(p.price) });
+              closeSheet(); renderInventory(); toast('Removed ' + p.name);
+            }}
+          ]
+        });
+      } }] : [])
+    ],
+    onMount: () => {
+      $('#sheetBody').addEventListener('click', ev => {
+        const st = ev.target.closest('[data-step]');
+        if (st) {
+          const [fid, d] = st.dataset.step.split(':');
+          const inp = document.getElementById(fid);
+          inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) + Number(d));
+        }
+        const aq = ev.target.closest('[data-addqty]');
+        if (aq) {
+          const inp = document.getElementById('pQty');
+          inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) + Number(aq.dataset.addqty));
+        }
+      });
+    }
+  });
+}
+
+function saveProduct(p) {
+  const name = $('#pName').value.trim();
+  const price = Number($('#pPrice').value) || 0;
+  if (!name) { toast('A product needs a name.', 'bad'); return; }
+  if (price <= 0) { toast('A product needs a selling price.', 'bad'); return; }
+  const data = {
+    name, sku: $('#pSku').value.trim() || 'SKU-' + Math.floor(Math.random() * 9000 + 1000),
+    cat: $('#pCat').value, cost: Number($('#pCost').value) || 0, price,
+    qty: Math.max(0, parseInt($('#pQty').value, 10) || 0),
+    reorder: Math.max(0, parseInt($('#pReorder').value, 10) || 0),
+    exp: $('#pExp').value, unit: p ? p.unit : 'piece'
+  };
+  if (p) Object.assign(p, data);
+  else S.products.push(Object.assign({ id: 'p' + (S.products.length + 1) + 'x' }, data));
+  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: (p ? 'Edited ' : 'Added ') + name, detail: p ? 'Stock now ' + data.qty : 'Opening stock ' + data.qty });
+  closeSheet();
+  renderInventory();
+  toast(p ? 'Saved ' + name : 'Added ' + name, 'good');
+}
+
+/* ============================================================ purchases */
+function renderPurchases() {
+  $('#poCount').textContent = S.pos.length + ' orders';
+  $('#poList').innerHTML = S.pos.map(po => {
+    const kind = po.status === 'received' ? 'ok' : po.status === 'ordered' ? 'info' : 'neutral';
+    return '<div class="rowcard"><div class="top"><div style="min-width:0">' +
+      '<div class="ttl">' + esc(po.no) + ' · ' + esc(sup(po.supplier).name) + '</div>' +
+      '<div class="meta">' + dmy(new Date(po.at)) + ' · ' + po.lines + ' lines</div></div>' +
+      '<div class="amt">' + fmt(po.total) + '</div></div>' +
+      '<div class="bottom"><span class="pill ' + kind + '"><span class="dot"></span>' + po.status[0].toUpperCase() + po.status.slice(1) + '</span>' +
+      '<div style="display:flex;gap:6px">' +
+      (po.status !== 'received' ? '<button class="btn secondary sm" data-receive="' + po.no + '">' + icon('package', 'sm') + 'Receive</button>' : '') +
+      '<button class="btn ghost sm" data-viewpo="' + po.no + '">Open</button></div></div></div>';
+  }).join('');
+  $('#supplierList').innerHTML = S.suppliers.map(s =>
+    '<div class="setrow"><div><div class="t">' + esc(s.name) + '</div>' +
+    '<div class="d">' + esc(s.phone) + ' · ' + esc(s.terms) + '</div></div>' +
+    '<div style="text-align:right"><div class="num" style="font-weight:600;font-size:14px">' + fmt(s.owed) + '</div>' +
+    '<div class="hint">' + (s.owed ? 'owed' : 'settled') + '</div></div></div>').join('');
+}
+
+document.addEventListener('click', e => {
+  const rec = e.target.closest('[data-receive]');
+  if (rec) {
+    const po = S.pos.find(x => x.no === rec.dataset.receive);
+    po.status = 'received';
+    S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Received ' + po.no, detail: fmt(po.total) + ' from ' + sup(po.supplier).name });
+    renderPurchases();
+    toast(po.no + ' marked received, stock updated', 'good');
+  }
+  const view = e.target.closest('[data-viewpo]');
+  if (view) {
+    const po = S.pos.find(x => x.no === view.dataset.viewpo);
+    sheet({
+      title: po.no, sub: sup(po.supplier).name + ' · ' + dmy(new Date(po.at)),
+      body: '<dl class="kv"><dt>Status</dt><dd>' + po.status + '</dd><dt>Lines</dt><dd>' + po.lines + '</dd>' +
+        '<dt>Total</dt><dd class="num">' + fmt(po.total) + '</dd><dt>Terms</dt><dd>' + esc(sup(po.supplier).terms) + '</dd></dl>' +
+        '<p class="hint" style="margin-top:11px">Receiving an order puts its quantities on the shelf and raises what you owe the supplier. In the real product every line is a product, a quantity and a unit cost.</p>',
+      actions: [{ label: 'Close' }]
+    });
+  }
+  if (e.target.closest('[data-new-po]')) {
+    sheet({
+      title: 'New purchase order', sub: 'Order stock from a supplier',
+      body: '<div class="formrow"><label class="lbl" for="poSup">Supplier</label><select class="field" id="poSup">' +
+        S.suppliers.map(s => '<option>' + esc(s.name) + '</option>').join('') + '</select></div>' +
+        '<div class="formrow"><label class="lbl" for="poItem">First item</label><select class="field" id="poItem">' +
+        S.products.map(p => '<option>' + esc(p.name) + '</option>').join('') + '</select></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px">' +
+        '<div><label class="lbl" for="poQty">Quantity</label><input class="field num" id="poQty" inputmode="numeric" value="12" /></div>' +
+        '<div><label class="lbl" for="poCost">Unit cost</label><input class="field num" id="poCost" inputmode="decimal" value="205" /></div></div>' +
+        '<p class="hint" style="margin-top:9px">A draft order can be edited freely. Stock only moves when you receive it.</p>',
+      actions: [{ label: 'Save as draft', kind: '', onClick: () => {
+        const supName = $('#poSup').value;
+        const s = S.suppliers.find(x => x.name === supName);
+        const total = (Number($('#poQty').value) || 0) * (Number($('#poCost').value) || 0);
+        S.pos.push({ no: 'PO-' + (1046 + S.pos.length), supplier: s.id, at: ymd(today()), status: 'draft', total, lines: 1 });
+        S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Created purchase order', detail: supName + ', ' + fmt(total) });
+        closeSheet(); renderPurchases(); toast('Draft order saved');
+      }}]
+    });
+  }
+});
+
+/* ============================================================ customers */
+let custTerm = '';
+$('#custSearch').addEventListener('input', e => { custTerm = e.target.value; renderCustomers(); });
+
+function renderCustomers() {
+  const t = custTerm.toLowerCase();
+  const list = S.customers.filter(c => c.id !== 'c6' && (!t || c.name.toLowerCase().includes(t) || c.phone.includes(t)));
+  if (!list.length) { $('#custList').innerHTML = '<div class="empty"><b>No customer matches</b><p>Add them with the button above.</p></div>'; return; }
+  $('#custList').innerHTML = list.map(c => {
+    const used = c.limit ? Math.min(100, (c.bal / c.limit) * 100) : 0;
+    return '<div class="rowcard"><div class="top"><div style="min-width:0">' +
+      '<div class="ttl">' + esc(c.name) + '</div>' +
+      '<div class="meta">' + esc(c.phone) + ' · limit ' + fmt(c.limit) + ' · since ' + dmy(new Date(c.since)) + '</div></div>' +
+      '<div class="amt" style="color:' + (c.bal > c.limit * 0.6 ? 'var(--danger)' : 'var(--ink)') + '">' + fmt(c.bal) + '</div></div>' +
+      '<div class="progress" style="margin-top:8px"><span style="width:' + used.toFixed(0) + '%;background:' + (used > 60 ? 'var(--danger)' : 'var(--syk)') + '"></span></div>' +
+      '<div class="hint" style="margin-top:5px">' + used.toFixed(0) + '% of the credit limit used</div>' +
+      '<div style="display:flex;gap:6px;margin-top:8px">' +
+      (c.bal > 0 ? '<button class="btn secondary sm" data-paycust="' + c.id + '">' + icon('banknote', 'sm') + 'Take payment</button>' : '') +
+      '<button class="btn ghost sm" style="margin-left:auto" data-ledger="' + c.id + '">Ledger</button></div></div>';
+  }).join('');
+}
+
+document.addEventListener('click', e => {
+  const p = e.target.closest('[data-paycust]');
+  if (p) {
+    const c = cust(p.dataset.paycust);
+    sheet({
+      title: 'Payment from ' + c.name, sub: 'Balance ' + fmt(c.bal),
+      body: '<div class="formrow"><label class="lbl" for="payAmt">Amount received</label>' +
+        '<input class="field big num" id="payAmt" inputmode="decimal" value="' + Math.round(c.bal) + '" /></div>' +
+        '<div class="chips" style="margin-top:9px">' + [500, 1000, 2000].map(n => '<button class="chip" data-payquick="' + n + '">+' + fmt(n) + '</button>').join('') +
+        '<button class="chip" data-payquick="' + Math.round(c.bal) + '">Full balance</button></div>' +
+        '<div class="formrow" style="margin-top:11px"><label class="lbl" for="payHow">Method</label>' +
+        '<select class="field" id="payHow"><option>M-Pesa</option><option>Cash</option><option>Bank transfer</option></select></div>' +
+        '<p class="hint" style="margin-top:9px">A payment over the balance leaves the customer in credit, which comes off their next sale.</p>',
+      actions: [{ label: 'Record payment', kind: '', onClick: () => {
+        const amt = Number($('#payAmt').value) || 0;
+        if (amt <= 0) { toast('Enter an amount.', 'bad'); return; }
+        c.bal = Math.round((c.bal - amt) * 100) / 100;
+        S.ledger.unshift({ at: now().toISOString(), customer: c.id, amt, how: $('#payHow').value, who: S.me.name });
+        S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Recorded payment', detail: c.name + ', ' + fmt(amt) });
+        closeSheet(); renderCustomers();
+        toast('Payment recorded. ' + c.name + ' now owes ' + fmt(c.bal), 'good');
+      }}],
+      onMount: () => { $('#sheetBody').onclick = ev => { const q = ev.target.closest('[data-payquick]'); if (q) $('#payAmt').value = q.dataset.payquick; }; }
+    });
+  }
+  const l = e.target.closest('[data-ledger]');
+  if (l) {
+    const c = cust(l.dataset.ledger);
+    const mine = S.sales.filter(s => s.customer === c.id);
+    const pays = S.ledger.filter(x => x.customer === c.id);
+    const rows = mine.map(s => ({ at: s.at, what: 'Sale ' + s.no, dr: s.total, cr: 0 }))
+      .concat(pays.map(p => ({ at: p.at, what: 'Payment · ' + p.how, dr: 0, cr: p.amt })))
+      .sort((a, b) => new Date(a.at) - new Date(b.at));
+    sheet({
+      title: c.name, sub: 'Ledger · balance ' + fmt(c.bal), wide: true,
+      body: rows.length ? '<div class="tablewrap"><table><thead><tr><th>Date</th><th>What</th><th>Sale</th><th>Paid</th></tr></thead><tbody>' +
+        rows.map(r => '<tr><td class="num">' + dmy(new Date(r.at)) + '</td><td>' + esc(r.what) + '</td>' +
+          '<td class="num">' + (r.dr ? fmt(r.dr) : '—') + '</td><td class="num">' + (r.cr ? fmt(r.cr) : '—') + '</td></tr>').join('') +
+        '</tbody></table></div>' : '<div class="empty"><b>Nothing on the ledger yet</b><p>Sales on credit and payments received will appear here.</p></div>',
+      actions: [{ label: 'Close' }]
+    });
+  }
+  if (e.target.closest('[data-add-customer]')) {
+    sheet({
+      title: 'New customer', sub: 'A person or a business buying on account',
+      body: '<div class="formrow"><label class="lbl" for="cN">Name</label><input class="field" id="cN" placeholder="e.g. Mama Zawadi Kiosk" /></div>' +
+        '<div class="formrow"><label class="lbl" for="cP">Phone</label><input class="field" id="cP" inputmode="tel" placeholder="07.. ... ..." /></div>' +
+        '<div class="formrow"><label class="lbl" for="cL">Credit limit</label><input class="field num" id="cL" inputmode="decimal" value="10000" /></div>' +
+        '<div class="formrow"><label class="lbl" for="cB">Opening balance owed</label><input class="field num" id="cB" inputmode="decimal" value="0" /></div>',
+      actions: [{ label: 'Add customer', kind: '', onClick: () => {
+        const n = $('#cN').value.trim();
+        if (!n) { toast('A customer needs a name.', 'bad'); return; }
+        S.customers.push({ id: 'c' + (S.customers.length + 1) + 'x', name: n, phone: $('#cP').value.trim(), limit: Number($('#cL').value) || 0, bal: Number($('#cB').value) || 0, since: ymd(today()) });
+        closeSheet(); renderCustomers(); toast('Added ' + n, 'good');
+      }}]
+    });
+  }
+});
+
+/* ============================================================ reports */
+let reportRange = 'This month';
+function renderReports() {
+  $('#reportChips').innerHTML = ['Today', 'This week', 'This month', 'This quarter'].map(r =>
+    '<button class="chip" data-range="' + r + '" aria-pressed="' + (reportRange === r) + '">' + r + '</button>').join('');
+
+  const days = { 'Today': 0, 'This week': 6, 'This month': 29, 'This quarter': 89 }[reportRange];
+  const from = addDays(today(), -days);
+  const sel = S.sales.filter(s => new Date(s.at) >= from);
+  const gross = sum(sel, s => s.total);
+  const cogs = sum(sel, costOf);
+  const vat = gross * 16 / 116;
+  const exp = S.expenses.filter(x => new Date(x.at) >= from);
+  const expTotal = sum(exp, x => x.amt);
+  const credit = sum(sel, s => s.credit);
+
+  $('#reportTable').innerHTML =
+    '<dl class="kv" style="margin-bottom:6px">' +
+    '<dt>Receipts</dt><dd class="num">' + sel.length + '</dd>' +
+    '<dt>Gross sales</dt><dd class="num">' + fmt2(gross) + '</dd>' +
+    '<dt>VAT included</dt><dd class="num">' + fmt2(vat) + '</dd>' +
+    '<dt>Cost of goods sold</dt><dd class="num">' + fmt2(cogs) + '</dd>' +
+    '<dt>Gross profit</dt><dd class="num" style="font-weight:700">' + fmt2(gross - cogs) + '</dd>' +
+    '<dt>Expenses</dt><dd class="num">' + fmt2(expTotal) + '</dd>' +
+    '<dt style="font-weight:600;color:var(--ink)">Net profit</dt><dd class="num" style="font-weight:700;color:' + (gross - cogs - expTotal >= 0 ? 'var(--forest)' : 'var(--danger)') + '">' + fmt2(gross - cogs - expTotal) + '</dd>' +
+    '<dt>Sold on credit</dt><dd class="num">' + fmt2(credit) + '</dd></dl>' +
+    '<div class="progress" style="margin:12px 0"><span style="width:' + (sel.length ? Math.min(100, (gross - cogs) / gross * 100) : 0).toFixed(0) + '%"></span></div>' +
+    '<div class="hint" style="margin-bottom:12px">Gross margin ' + (gross ? ((gross - cogs) / gross * 100).toFixed(1) : '0.0') + '% over ' + reportRange.toLowerCase() + '.</div>';
+
+  const byCat = {};
+  sel.forEach(s => s.items.forEach(it => {
+    const p = prod(it.id);
+    const cat = p ? p.cat : 'Other';
+    byCat[cat] = byCat[cat] || { qty: 0, value: 0, profit: 0 };
+    byCat[cat].qty += it.qty;
+    byCat[cat].value += it.qty * it.price;
+    byCat[cat].profit += it.qty * (it.price - (it.cost || 0));
+  }));
+  const maxV = Math.max.apply(null, Object.values(byCat).map(x => x.value).concat([1]));
+  $('#reportTable').innerHTML += '<h3 style="font-size:14px;font-weight:600;margin:14px 0 8px">By category</h3>' +
+    Object.keys(byCat).sort((a, b) => byCat[b].value - byCat[a].value).map(k =>
+      '<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:13px">' +
+      '<span>' + esc(k) + ' <span class="hint">(' + byCat[k].qty + ' items)</span></span>' +
+      '<span class="num" style="font-weight:600">' + fmt(byCat[k].value) + '</span></div>' +
+      '<div class="progress" style="margin-top:4px"><span style="width:' + ((byCat[k].value / maxV) * 100).toFixed(0) + '%"></span></div></div>').join('') +
+    '<h3 style="font-size:14px;font-weight:600;margin:16px 0 8px">Expenses</h3>' +
+    (exp.length
+      ? '<div class="cards-mobile">' + exp.map(x =>
+          '<div class="rowcard"><div class="top"><div style="min-width:0"><div class="ttl">' + esc(x.what) + '</div>' +
+          '<div class="meta">' + dmy(new Date(x.at)) + ' · ' + esc(x.cat) + '</div></div>' +
+          '<div class="amt">' + fmt(x.amt) + '</div></div></div>').join('') + '</div>' +
+        '<div class="tablewrap desk"><table><thead><tr><th>Date</th><th>What</th><th>Category</th><th class="num">Amount</th></tr></thead><tbody>' +
+        exp.map(x => '<tr><td class="num">' + dmy(new Date(x.at)) + '</td><td>' + esc(x.what) + '</td><td>' + esc(x.cat) + '</td>' +
+          '<td class="num">' + fmt(x.amt) + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty"><b>No expenses in this range</b><p>Expenses you record come off net profit.</p></div>');
+}
+document.addEventListener('click', e => {
+  const r = e.target.closest('[data-range]');
+  if (r) { reportRange = r.dataset.range; renderReports(); }
+});/* ============================================================ eTIMS */
+function renderEtims() {
+  $('#etimsShop').textContent = S.shop.name;
+  const recent = S.sales.slice(0, 8);
+  /* every figure here is read from the same sales the rest of the app uses */
+  const todayRows = salesToday();
+  const monthFrom = addDays(today(), -29);
+  const monthRows = S.sales.filter(x => new Date(x.at) >= monthFrom);
+  const monthVat = sum(monthRows, x => x.total) * 16 / 116;
+  $('#etimsSent').textContent = todayRows.length;
+  $('#etimsSent').parentNode.querySelector('.f').textContent = 'Of ' + todayRows.length + ' receipts';
+  $('#etimsVat').textContent = fmt(monthVat);
+  $('#etimsVat').parentNode.querySelector('.f').textContent =
+    '16% on ' + monthRows.length + ' sales this month';
+  $('#etimsQueue').textContent = todayRows.filter(x => x.etims.status !== 'sent').length;
+  const last = S.sales[0];
+  $('#etimsLast').textContent = last
+    ? dmy(new Date(last.at)) + ', ' + clock(new Date(last.at))
+    : 'Nothing sent yet';
+  $('#etimsList').innerHTML = recent.map(s => {
+    const c = cust(s.customer);
+    return '<div class="setrow"><div><div class="t">' + esc(s.no) + ' · ' + fmt(s.total) + '</div>' +
+      '<div class="d">' + dmy(new Date(s.at)) + ' ' + clock(new Date(s.at)) + ' · ' + esc(c ? c.name : 'Walk-in') + '</div></div>' +
+      '<div style="text-align:right"><span class="pill ok"><span class="dot"></span>Signed</span>' +
+      '<div class="hint num">' + esc(s.etims.sig) + '</div></div></div>';
+  }).join('');
+}
+$('#etimsTest').onclick = () => {
+  const b = $('#etimsTest');
+  b.disabled = true; b.innerHTML = icon('scan-line', 'sm') + 'Sending…';
+  setTimeout(() => {
+    b.disabled = false; b.innerHTML = icon('scan-line', 'sm') + 'Send a test transmission';
+    $('#etimsLast').textContent = 'Today, ' + clock(now());
+    toast('Test accepted by eTIMS. Signature returned.', 'good');
+    S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Sent eTIMS test', detail: 'Accepted' });
+  }, 1100);
+};
+
+/* ============================================================ settings */
+function renderSettings() {
+  $('#userList').innerHTML = S.users.map(u =>
+    '<div class="setrow"><div><div class="t">' + esc(u.name) + (u.id === 'u1' ? ' <span class="pill info">You</span>' : '') + '</div>' +
+    '<div class="d">' + esc(u.phone) + ' · ' + (u.role === 'owner' ? 'Owner' : 'Sales') + ' · last seen ' + esc(u.last) + '</div></div>' +
+    '<div style="display:flex;gap:6px;align-items:center">' +
+    (u.active ? '<span class="pill ok">Active</span>' : '<span class="pill neutral">Off</span>') +
+    (u.id === 'u1' ? '' : '<button class="btn ghost sm" data-toggleuser="' + u.id + '">' + (u.active ? 'Disable' : 'Enable') + '</button>') +
+    '</div></div>').join('');
+  $$('.toggle').forEach(t => {
+    const k = t.dataset.toggle;
+    t.setAttribute('aria-checked', String(!!S.settings[k]));
+  });
+  $$('[data-plan-price]').forEach(n => { n.textContent = fmt(S.shop.plan); });
+  $$('[data-plan-line]').forEach(n => { n.textContent = fmt(S.shop.plan) + ' / month'; });
+  $('#setShop').value = S.shop.name;
+  $('#setBranch').value = S.shop.branch;
+  $('#setPhone').value = S.shop.phone;
+  $('#setKra').value = S.shop.kra;
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-toggle]');
+  if (t) {
+    const k = t.dataset.toggle;
+    S.settings[k] = !S.settings[k];
+    t.setAttribute('aria-checked', String(S.settings[k]));
+    toast(k === 'allowCredit' && !S.settings[k] ? 'Credit sales are off — the till will refuse a shortfall.' : 'Saved');
+  }
+  const tu = e.target.closest('[data-toggleuser]');
+  if (tu) {
+    const u = S.users.find(x => x.id === tu.dataset.toggleuser);
+    u.active = !u.active;
+    renderSettings(); toast(u.name + (u.active ? ' can sign in again.' : ' can no longer sign in.'));
+  }
+  if (e.target.closest('[data-save-settings]')) {
+    S.shop.name = $('#setShop').value.trim() || 'Shop Yangu Kenya';
+    S.shop.branch = $('#setBranch').value.trim();
+    S.shop.phone = $('#setPhone').value.trim();
+    S.shop.kra = $('#setKra').value.trim();
+    paintNav(); toast('Shop profile saved. It is now on every receipt.', 'good');
+  }
+  if (e.target.closest('[data-add-user]')) {
+    sheet({
+      title: 'Add a user', sub: 'Sales are limited on purpose',
+      body: '<div class="formrow"><label class="lbl" for="uN">Name</label><input class="field" id="uN" /></div>' +
+        '<div class="formrow"><label class="lbl" for="uP">Phone, used to sign in</label><input class="field" id="uP" inputmode="tel" /></div>' +
+        '<div class="formrow"><label class="lbl" for="uR">Role</label><select class="field" id="uR"><option value="sales">Sales — till, stock, buying</option><option value="owner">Owner — everything</option></select></div>' +
+        '<p class="hint" style="margin-top:9px">A sales user sees the till, the stock list and purchase orders. Costs, profit, reports, users and eTIMS settings stay with the owner.</p>',
+      actions: [{ label: 'Send invite', kind: '', onClick: () => {
+        const n = $('#uN').value.trim();
+        if (!n) { toast('A name is needed.', 'bad'); return; }
+        S.users.push({ id: 'u' + (S.users.length + 1) + 'x', name: n, phone: $('#uP').value.trim(), role: $('#uR').value, active: true, last: 'Never' });
+        closeSheet(); renderSettings(); toast('Invite sent to ' + n);
+      }}]
+    });
+  }
+});
+
+/* ============================================================ audit */
+let auditFilter = 'Everything';
+function renderAudit() {
+  const kinds = ['Everything', 'Sales', 'Stock', 'Credit'];
+  $('#auditChips').innerHTML = kinds.map(k => '<button class="chip" data-audit="' + k + '" aria-pressed="' + (auditFilter === k) + '">' + k + '</button>').join('');
+  if (!S.audit.length) {
+    S.audit.push({ at: now().toISOString(), who: 'Wanjiku Kamau', what: 'Signed in', detail: 'Owner, Mombasa Branch' });
+    S.audit.push({ at: addDays(now(), 0).toISOString(), who: 'Otieno Were', what: 'Completed sale R-3804', detail: 'Ksh 1,240, M-Pesa' });
+    S.audit.push({ at: now().toISOString(), who: 'Fatuma Ali', what: 'Adjusted stock', detail: 'Fresh milk 500ml, 12 → 8' });
+  }
+  const rows = S.audit.filter(a => {
+    if (auditFilter === 'Everything') return true;
+    if (auditFilter === 'Sales') return /sale|receipt/i.test(a.what);
+    if (auditFilter === 'Stock') return /stock|product|received/i.test(a.what);
+    return /credit|payment/i.test(a.what);
+  });
+  $('#auditList').innerHTML = rows.map(a =>
+    '<div class="setrow"><div style="display:flex;gap:10px;align-items:flex-start">' +
+    '<span class="pill info" style="padding:5px">' + icon('landmark', 'sm') + '</span>' +
+    '<div><div class="t">' + esc(a.what) + '</div>' +
+    '<div class="d">' + esc(a.who) + ' · ' + dmy(new Date(a.at)) + ' ' + clock(new Date(a.at)) + ' · ' + esc(a.detail) + '</div></div></div></div>').join('');
+  if (!rows.length) $('#auditList').innerHTML = '<div class="empty"><b>Nothing of that kind yet</b><p>Actions appear the moment they happen, and cannot be edited afterwards.</p></div>';
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-audit]');
+  if (a) { auditFilter = a.dataset.audit; renderAudit(); }
+});
+
+/* ============================================================ import from Excel / CSV */
+const SCHEMAS = {
+  products: {
+    label: 'Products / stock',
+    cols: ['sku', 'name', 'category', 'unit', 'cost_price', 'selling_price', 'opening_qty', 'reorder_level', 'expiry_date', 'supplier', 'barcode'],
+    sample: ['GRC-001', 'Sugar 2kg', 'Grocery', 'packet', '205', '240', '68', '24', '', 'Kwa Nguvu Distributors', '6001234500012']
+  },
+  customers: {
+    label: 'Customers',
+    cols: ['name', 'phone', 'credit_limit', 'opening_balance', 'since', 'notes'],
+    sample: ['Mama Zawadi Kiosk', '0722118044', '20000', '8650', '2024-03-11', 'Kiosk on Moi Avenue']
+  },
+  sales: {
+    label: 'Sales history',
+    cols: ['receipt_no', 'date', 'customer', 'sku', 'qty', 'unit_price', 'amount_paid', 'payment_method', 'cashier', 'notes'],
+    sample: ['R-2101', '2026-04-01', 'Hotel Bahari', 'DRK-001', '24', '50', '1200', 'M-Pesa', 'Otieno Were', 'March order, settled']
+  }
+};
+let importTarget = 'products';
+let parsed = null;
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-target]');
+  if (t) {
+    importTarget = t.dataset.target;
+    $$('#importTarget button').forEach(b => b.setAttribute('aria-pressed', String(b === t)));
+    parsed = null;
+    $('#importReport').innerHTML = '';
+    $('#dropzone').querySelector('div:nth-child(2)').textContent = 'Tap to choose a file, or drop it here';
+  }
+  const tpl = e.target.closest('[data-template]');
+  if (tpl) showTemplate(tpl.dataset.template);
+});
+
+function showTemplate(kind) {
+  const sc = SCHEMAS[kind];
+  const mock = sc.cols.map((c, i) => '<tr><td><b>' + esc(c) + '</b></td><td class="hint">' + kindHint(kind, c) + '</td><td>' + esc(sc.sample[i] || '') + '</td></tr>').join('');
+  sheet({
+    title: sc.label + ' template', sub: sc.cols.length + ' columns', wide: true,
+    body: '<div class="tablewrap"><table><thead><tr><th>Column</th><th>What goes in it</th><th>Example</th></tr></thead><tbody>' + mock + '</tbody></table></div>' +
+      '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap">' +
+      '<button class="btn" id="dlTpl">' + icon('download', 'sm') + 'Download .xlsx</button>' +
+      '<button class="btn secondary" id="copyTpl">' + icon('file-text', 'sm') + 'Copy as CSV</button></div>' +
+      '<p class="hint" style="margin-top:10px">The workbook opens in Excel with the header row already coloured. If a download is blocked here, copy the CSV instead — the columns are identical.</p>',
+    actions: [{ label: 'Close' }]
+  });
+  $('#dlTpl').onclick = () => {
+    const b64 = XLSX_B64[kind];
+    if (b64) downloadB64('shop-yangu-' + kind + '-template.xlsx', b64,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    else downloadFile('shop-yangu-' + kind + '-template.csv', csvOf([sc.cols, sc.sample]));
+  };
+  $('#copyTpl').onclick = () => {
+    const txt = csvOf([sc.cols, sc.sample]);
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast('Copied. Paste into Excel.', 'good'), () => toast('Could not copy here.', 'bad'));
+    else toast('Copying is not available in this browser.', 'bad');
+  };
+}
+function kindHint(kind, c) {
+  const h = {
+    sku: 'Your own code, must be unique', name: 'Product name as you say it', category: 'Must match an existing category',
+    unit: 'packet, bottle, kg, piece', cost_price: 'What you pay, in Ksh', selling_price: 'What you charge, in Ksh',
+    opening_qty: 'Count on the shelf today', reorder_level: 'Warn me at this number', expiry_date: 'YYYY-MM-DD, or blank',
+    supplier: 'Free text, matched by name', barcode: 'EAN, optional',
+    phone: '07.. digits', credit_limit: 'Ksh, 0 means cash only', opening_balance: 'Ksh owed to you today',
+    since: 'YYYY-MM-DD', notes: 'Anything you like',
+    receipt_no: 'Must be unique, never reused', date: 'YYYY-MM-DD, not in the future',
+    customer: 'Name, or blank for walk-in', qty: 'Units sold', unit_price: 'Ksh per unit',
+    amount_paid: 'Leave blank if unpaid', payment_method: 'Cash, M-Pesa, Card', cashier: 'Who sold it'
+  };
+  return h[c] || '';
+}
+function csvOf(rows) {
+  return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? '"' + String(c).replace(/"/g, '""') + '"' : String(c)).join(',')).join('\r\n');
+}
+function downloadB64(name, b64, type) {
+  try {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: type || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast('Downloaded ' + name + '. It opens in Excel.', 'good');
+  } catch (err) { toast('This preview blocked the download. Use Copy as CSV.', 'bad'); }
+}
+function downloadFile(name, text, type) {
+  try {
+    const blob = new Blob([text], { type: type || 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  } catch (err) { toast('This preview blocked the download. Use Copy as CSV.', 'bad'); }
+}
+
+/* ---- reading a CSV ---- */
+/* note: no top-level name may shadow a built-in used elsewhere — `sum` is the app's own */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = '', q = false;
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+
+/* ---- date handling, the part that matters ---- */
+function readDate(s, allowFuture) {
+  const v = String(s || '').trim();
+  if (!v) return { ok: true, date: null };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const d = new Date(v + 'T00:00:00');
+    if (isNaN(d)) return { ok: false, why: 'not a real date' };
+    const back = ymd(d);
+    if (back !== v) return { ok: false, why: 'not a real date' };
+    return finishDate(d, allowFuture);
+  }
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
+    /* dd/mm/yyyy, the Kenyan convention — never mm/dd */
+    const [dd, mm, yy] = v.split('/').map(Number);
+    const d = new Date(yy, mm - 1, dd);
+    if (d.getDate() !== dd || d.getMonth() !== mm - 1) return { ok: false, why: 'not a real date' };
+    return finishDate(d, allowFuture);
+  }
+  if (/^\d{5}$/.test(v)) {
+    /* an Excel serial date, what a raw export often holds */
+    const d = new Date(Date.UTC(1899, 11, 30) + Number(v) * 86400000);
+    if (isNaN(d)) return { ok: false, why: 'not a real date' };
+    return finishDate(d, allowFuture);
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(v)) {
+    const d = new Date(v);
+    if (!isNaN(d)) return finishDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()), allowFuture);
+  }
+  return { ok: false, why: 'use YYYY-MM-DD' };
+}
+function finishDate(d, allowFuture) {
+  if (!allowFuture && d > today()) return { ok: false, why: 'in the future', date: d };
+  return { ok: true, date: d };
+}
+
+function validate(kind, rows) {
+  const sc = SCHEMAS[kind];
+  const head = rows[0].map(h => String(h).trim().toLowerCase());
+  const missing = sc.cols.filter(c => !head.includes(c));
+  const extra = head.filter(h => h && !sc.cols.includes(h));
+  const seenSku = new Map(), seenReceipt = new Map();
+  const good = [], bad = [];
+  for (let r = 1; r < rows.length; r++) {
+    const raw = rows[r];
+    const o = {};
+    sc.cols.forEach(c => { o[c] = String(raw[head.indexOf(c)] == null ? '' : raw[head.indexOf(c)]).trim(); });
+    const errs = [];
+
+    if (kind === 'products') {
+      if (!o.name) errs.push('no name');
+      if (!o.sku) errs.push('no sku');
+      else if (seenSku.has(o.sku)) errs.push('sku repeats row ' + seenSku.get(o.sku));
+      else seenSku.set(o.sku, r + 1);
+      if (o.selling_price && isNaN(Number(o.selling_price))) errs.push('selling_price is not a number');
+      if (o.cost_price && isNaN(Number(o.cost_price))) errs.push('cost_price is not a number');
+      if (o.opening_qty && (!/^\d+$/.test(o.opening_qty))) errs.push('opening_qty must be a whole number');
+      /* an expiry date is normally in the future; only a sale cannot be */
+      const d = readDate(o.expiry_date, true);
+      if (!d.ok) errs.push('expiry_date ' + d.why);
+      o._date = d.date;
+    }
+    if (kind === 'customers') {
+      if (!o.name) errs.push('no name');
+      if (o.opening_balance && isNaN(Number(o.opening_balance))) errs.push('opening_balance is not a number');
+      const d = readDate(o.since);
+      if (!d.ok) errs.push('since ' + d.why);
+      o._date = d.date;
+    }
+    if (kind === 'sales') {
+      if (!o.receipt_no) errs.push('no receipt_no');
+      else if (seenReceipt.has(o.receipt_no)) errs.push('receipt already imported');
+      else seenReceipt.set(o.receipt_no, r + 1);
+      if (!o.sku) errs.push('no sku');
+      if (!/^\d+(\.\d+)?$/.test(o.qty || '')) errs.push('qty must be a number');
+      if (!/^\d+(\.\d+)?$/.test(o.unit_price || '')) errs.push('unit_price must be a number');
+      const d = readDate(o.date);
+      if (!d.ok) errs.push('date ' + d.why + ' (' + o.date + ')');
+      o._date = d.date;
+      if (o.amount_paid && isNaN(Number(o.amount_paid))) errs.push('amount_paid is not a number');
+    }
+    if (errs.length) bad.push({ row: r + 1, errs, o });
+    else good.push(o);
+  }
+  return { head, missing, extra, good, bad, total: rows.length - 1 };
+}
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCSV(String(reader.result));
+    if (!rows.length) { toast('That file is empty.', 'bad'); return; }
+    parsed = { kind: importTarget, rows };
+    renderImportReport(validate(importTarget, rows), rows);
+  };
+  reader.onerror = () => toast('Could not read that file.', 'bad');
+  reader.readAsText(file);
+}
+
+function renderImportReport(v, rows) {
+  const preview = rows.slice(0, 6);
+  const head = rows[0];
+  const pctOk = v.total ? Math.round((v.good.length / v.total) * 100) : 0;
+  let html = '<div class="card" style="margin:0">' +
+    '<div class="card-head"><div><h2>' + (v.good.length) + ' of ' + v.total + ' row' + (v.total === 1 ? '' : 's') +
+    (v.good.length === 1 ? ' is' : ' are') + ' ready</h2>' +
+    '<div class="sub">Nothing has been written yet</div></div>' +
+    '<span class="pill ' + (v.bad.length ? 'low' : 'ok') + '">' + pctOk + '%</span></div>' +
+    '<div class="progress"><span style="width:' + pctOk + '%"></span></div>';
+
+  if (v.missing.length) {
+    html += '<div class="errmsg" style="margin-top:11px">' + icon('alert') + '<span>Missing column' + (v.missing.length > 1 ? 's' : '') + ': <b>' + v.missing.map(esc).join(', ') + '</b>. Download the template and keep its header row.</span></div>';
+  }
+  if (v.extra.length) {
+    html += '<p class="hint" style="margin-top:8px">Ignored extra column' + (v.extra.length > 1 ? 's' : '') + ': ' + v.extra.map(esc).join(', ') + '.</p>';
+  }
+  if (v.bad.length) {
+    html += '<h3 style="font-size:13.5px;font-weight:600;margin:13px 0 6px">Rows that need fixing</h3>' +
+      '<div class="tablewrap"><table><thead><tr><th>Row</th><th>Problem</th></tr></thead><tbody>' +
+      v.bad.slice(0, 8).map(b => '<tr><td class="num">' + b.row + '</td><td>' + b.errs.map(esc).join('; ') + '</td></tr>').join('') +
+      '</tbody></table></div>' +
+      (v.bad.length > 8 ? '<p class="hint">…and ' + (v.bad.length - 8) + ' more.</p>' : '');
+  }
+  html += '<h3 style="font-size:13.5px;font-weight:600;margin:13px 0 6px">First rows</h3>' +
+    '<div class="tablewrap"><table><thead><tr>' + head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
+    preview.slice(1).map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') +
+    '</tbody></table></div>';
+
+  const dates = v.good.map(g => g._date).filter(Boolean);
+  if (dates.length) {
+    const oldest = dates.reduce((a, b) => (a < b ? a : b));
+    const newest = dates.reduce((a, b) => (a > b ? a : b));
+    html += '<p class="hint" style="margin-top:10px">' + icon('calendar-days', 'sm') + ' Dates run from <b>' + dmy(oldest) + '</b> to <b>' + dmy(newest) +
+      '</b>. Old records keep their own date, so they land in the right month and never in today’s takings.</p>';
+  }
+  html += '</div>';
+
+  $('#importReport').innerHTML = html;
+
+  /* the commit button lives outside the sheet: rebuild it next to the report */
+  const commit = el('div', '', '');
+  commit.style.marginTop = '11px';
+  commit.innerHTML = '<button class="btn block" id="commitImport"' + (v.good.length ? '' : ' disabled') + '>' +
+    icon('upload') + 'Import ' + v.good.length + ' row' + (v.good.length === 1 ? '' : 's') + '</button>' +
+    (v.good.length ? '<p class="hint" style="text-align:center">Rows that failed are left out. You can fix the file and import only the rest — duplicates are skipped, never doubled.</p>' : '');
+  $('#importReport').appendChild(commit);
+  $('#commitImport').onclick = () => commitImport(v);
+}
+
+function commitImport(v) {
+  const kind = parsed.kind;
+  /* kept so the whole batch can be undone in one move */
+  const snapshot = JSON.parse(JSON.stringify({ products: S.products, customers: S.customers, sales: S.sales }));
+  let added = 0, skipped = 0;
+  if (kind === 'products') {
+    v.good.forEach(r => {
+      if (S.products.some(p => p.sku === r.sku)) { skipped++; return; }
+      S.products.push({
+        id: 'p' + (S.products.length + 1) + 'i', sku: r.sku, name: r.name,
+        cat: S.cats.includes(r.category) ? r.category : S.cats[0],
+        unit: r.unit || 'piece', cost: Number(r.cost_price) || 0, price: Number(r.selling_price) || 0,
+        qty: Number(r.opening_qty) || 0, reorder: Number(r.reorder_level) || 0,
+        exp: r._date ? ymd(r._date) : ''
+      });
+      added++;
+    });
+  }
+  if (kind === 'customers') {
+    v.good.forEach(r => {
+      if (S.customers.some(c => c.name.toLowerCase() === r.name.toLowerCase())) { skipped++; return; }
+      S.customers.push({
+        id: 'c' + (S.customers.length + 1) + 'i', name: r.name, phone: r.phone,
+        limit: Number(r.credit_limit) || 0, bal: Number(r.opening_balance) || 0,
+        since: r._date ? ymd(r._date) : ymd(today())
+      });
+      added++;
+    });
+  }
+  if (kind === 'sales') {
+    v.good.forEach(r => {
+      if (S.sales.some(s => s.no === r.receipt_no)) { skipped++; return; }
+      const p = S.products.find(x => x.sku === r.sku);
+      if (!p) { skipped++; return; }
+      const qty = Number(r.qty) || 1;
+      const price = Number(r.unit_price) || p.price;
+      const total = qty * price;
+      const paidAmt = r.amount_paid === '' ? total : Number(r.amount_paid) || 0;
+      const d = r._date || today();
+      const at = new Date(d); at.setHours(11, 30, 0, 0);
+      const c = S.customers.find(x => x.name.toLowerCase() === String(r.customer || '').toLowerCase());
+      S.sales.push({
+        no: r.receipt_no, at: at.toISOString(),
+        items: [{ id: p.id, name: p.name, qty, price, cost: p.cost, unit: p.unit }],
+        total, paid: paidAmt ? [{ m: r.payment_method || 'Cash', amt: paidAmt }] : [],
+        credit: Math.max(0, total - paidAmt), customer: c ? c.id : 'c6',
+        cashier: r.cashier || S.me.name, etims: { status: 'imported', sig: '—' }
+      });
+      added++;
+    });
+    S.sales.sort((a, b) => new Date(b.at) - new Date(a.at));
+  }
+  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Imported ' + SCHEMAS[kind].label, detail: added + ' added, ' + skipped + ' skipped' });
+  parsed = null;
+  $('#importReport').innerHTML = '<div class="card" style="margin:0"><div class="empty" style="padding:20px">' +
+    '<div class="big">' + icon('circle-check') + '</div><b>' + added + ' row' + (added === 1 ? '' : 's') + ' imported</b>' +
+    '<p>' + (skipped ? skipped + ' were skipped because they already existed. ' : '') + 'The rest of the file had nothing wrong with it.</p>' +
+    '<button class="btn secondary sm" id="undoImport">Undo this import</button></div></div>';
+  refreshAll();
+  toast(added + ' imported, ' + skipped + ' skipped', 'good');
+  $('#undoImport').onclick = () => {
+    S.products = snapshot.products; S.customers = snapshot.customers; S.sales = snapshot.sales;
+    $('#importReport').innerHTML = '<div class="card" style="margin:0"><div class="empty" style="padding:20px">' +
+      '<div class="big">' + icon('upload') + '</div><b>Import undone</b>' +
+      '<p>Everything in that batch was removed. Your records are exactly as they were.</p></div></div>';
+    refreshAll();
+    toast('Import undone. Nothing was kept.', 'bad');
+  };
+  RENDER[route] && RENDER[route]();
+}
+
+$('#dropzone').onclick = () => $('#filePicker').click();
+$('#dropzone').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') $('#filePicker').click(); };
+$('#filePicker').onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(ev => $('#dropzone').addEventListener(ev, e => { e.preventDefault(); $('#dropzone').classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => $('#dropzone').addEventListener(ev, e => { e.preventDefault(); $('#dropzone').classList.remove('over'); }));
+$('#dropzone').addEventListener('drop', e => {
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+$('#importBtn').onclick = () => go('migration');
+
+/* ============================================================ export, with the shop's branding */
+function exportCSV(kind) {
+  let rows;
+  if (kind === 'sales') {
+    rows = [['Receipt', 'Date', 'Customer', 'Items', 'Total', 'Paid', 'On credit', 'Cashier', 'eTIMS']];
+    S.sales.forEach(s => rows.push([s.no, dmy(new Date(s.at)), (cust(s.customer) || {}).name || 'Walk-in',
+      s.items.map(i => i.qty + 'x ' + i.name).join('; '), s.total.toFixed(2),
+      sum(s.paid, p => p.amt).toFixed(2), (s.credit || 0).toFixed(2), s.cashier, s.etims.sig]));
+  } else if (kind === 'customers') {
+    rows = [['Name', 'Phone', 'Credit limit', 'Balance', 'Since']];
+    S.customers.filter(c => c.id !== 'c6').forEach(c => rows.push([c.name, c.phone, c.limit, c.bal, c.since]));
+  } else if (kind === 'report') {
+    rows = [['Shop', S.shop.name], ['Branch', S.shop.branch], ['KRA PIN', S.shop.kra], [],
+      ['Report', reportRange], ['Generated', dmy(now()) + ' ' + clock(now())], [],
+      ['Receipts', String(salesToday().length)], ['Gross sales', String(sum(salesToday(), s => s.total))]];
+  } else if (kind === 'audit') {
+    rows = [['When', 'Who', 'What', 'Detail']];
+    S.audit.forEach(a => rows.push([dmy(new Date(a.at)) + ' ' + clock(new Date(a.at)), a.who, a.what, a.detail]));
+  } else {
+    rows = [['Sheet', 'Note'], ['Products', S.products.length + ' rows'], ['Customers', S.customers.length + ' rows'],
+      ['Sales', S.sales.length + ' rows'], ['Shop', S.shop.name], ['KRA PIN', S.shop.kra]];
+  }
+  downloadFile('shop-yangu-' + kind + '-' + ymd(today()) + '.csv', csvOf(rows));
+  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Exported ' + kind, detail: 'CSV with shop name' });
+  toast('Exported with ' + S.shop.name + ' at the top.');
+}
+
+document.addEventListener('click', e => {
+  const x = e.target.closest('[data-export]');
+  if (!x) return;
+  if (x.dataset.export === 'pdf') {
+    toast('Opening the print sheet — choose "Save as PDF".');
+    setTimeout(() => printDoc(reportDoc(), 'Sales summary'), 300);
+  }
+  else exportCSV(x.dataset.export);
+});
+
+function reportDoc() {
+  const days = { 'Today': 0, 'This week': 6, 'This month': 29, 'This quarter': 89 }[reportRange];
+  const from = addDays(today(), -days);
+  const sel = S.sales.filter(s => new Date(s.at) >= from);
+  const gross = sum(sel, s => s.total), cogs = sum(sel, costOf);
+  const exp = S.expenses.filter(x => new Date(x.at) >= from);
+  const expTotal = sum(exp, x => x.amt);
+  return '<div style="font-size:12.5px">' + esc(reportRange) + ' · ' + sel.length + ' receipts</div>' +
+    '<h3>Sales summary</h3><table><tbody>' +
+    '<tr><td>Gross sales</td><td class="n">' + fmt2(gross) + '</td></tr>' +
+    '<tr><td>VAT included, 16%</td><td class="n">' + fmt2(gross * 16 / 116) + '</td></tr>' +
+    '<tr><td>Cost of goods sold</td><td class="n">' + fmt2(cogs) + '</td></tr>' +
+    '<tr><td><b>Gross profit</b></td><td class="n"><b>' + fmt2(gross - cogs) + '</b></td></tr>' +
+    '<tr><td>Expenses</td><td class="n">' + fmt2(expTotal) + '</td></tr>' +
+    '</tbody></table>' +
+    '<div class="ptotal"><span>Net profit</span><span class="num">' + fmt2(gross - cogs - expTotal) + '</span></div>' +
+    '<h3>Receipts</h3><table><thead><tr><th>Receipt</th><th>Date</th><th>Customer</th><th class="n">Total</th><th class="n">Credit</th></tr></thead><tbody>' +
+    sel.slice(0, 40).map(s => '<tr><td>' + esc(s.no) + '</td><td>' + dmy(new Date(s.at)) + '</td>' +
+      '<td>' + esc((cust(s.customer) || {}).name || 'Walk-in') + '</td>' +
+      '<td class="n">' + fmt(s.total) + '</td><td class="n">' + (s.credit ? fmt(s.credit) : '—') + '</td></tr>').join('') +
+    '</tbody></table>';
+}
+
+/* after an import, every list that reads the same data is redrawn */
+function refreshAll() {
+  renderInventory(); renderCustomers(); renderSales(); renderDashboard();
+  RENDER[route] && RENDER[route]();
+}
+
+/* ============================================================ boot */
+const RENDER = {
+  dashboard: renderDashboard, pos: renderPOS, inventory: renderInventory,
+  purchases: renderPurchases, sales: renderSales, customers: renderCustomers,
+  migration: () => {}, reports: renderReports, etims: renderEtims,
+  settings: renderSettings, audit: renderAudit
+};
+
+let saleFilter = 'All';
+function renderSales() {
+  /* sales users see only the receipts they took */
+  const mine = isOwner() ? S.sales : S.sales.filter(s => s.cashier === S.me.name);
+  const list = mine.filter(s => {
+    if (saleFilter === 'All') return true;
+    if (saleFilter === 'On credit') return s.credit > 0;
+    return s.paid.some(p => p.m === saleFilter);
+  }).slice(0, 40);
+
+  const counts = { 'All': mine.length, 'Cash': 0, 'M-Pesa': 0, 'On credit': 0 };
+  mine.forEach(s => { s.paid.forEach(p => { if (counts[p.m] != null) counts[p.m]++; }); if (s.credit) counts['On credit']++; });
+  $('#salesChips').innerHTML = Object.keys(counts).map(k =>
+    '<button class="chip" data-salefilter="' + k + '" aria-pressed="' + (saleFilter === k) + '">' + k +
+    ' <span style="opacity:.6">' + counts[k] + '</span></button>').join('');
+
+  if (!list.length) {
+    $('#salesList').innerHTML = '<div class="empty"><div class="big">' + icon('receipt') + '</div>' +
+      '<b>No receipts like that</b><p>Nothing matches this filter. The till is where new ones come from.</p>' +
+      '<button class="btn secondary sm" data-goto="pos">Open the till</button></div>';
+    return;
+  }
+
+  $('#salesList').innerHTML = list.map(s => {
+    const c = cust(s.customer);
+    return '<div class="rowcard"><div class="top"><div style="min-width:0">' +
+      '<div class="ttl">' + esc(s.no) + ' <span class="hint">' + clock(new Date(s.at)) + '</span></div>' +
+      '<div class="meta">' + dmy(new Date(s.at)) + ' · ' + esc(c ? c.name : 'Walk-in') + ' · ' + esc(s.cashier) + '</div></div>' +
+      '<div class="amt">' + fmt(s.total) + '</div></div>' +
+      '<div class="bottom"><div style="display:flex;gap:5px;flex-wrap:wrap;min-width:0">' +
+      s.paid.map(p => '<span class="pill info">' + esc(p.m) + '</span>').join('') +
+      (s.credit ? '<span class="pill low">' + fmt(s.credit) + ' credit</span>' : '') +
+      (s.etims.status === 'sent' ? '<span class="pill ok">Signed</span>' : '<span class="pill neutral">Imported</span>') +
+      '</div><div style="display:flex;gap:4px">' +
+      '<button class="btn ghost sm" data-printsale="' + esc(s.no) + '" title="Print this receipt">' + icon('printer', 'sm') + '</button>' +
+      '<button class="btn ghost sm" data-receipt="' + esc(s.no) + '">Receipt</button></div></div></div>';
+  }).join('');
+}
+
+document.addEventListener('click', e => {
+  const p = e.target.closest('[data-printsale]');
+  if (p) {
+    const s = S.sales.find(x => x.no === p.dataset.printsale);
+    if (s) printDoc(receiptDoc(s), 'Sales receipt');
+    return;
+  }
+  const r = e.target.closest('[data-receipt]');
+  if (r) {
+    const s = S.sales.find(x => x.no === r.dataset.receipt);
+    if (!s) return;
+    go('pos');
+    showReceipt(s, 0);
+    setTimeout(() => $('#receiptCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    return;
+  }
+  const f = e.target.closest('[data-salefilter]');
+  if (f) { saleFilter = f.dataset.salefilter; renderSales(); }
+});
+
+/* greeting line and a sensible first route */
+paintNav();
+renderInventory();
+renderDashboard();
+const start = (location.hash || '').replace('#', '');
+go(start && navFor(S.me.role).some(g => g.items.some(i => i[0] === start)) ? start : 'dashboard');
+</script>
+</body>
+</html>
