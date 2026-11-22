@@ -75,3 +75,12 @@ jobs:
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.path }}
         run: node smoke.mjs
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-check-report
+          path: .github/site-preview/report.txt
+          if-no-files-found: warn
+          retention-days: 7

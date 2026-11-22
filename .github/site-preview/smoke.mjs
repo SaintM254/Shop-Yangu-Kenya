@@ -11,7 +11,16 @@
  * a missing font, a broken internal link, or a 404.
  */
 
+import fs from 'node:fs';
 import { chromium } from 'playwright-core';
+
+const REPORT = 'report.txt';
+const notes = [];
+const note = (line) => {
+  notes.push(line);
+  console.log(line);
+  fs.writeFileSync(REPORT, notes.join('\n') + '\n');
+};
 
 const BASE = (process.env.SITE_URL || '').replace(/\/$/, '');
 if (!BASE) {
@@ -34,15 +43,26 @@ const launchOptions = {
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 };
 
-const browser = await chromium.launch(launchOptions);
 const failures = [];
 const fail = (msg) => {
   failures.push(msg);
-  console.error(`  ✗ ${msg}`);
+  note(`FAIL ${msg}`);
 };
+
+let browser;
+try {
+  browser = await chromium.launch(launchOptions);
+  note(`launched ${process.env.CHROME_PATH || 'bundled chromium'}`);
+} catch (e) {
+  fail(`could not launch a browser: ${e.message.split('\n')[0]}`);
+  note(e.stack || String(e));
+  console.log(`::error title=Live site check::${e.message.split('\n')[0]}`);
+  process.exit(1);
+}
 
 for (const page of PAGES) {
   for (const width of WIDTHS) {
+    try {
     const ctx = await browser.newContext({
       viewport: { width, height: width < 500 ? 780 : 900 },
       deviceScaleFactor: 1,
@@ -135,13 +155,17 @@ for (const page of PAGES) {
     );
     if (realErrors.length) fail(`${page.name}@${width}: ${realErrors.slice(0, 3).join(' | ')}`);
 
-    console.log(`  ok ${page.name}@${width}px`);
+    note(`ok ${page.name}@${width}px`);
     await ctx.close();
+    } catch (e) {
+      fail(`${page.name}@${width}: threw — ${e.message.split('\n')[0]}`);
+      note((e.stack || '').split('\n').slice(0, 4).join('\n'));
+    }
   }
 }
 
 /* The prototype must actually boot: its JS builds the whole app. */
-{
+try {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 780 } });
   const tab = await ctx.newPage();
   await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
@@ -155,21 +179,26 @@ for (const page of PAGES) {
   const bodyText = await tab.evaluate(() => document.body.innerText);
   if (!/Payment Goal|Total Balance/i.test(bodyText)) fail('prototype: dashboard did not paint');
   if (!/Ksh/.test(bodyText)) fail('prototype: no money rendered — the app did not boot');
-  console.log(`  ok prototype booted (${railItems} rail links, ${tabItems} tabs)`);
+  note(`ok prototype booted (${railItems} rail links, ${tabItems} tabs)`);
   await ctx.close();
+} catch (e) {
+  fail(`prototype: threw — ${e.message.split('\n')[0]}`);
 }
 
 /* And the back-link into the site must be present. */
-{
+try {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 780 } });
   const tab = await ctx.newPage();
   await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
   const back = await tab.locator('#protoBar a[href="index.html"]').count();
   if (back !== 1) fail('prototype: back-to-site link missing');
+  note('ok back-to-site link present');
   await ctx.close();
+} catch (e) {
+  fail(`prototype back-link: threw — ${e.message.split('\n')[0]}`);
 }
 
-await browser.close();
+await browser.close().catch(() => {});
 
 /* Annotations survive to the run's Checks tab even though the raw log lives in
    blob storage, which makes a failure readable from the API and the UI. */
@@ -178,8 +207,8 @@ for (const f of failures) {
   console.log(`::error title=Live site check::${one}`);
 }
 
+note(`\n--- summary: ${failures.length} failure(s) ---`);
 if (failures) {
-  console.error(`\n${failures.length} check(s) failed against ${BASE}`);
   process.exit(1);
 }
-console.log(`\nAll browser checks passed against ${BASE}`);
+note(`\nAll browser checks passed against ${BASE}`);
