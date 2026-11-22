@@ -84,7 +84,7 @@ for (const page of PAGES) {
       await tab.fill('#email', 'owner@shopyangu.co.ke');
       await tab.fill('#password', 'Owner@2026');
       await tab.click('#loginBtn');
-      await tab.locator('#loginDone a[href="/dashboard/"]').click();
+      await tab.locator('#loginDone a[href$="dashboard/"]').click();
       await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
       await tab.waitForTimeout(300);
     }
@@ -169,7 +169,9 @@ for (const page of PAGES) {
           .map((a) => a.getAttribute('href'))
       );
       if (cta.length < 2) fail(`home: expected a sign-up CTA, found ${cta.length}`);
-      if (cta.some((h) => h !== '/login/')) fail(`home: a sign-up CTA points at ${cta.join(', ')}`);
+      if (cta.some((h) => !/^(?:\.\.\/|\.\/|\/Shop-Yangu-Kenya\/)?login\/$/.test(h))) {
+        fail(`home: a sign-up CTA points at ${cta.join(', ')}`);
+      }
       const fileLinks = await tab.evaluate(() =>
         [...document.querySelectorAll('a[href]')]
           .map((a) => a.getAttribute('href'))
@@ -198,7 +200,7 @@ for (const page of PAGES) {
       await tab.click('#loginBtn');
       await tab.waitForTimeout(200);
       if (await tab.locator('#loginDone').isHidden()) fail('login: the demo credentials did not sign in');
-      if (!(await tab.locator('#loginDone a[href="/dashboard/"]').count())) fail('login: no way through to the shop');
+      if (!(await tab.locator('#loginDone a[href$="dashboard/"]').count())) fail('login: no way through to the shop');
     }
 
     /* Every internal link on the page must resolve. */
@@ -253,7 +255,7 @@ try {
   await tab.fill('#password', 'Owner@2026');
   await tab.click('#loginBtn');
   await tab.waitForTimeout(250);
-  await tab.locator('#loginDone a[href="/dashboard/"]').click();
+  await tab.locator('#loginDone a[href$="dashboard/"]').click();
   await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
   await tab.waitForTimeout(500);
   const booted = await tab.locator('#rail .navlink').count();
@@ -274,7 +276,7 @@ try {
   await tab.fill('#email', 'owner@shopyangu.co.ke');
   await tab.fill('#password', 'Owner@2026');
   await tab.click('#loginBtn');
-  await tab.locator('#loginDone a[href="/dashboard/"]').click();
+  await tab.locator('#loginDone a[href$="dashboard/"]').click();
   await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
   await tab.waitForTimeout(400);
 
