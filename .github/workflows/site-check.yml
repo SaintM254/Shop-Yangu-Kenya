@@ -82,6 +82,15 @@ jobs:
           code=$?
           echo "exit=$code"
 
+          # Nothing at all reached the log? Then the step's own environment is
+          # where it stopped, before the first line of the report. Say where.
+          if [ ! -f report.txt ] || [ ! -s report.txt ]; then
+            echo "::error title=Live site::the browser check produced no report (exit $code) — see the run log"
+            if [ -f ../../.github/site-preview/smoke.mjs ]; then
+              node --check ../../.github/site-preview/smoke.mjs || true
+            fi
+          fi
+
           if [ -f report.txt ]; then
             cat report.txt
             { echo "### Live site check"; echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
