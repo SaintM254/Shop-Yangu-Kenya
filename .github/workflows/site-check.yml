@@ -74,7 +74,25 @@ jobs:
         working-directory: .github/site-preview
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.path }}
-        run: node smoke.mjs
+        # The raw log of a failed step lives in blob storage that is not always
+        # readable, so surface the report as annotations and in the summary too.
+        run: |
+          set +e
+          node smoke.mjs
+          code=$?
+          echo "exit=$code"
+
+          if [ -f report.txt ]; then
+            cat report.txt
+            { echo "### Live site check"; echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            grep -E '^(FAIL|--- summary)' report.txt | head -12 | while IFS= read -r line; do
+              echo "::error title=Live site::$(printf '%s' "$line" | cut -c1-800)"
+            done
+          else
+            echo "::error title=Live site::smoke.mjs produced no report (exit $code)"
+          fi
+
+          exit $code
 
       - name: Upload the report
         if: always()
