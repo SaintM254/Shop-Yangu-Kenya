@@ -35,9 +35,9 @@ const launchOptions = {
 };
 
 const browser = await chromium.launch(launchOptions);
-let failures = 0;
+const failures = [];
 const fail = (msg) => {
-  failures++;
+  failures.push(msg);
   console.error(`  ✗ ${msg}`);
 };
 
@@ -76,10 +76,36 @@ for (const page of PAGES) {
 
     if (status < 200 || status >= 400) fail(`${page.name}@${width}: HTTP ${status}`);
 
-    const overflow = await tab.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth
-    );
-    if (overflow > 0) fail(`${page.name}@${width}: scrolls sideways by ${overflow}px`);
+    const overflow = await tab.evaluate(() => {
+      const doc = document.documentElement;
+      const over = doc.scrollWidth - doc.clientWidth;
+      if (over <= 0) return { over: 0, culprits: [] };
+      const limit = doc.clientWidth;
+      const culprits = [];
+      for (const el of document.querySelectorAll('body *')) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (r.right > limit + 1) {
+          const id = el.id ? '#' + el.id : '';
+          const cls = el.className && typeof el.className === 'string'
+            ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.')
+            : '';
+          culprits.push({
+            sel: el.tagName.toLowerCase() + id + cls,
+            right: Math.round(r.right),
+            width: Math.round(r.width),
+          });
+        }
+      }
+      // shallowest offenders first — they are usually the cause
+      return { over, culprits: culprits.slice(0, 6) };
+    });
+    if (overflow.over > 0) {
+      const detail = overflow.culprits
+        .map((c) => `${c.sel} (w ${c.width}, right ${c.right})`)
+        .join('; ');
+      fail(`${page.name}@${width}: scrolls sideways by ${overflow.over}px — ${detail}`);
+    }
 
     if (page.name !== 'prototype') {
       const fontOk = await tab.evaluate(() => document.fonts.check('700 16px "Public Sans"'));
@@ -109,7 +135,7 @@ for (const page of PAGES) {
     );
     if (realErrors.length) fail(`${page.name}@${width}: ${realErrors.slice(0, 3).join(' | ')}`);
 
-    console.log(`  ${failures ? '·' : '✓'} ${page.name}@${width}px`);
+    console.log(`  ok ${page.name}@${width}px`);
     await ctx.close();
   }
 }
@@ -123,7 +149,7 @@ for (const page of PAGES) {
   const bodyText = await tab.evaluate(() => document.body.innerText);
   if (navItems < 3) fail(`prototype: navigation did not render (${navItems} items)`);
   if (!/Ksh/.test(bodyText)) fail('prototype: no money rendered — the app did not boot');
-  console.log(`  · prototype booted (${navItems} nav items)`);
+  console.log(`  ok prototype booted (${navItems} nav items)`);
   await ctx.close();
 }
 
@@ -139,8 +165,15 @@ for (const page of PAGES) {
 
 await browser.close();
 
+/* Annotations survive to the run's Checks tab even though the raw log lives in
+   blob storage, which makes a failure readable from the API and the UI. */
+for (const f of failures) {
+  const one = f.replace(/\r?\n/g, ' ').slice(0, 900);
+  console.log(`::error title=Live site check::${one}`);
+}
+
 if (failures) {
-  console.error(`\n${failures} check(s) failed against ${BASE}`);
+  console.error(`\n${failures.length} check(s) failed against ${BASE}`);
   process.exit(1);
 }
 console.log(`\nAll browser checks passed against ${BASE}`);
