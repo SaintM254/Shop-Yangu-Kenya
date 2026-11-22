@@ -1761,8 +1761,6 @@ function renderCustomer() {
           ? esc(c.phone || 'no phone') + ' · limit ' + fmt(c.limit) + ' · owes ' + fmt(c.bal)
           : 'Walk-in · no balance kept, so no credit') + '</div>' +
       '</div>' +
-      '<div class="amt" style="font-size:12px;font-weight:600;color:var(--ink-muted)">' +
-        (isWalk ? icon('user-round', 'sm') : icon('box', 'sm')) + '</div>' +
       '</div>' +
       '<div class="bottom" style="display:flex;gap:7px;margin-top:9px">' +
         '<button class="btn secondary sm" id="pickCustomer">' + icon('search', 'sm') + 'Change</button>' +
