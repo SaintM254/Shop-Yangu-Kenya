@@ -194,11 +194,18 @@ const wrap = (fill) =>
 fs.writeFileSync(path.join(root, 'src/logo/mark.svg'), wrap('currentColor'));
 fs.writeFileSync(path.join(root, 'src/logo/mark-syk.svg'), wrap('#287094'));
 fs.writeFileSync(path.join(root, 'src/logo/mark-cream.svg'), wrap('#FFF8E1'));
+fs.writeFileSync(path.join(root, 'src/logo/mark-white.svg'), wrap('#FFFFFF'));
+
+/* The browser tab wears the mark alone — no plate, no tile: a tab strip is
+   already a surface. It is white by default, as asked; and because a white
+   mark vanishes on a light tab strip, the file carries one media query that
+   turns it to the shop's blue in a light browser. Same artwork, no
+   background either way, visible on both. */
 fs.writeFileSync(
   path.join(root, 'src/logo/favicon.svg'),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -70 ${W + 140} ${H + 140}">` +
-    `<rect x="-70" y="-70" width="${W + 140}" height="${H + 140}" rx="150" fill="#FFF8E1"/>` +
-    `<path fill="#287094" d="${d}"/></svg>\n`
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -40 ${W + 80} ${H + 80}">` +
+    `<style>path{fill:#fff}@media (prefers-color-scheme:light){path{fill:#287094}}</style>` +
+    `<path fill="#FFFFFF" d="${d}"/></svg>\n`
 );
 console.log(`mark: ${W} × ${H}, ${(d.length / 1024).toFixed(1)} kB of path`);
 
@@ -215,12 +222,15 @@ if (Resvg) {
   const render = (markup, width) =>
     new Resvg(markup, { fitTo: { mode: 'width', value: width } }).render().asPng();
 
+  /* The home-screen icon is the one place a plate is allowed: iOS puts the
+     artwork straight onto the wallpaper, and a white bag would vanish on a
+     light one. Navy, the brand's dark, with the mark in cream. */
   fs.writeFileSync(
     path.join(root, 'src/logo/apple-touch-icon.png'),
     render(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -70 ${W + 140} ${H + 140}">` +
-        `<rect x="-70" y="-70" width="${W + 140}" height="${H + 140}" fill="#FFF8E1"/>` +
-        `<path fill="#287094" d="${d}"/></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 ${W + 120} ${H + 120}">` +
+        `<rect x="-60" y="-60" width="${W + 120}" height="${H + 120}" fill="#023246"/>` +
+        `<path fill="#FFF8E1" d="${d}"/></svg>`,
       180
     )
   );

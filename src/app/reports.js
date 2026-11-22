@@ -97,10 +97,17 @@ $('#etimsTest').onclick = () => {
 
 /* ============================================================ settings */
 function renderSettings() {
+  /* A name is editable where it is shown: the row is the field. Renaming a
+     person renames them on the audit trail and on their receipts from then
+     on, which is why the rename is written to the audit trail itself. */
   $('#userList').innerHTML = S.users.map(u =>
-    '<div class="setrow"><div><div class="t">' + esc(u.name) + (u.id === 'u1' ? ' <span class="pill info">You</span>' : '') + '</div>' +
-    '<div class="d">' + esc(u.phone) + ' · ' + (u.role === 'owner' ? 'Owner' : 'Sales') + ' · last seen ' + esc(u.last) + '</div></div>' +
-    '<div style="display:flex;gap:6px;align-items:center">' +
+    '<div class="setrow"><div style="min-width:0;flex:1">' +
+      '<input class="field field--name" data-user-name="' + u.id + '" value="' + esc(u.name) + '" ' +
+        'aria-label="Name of ' + esc(u.name) + '" autocomplete="off" />' +
+      '<div class="d" style="margin-top:5px">' + esc(u.phone) + ' · ' + (u.role === 'owner' ? 'Owner' : 'Sales') +
+        ' · last seen ' + esc(u.last) + '</div></div>' +
+    '<div style="display:flex;gap:6px;align-items:center;flex:none">' +
+    (u.id === 'u1' ? '<span class="pill info">You</span>' : '') +
     (u.active ? '<span class="pill ok">Active</span>' : '<span class="pill neutral">Off</span>') +
     (u.id === 'u1' ? '' : '<button class="btn ghost sm" data-toggleuser="' + u.id + '">' + (u.active ? 'Disable' : 'Enable') + '</button>') +
     '</div></div>').join('');
@@ -115,6 +122,37 @@ function renderSettings() {
   $('#setPhone').value = S.shop.phone;
   $('#setKra').value = S.shop.kra;
 }
+
+/* Renaming: saved when the field loses focus or Enter is pressed, not on
+   every keystroke — a name is not saved half-typed. */
+function commitUserName(input, quiet) {
+  const u = S.users.find(x => x.id === input.dataset.userName);
+  if (!u) return;
+  const next = input.value.trim().replace(/\s+/g, ' ');
+  if (next.length < 2) {
+    input.value = u.name;
+    toast('A name needs at least two letters.', 'bad');
+    return;
+  }
+  if (next === u.name) return;
+  const was = u.name;
+  u.name = next;
+  /* the signed-in person is the same person, so the rail and the audit trail follow */
+  if (S.me.name === was) S.me.name = next;
+  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Renamed user', detail: was + ' → ' + next });
+  input.value = next;
+  if (!quiet) toast('Saved. ' + was + ' is now ' + next + '.', 'good');
+  paintNav();
+}
+document.addEventListener('change', (e) => {
+  const input = e.target.closest('[data-user-name]');
+  if (input) commitUserName(input);
+});
+document.addEventListener('keydown', (e) => {
+  const input = e.target.closest('[data-user-name]');
+  if (input && e.key === 'Enter') { e.preventDefault(); input.blur(); }
+});
+
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-toggle]');
   if (t) {

@@ -16,8 +16,14 @@
    `kind` picks the summary band and the column widths. */
 
 const PDF = (() => {
-  const PAGE = { w: 595.28, h: 841.89 }; /* A4 in points */
-  const M = 40; /* margin */
+  /* A4, 80mm thermal, and nothing else. Both are point sizes: PDF measures in
+     1/72 inch, so 80mm is 226.77pt and the printable width of a thermal roll
+     is 72mm (204.09pt) — 4mm of margin on each side, which is what the
+     printers actually need. */
+  const SHEETS = {
+    a4: { w: 595.28, h: 841.89, m: 40 },
+    receipt: { w: 226.77, h: 841.89, m: 11.34 },
+  };
   const CREAM = [1, 0.973, 0.882]; /* #FFF8E1 */
   const PAPER = [1, 1, 1];
   const SAND = [0.906, 0.867, 0.71]; /* #E7DDB5 */
@@ -106,32 +112,35 @@ const PDF = (() => {
   }
 
   /* A page of the document: header, footer, and the usable band between. */
+  /* The header of an A4 document: the mark on the paper itself, then the shop
+     on the left and the document's own name on the right. No tinted square
+     behind the mark — the artwork is a solid shape and does not need a plate,
+     and a plate reads as a stuck-on badge in print. */
   function newPage(state, doc) {
+    const { w, h, m } = state.sheet;
     state.page++;
     const p = { ops: [], index: state.page };
     state.pages.push(p);
     state.ops = p.ops;
-    rect(state, 0, 0, PAGE.w, PAGE.h, CREAM);
-    /* header: logo tile, shop, document title, date */
-    rect(state, M, PAGE.h - M - 42, 42, 42, [0.996, 0.984, 0.93]);
-    const lw = 25;
+    rect(state, 0, 0, w, h, CREAM);
+    const lw = 21;
     const lh = doc.logo ? lw * doc.logo.h / doc.logo.w : lw;
-    drawLogo(state, doc.logo, M + (42 - lw) / 2, PAGE.h - M - 42 + (42 - lh) / 2, lw);
-    text(state, doc.shop, M + 54, PAGE.h - M - 14, 13, NAVY, true);
-    text(state, doc.branch + '  ·  ' + doc.phone + '  ·  PIN ' + doc.kra, M + 54, PAGE.h - M - 29, 7.6, MUTED, false);
-    text(state, doc.title, PAGE.w - M, PAGE.h - M - 12, 15, NAVY, true, 'right');
-    text(state, doc.subtitle || '', PAGE.w - M, PAGE.h - M - 27, 8, MUTED, false, 'right');
-    text(state, doc.stamp, PAGE.w - M, PAGE.h - M - 38, 7.6, MUTED, false, 'right');
-    line(state, M, PAGE.h - M - 52, PAGE.w - M, PAGE.h - M - 52, SAND, 1);
-    state.y = PAGE.h - M - 52;
+    if (doc.logo) drawLogo(state, doc.logo, m, h - m - lh, lw, SYK);
+    text(state, doc.shop, m + lw + 10, h - m - 9, 13, NAVY, true);
+    text(state, doc.branch + '  ·  ' + doc.phone + '  ·  PIN ' + doc.kra, m + lw + 10, h - m - 23, 7.6, MUTED, false);
+    if (doc.stamp) text(state, doc.stamp, m + lw + 10, h - m - 34, 7.4, MUTED, false);
+    text(state, doc.title, w - m, h - m - 9, 14, NAVY, true, 'right');
+    text(state, doc.subtitle || '', w - m, h - m - 23, 8, MUTED, false, 'right');
+    line(state, m, h - m - 42, w - m, h - m - 42, SAND, 1);
+    state.y = h - m - 42;
     return p;
   }
 
   function footer(state, doc, total) {
-    const n = state.pages.length;
-    line(state, M, M + 18, PAGE.w - M, M + 18, SAND, 1);
-    text(state, doc.shop + ' · ' + doc.branch, M, M + 6, 7.2, MUTED, false);
-    text(state, 'Page ' + state.page + ' of ' + total, PAGE.w - M, M + 6, 7.2, MUTED, false, 'right');
+    const { w, h, m } = state.sheet;
+    line(state, m, m + 18, w - m, m + 18, SAND, 1);
+    text(state, doc.shop + ' · ' + doc.branch, m, m + 6, 7.2, MUTED, false);
+    text(state, 'Page ' + state.page + ' of ' + total, w - m, m + 6, 7.2, MUTED, false, 'right');
   }
 
   /* ---- cells ---------------------------------------------------------- */
@@ -150,33 +159,73 @@ const PDF = (() => {
     return (neg ? '-' : '') + out;
   }
 
+  /* The column header is the label alone — "VALUE AT COST", not
+     "VALUE AT COST (KSH)". The table already ends in money columns that are
+     right-aligned and grouped, and the note under the title says the figures
+     are shillings; repeating KSH nine times across a header is noise that
+     also costs the width the product name needs. */
+  /* The label alone. "COST (KSH)", "SELLING (KSH)", "STOCK VALUE (KSH)" is
+     the same unit three times in a row, and it doubles the width of the
+     header for nothing: one line above the table says it once. */
   function headerLabel(c) {
-    const base = String(c.label || '').toUpperCase();
-    return c.type === 'money' && !/KSH/.test(base) ? base + ' (KSH)' : base;
+    return String(c.label || '').toUpperCase();
   }
 
+  /* What a cell actually prints. Money is grouped, so 13,940 is measured as
+     six characters and its column is sized for the comma. */
   function cellText(v, c) {
     if (v === null || v === undefined) return '';
     if (typeof v === 'number') return c.type === 'money' ? group(v) : String(Math.round(v));
+    /* A number that arrives as a string — from an import, or a form field —
+       is still a number to the reader. Group it when the column is money. */
+    if (c.type === 'money' && v !== '' && /^-?\d+(\.\d+)?$/.test(String(v).trim())) {
+      return group(String(v).trim());
+    }
     return String(v);
+  }
+
+  /* A cell that does not fit is shortened in the middle of its own words, not
+     by chopping the tail: "Running..." tells a shopkeeper nothing, "Running
+     low" tells them to reorder. Two chars give way to one ellipsis. */
+  function shorten(raw, size, bold, max) {
+    const s = clean(raw);
+    if (textW(s, size, bold) <= max) return s;
+    if (max < 12) return fit(s, size, bold, max);
+    const words = s.split(' ');
+    if (words.length > 1) {
+      /* drop whole words from the end while they are the cheapest thing to lose */
+      let out = s;
+      while (out.includes(' ') && textW(out, size, bold) > max) out = out.slice(0, out.lastIndexOf(' '));
+      if (textW(out, size, bold) >= max * 0.45) return out;
+    }
+    return fit(s, size, bold, max);
   }
 
   /* Column widths follow the content: the widest of the header and its cells,
      with a floor so a short column still reads, and a ceiling so one long
      product name cannot squeeze the numbers. Then the whole table is scaled
      to the page. */
-  function sizeColumns(cols, rows, usable) {
+  function sizeColumns(cols, rows, usable, startX) {
     const HEAD = 6.8, CELL = 8.4;
+    /* A header is measured on its longest word, because it wraps: four lines
+       of "VALUE AT COST" is a narrower column than one line of it. */
+    const headNeeds = (c) => {
+      const label = headerLabel(c);
+      const longest = label.split(' ').reduce((m, w) => Math.max(m, textW(w, HEAD, true)), 0);
+      return Math.max(longest + 10, Math.min(textW(label, HEAD, true) + 10, 74));
+    };
     const natural = cols.map((c, i) => {
-      let w = textW(headerLabel(c), HEAD, true) + 12;
+      let w = headNeeds(c);
       for (let r = 0; r < Math.min(rows.length, 200); r++) {
-        w = Math.max(w, textW(cellText(rows[r][i], c), CELL, c.type === 'strong') + 12);
+        w = Math.max(w, Math.min(textW(cellText(rows[r][i], c), CELL, c.type === 'strong') + 14, c.max || 190));
       }
-      return Math.max(30, Math.min(w, c.max || 190));
+      return Math.max(34, Math.min(w, c.max || 190));
     });
     const total = natural.reduce((t, w) => t + w, 0);
-    const scale = total > usable ? usable / total : Math.min(1.3, usable / total);
-    let x = M;
+    /* Scale down to the page when the columns do not fit. Never scale a
+       readable table up to fill it: white space on the right is correct. */
+    const scale = total > usable ? usable / total : 1;
+    let x = startX;
     return cols.map((c, i) => {
       const w = natural[i] * scale;
       const col = { ...c, w, x };
@@ -222,11 +271,11 @@ const PDF = (() => {
     return out.join(' ');
   }
 
-  function drawLogo(state, logo, x, y, w) {
+  function drawLogo(state, logo, x, y, w, color) {
     if (!logo || !logo.d) return;
     const h = w * logo.h / logo.w;
     push(state, 'q',
-      rgb(SYK), 'rg',
+      rgb(color || SYK), 'rg',
       (w / logo.w).toFixed(4), '0 0', (h / logo.h).toFixed(4), x.toFixed(2),
       y.toFixed(2), 'cm',
       '1 0 0 -1 0', logo.h.toFixed(2), 'cm',
@@ -237,12 +286,15 @@ const PDF = (() => {
   /* ---- the document ---- */
 
   function build(doc) {
+    if (doc.sheet === 'receipt') return buildReceipt(doc);
     const state = layout();
-    const usable = PAGE.w - M * 2;
-    const cols = sizeColumns(doc.columns, doc.rows, usable);
-    const rowH = 15;
-    const headerH = 19;
-    const bandBottom = M + 34;
+    state.sheet = SHEETS.a4;
+    const { w: PW, h: PH, m: PM } = state.sheet;
+    const usable = PW - PM * 2;
+    const cols = sizeColumns(doc.columns, doc.rows, usable, PM);
+    const rowH = 15.5;
+    const headerH = 25;
+    const bandBottom = PM + 34;
 
     /* Page 1: the header, then the summary band and the meta block. */
     newPage(state, doc);
@@ -251,11 +303,11 @@ const PDF = (() => {
     if (doc.meta && doc.meta.length) {
       const boxH = 46;
       const top = state.y - 14;
-      rect(state, M, top - boxH, PAGE.w - M * 2, boxH, NAVY);
+      rect(state, PM, top - boxH, usable, boxH, NAVY);
       const n = Math.min(doc.meta.length, 4);
-      const cellW = (PAGE.w - M * 2) / n;
+      const cellW = usable / n;
       doc.meta.slice(0, 4).forEach(([label, value], i) => {
-        const cx = M + cellW * i + 14;
+        const cx = PM + cellW * i + 14;
         text(state, String(label).toUpperCase(), cx, top - 16, 6.6, [0.62, 0.78, 0.86], true);
         text(state, value, cx, top - 33, 13.5, WHITE, true);
       });
@@ -263,39 +315,69 @@ const PDF = (() => {
     }
 
     if (doc.note) {
-      text(state, doc.note, M, state.y, 8, MUTED, false);
+      text(state, doc.note, PM, state.y, 8, MUTED, false);
       state.y -= 16;
     }
 
     /* keep one row + header together, so a table never strands its header */
     function drawTableHeader() {
       const y = state.y;
-      rect(state, M, y - headerH, PAGE.w - M * 2, headerH, SYK);
+      rect(state, PM, y - headerH, usable, headerH, SYK);
       cols.forEach((c) => {
         const align = c.align === 'right' ? 'right' : 'left';
-        const tx = align === 'right' ? c.x + c.w - 6 : c.x + 6;
-        text(state, fit(headerLabel(c), 6.8, true, c.w - 10), tx, y - headerH + 6, 6.8, WHITE, true, align);
+        const tx = align === 'right' ? c.x + c.w - 7 : c.x + 7;
+        const lines = wrapLabel(headerLabel(c), c.w - 14);
+        const top = y - headerH + 10.6;
+        lines.forEach((ln, i) => {
+          text(state, ln, tx, top - i * LINE, 6.8, WHITE, true, align);
+        });
       });
       state.y = y - headerH;
     }
 
+    /* Split a header onto as many lines as it needs, never more than three,
+       wrapping on whole words: "VALUE AT COST (KSH)" becomes three short
+       lines instead of a column title cut off at "VALUE AT...". */
+    const LINE = 7.9;
+    function wrapLabel(label, max) {
+      if (textW(label, 6.8, true) <= max) return [label];
+      const lines = [];
+      let cur = '';
+      for (const w of label.split(' ')) {
+        const next = cur ? cur + ' ' + w : w;
+        if (cur && textW(next, 6.8, true) > max) {
+          lines.push(cur);
+          cur = w;
+        } else cur = next;
+      }
+      if (cur) lines.push(cur);
+      /* still too wide on its own (a long single word): fit it, do not spill */
+      return lines.slice(0, 3).map((ln) => (textW(ln, 6.8, true) > max ? fit(ln, 6.8, true, max) : ln));
+    }
+
     function drawRow(row, i) {
       const y = state.y;
-      if (i % 2 === 1) rect(state, M, y - rowH, PAGE.w - M * 2, rowH, PAPER);
+      if (i % 2 === 1) rect(state, PM, y - rowH, usable, rowH, PAPER);
       cols.forEach((c, ci) => {
         const raw = cellText(row[ci], c);
         const align = c.align === 'right' ? 'right' : 'left';
         const tx = align === 'right' ? c.x + c.w - 6 : c.x + 6;
         const bold = c.type === 'strong';
-        text(state, fit(raw, 8.4, bold, c.w - 12), tx, y - rowH + 4.6, 8.4, bold ? NAVY : INK, bold, align);
+        text(state, shorten(raw, 8.4, bold, c.w - 14), tx, y - rowH + 4.6, 8.4, bold ? NAVY : INK, bold, align);
       });
-      line(state, M, y - rowH, PAGE.w - M, y - rowH, [0.94, 0.91, 0.83], 0.5);
+      line(state, PM, y - rowH, PW - PM, y - rowH, [0.94, 0.91, 0.83], 0.5);
       state.y = y - rowH;
     }
 
     function newPageWithHeader() {
       newPage(state, doc);
       drawTableHeader();
+    }
+
+    /* Say the unit once, quietly, right where the numbers start. */
+    if (doc.columns.some((c) => c.type === 'money')) {
+      text(state, 'Amounts in Kenya shillings (Ksh)', PW - PM, state.y - 10, 6.6, MUTED, false, 'right');
+      state.y -= 14;
     }
 
     drawTableHeader();
@@ -308,11 +390,11 @@ const PDF = (() => {
     if (doc.totals && doc.totals.length) {
       if (state.y - 30 < bandBottom) newPageWithHeader();
       state.y -= 6;
-      line(state, M, state.y, PAGE.w - M, state.y, SAND, 1);
+      line(state, PM, state.y, PW - PM, state.y, SAND, 1);
       state.y -= 16;
       /* A summary block, right-aligned to the page edge, so it never lies
          under the wrong column. */
-      const rx = PAGE.w - M;
+      const rx = PW - PM;
       const lx = rx - 250;
       doc.totals.forEach(([label, value, strong]) => {
         const y = state.y;
@@ -332,9 +414,181 @@ const PDF = (() => {
     return assemble(doc, state.pages);
   }
 
+  /* ---- an 80mm till slip ------------------------------------------------
+
+     This is not a report shrunk to fit a roll. A thermal receipt is read
+     standing up, at arm's length, with a thumb over the bottom third: it is
+     one column, it is centred, and it is set in the order a customer checks
+     it — who sold to me, what did I buy, what did I pay, what do I owe, and
+     the KRA signature that makes it a receipt.
+
+     The sheet is 226.77pt wide (80mm). The printer cannot reach the outer
+     4mm, so everything lives inside 204pt. The height is sized to the content
+     after it is drawn, then written into every page box: no roll is wasted on
+     an A4 page with a slip at the top. Long baskets break across pages
+     rather than shrink the type. */
+
+  const RCPT = {
+    w: SHEETS.receipt.w,
+    pad: 11.34,          /* 4mm, the unprintable edge of the roll */
+    line: 4.6,           /* the height of a dashed tear rule */
+  };
+
+  function buildReceipt(doc) {
+    const state = layout();
+    const W = RCPT.w;
+    const P = RCPT.pad;
+    const IN = P + 5;
+    const RIGHT = W - IN;
+    const CW = W - IN * 2;          /* the column text is set in */
+    const DASH = [0.78, 0.75, 0.62];
+    const page = { ops: [], index: 1 };
+    state.pages.push(page);
+    state.ops = page.ops;
+
+    let y = 0;                       /* measured down from the top, flipped at the end */
+
+    const center = (str, size, color, bold) =>
+      text(state, str, W / 2, -y, size, color, bold, 'center');
+
+    const dashed = () => {
+      y += 6;
+      const step = 3.2;
+      for (let x = IN; x < RIGHT; x += step * 2) {
+        line(state, x, -y, Math.min(x + step, RIGHT), -y, DASH, 0.6);
+      }
+      y += 7;
+    };
+
+    /* Two columns on one line: what on the left, what it cost on the right. */
+    const pair = (left, right, opts) => {
+      const o = opts || {};
+      const size = o.size || 8.2;
+      const bold = !!o.bold;
+      text(state, fit(left, size, bold, CW - (o.rightW || 62) - 4), IN, -y, size, o.color || INK, bold);
+      text(state, right, RIGHT, -y, size, o.color || INK, bold, 'right');
+      y += o.lead || size + 3.4;
+    };
+
+    /* ---- the shop ---- */
+    const logoW = 34;
+    if (doc.logo) {
+      const logoH = logoW * doc.logo.h / doc.logo.w;
+      y = 2;
+      drawLogo(state, doc.logo, (W - logoW) / 2, -(y + logoH), logoW, NAVY);
+      y += logoH + 7;
+    }
+    y += 4;
+    center(doc.shop, 11.5, NAVY, true);
+    y += 13;
+    center(doc.branch, 7.6, MUTED, false);
+    y += 10.5;
+    center(doc.phone + '  ·  KRA PIN ' + doc.kra, 7.6, MUTED, false);
+    y += 12;
+
+    dashed();
+
+    /* ---- the receipt's own name and number ---- */
+    center('TAX INVOICE / RECEIPT', 7.4, SYK, true);
+    y += 11;
+    center('No ' + doc.receiptNo, 9.2, NAVY, true);
+    y += 12;
+    center(doc.dateLine, 7.6, MUTED, false);
+    y += 11;
+    if (doc.customer) {
+      pair('Customer', doc.customer, { size: 7.8, rightW: 96 });
+    }
+    if (doc.cashier) {
+      pair('Served by', doc.cashier, { size: 7.8, rightW: 96, color: MUTED });
+    }
+
+    dashed();
+
+    /* ---- what was bought ---- */
+    pair('ITEM', 'AMOUNT', { size: 6.4, bold: true, color: MUTED, lead: 10, rightW: 56 });
+    (doc.lines || []).forEach((l) => {
+      /* the name on its own line, then the arithmetic underneath, indented:
+         a 72mm column cannot hold "Cooking oil 2L × 2 @ 1,000" on one line
+         without shrinking it past readable */
+      text(state, fit(l.name, 8.2, true, CW), IN, -y, 8.2, INK, true);
+      y += 9.6;
+      text(state, l.qty + ' x ' + l.price, IN, -y, 7.4, MUTED, false);
+      text(state, l.amount, RIGHT, -y, 8.2, INK, false, 'right');
+      y += 11.4;
+    });
+
+    dashed();
+
+    /* ---- what it adds up to ---- */
+    (doc.amounts || []).forEach((a) => {
+      if (a.rule) {
+        y += 1.5;
+        line(state, IN, -y, RIGHT, -y, DASH, 0.6);
+        y += 7;
+      }
+      pair(a.label, a.value, {
+        size: a.strong ? 10.4 : 8.2,
+        bold: !!a.strong,
+        color: a.strong ? NAVY : a.tone === 'credit' ? MUTED : INK,
+        lead: a.strong ? 16 : 12,
+        rightW: 84,
+      });
+    });
+
+    /* ---- what is still owed ---- */
+    if (doc.credit) {
+      dashed();
+      const boxH = 30;
+      rect(state, IN, -(y + boxH), CW, boxH, [0.996, 0.973, 0.91]);
+      strokeRect(state, IN, -(y + boxH), CW, boxH, SAND, 0.8);
+      text(state, 'ON CREDIT', IN + 7, -(y + 10), 6.4, MUTED, true);
+      text(state, doc.credit, IN + 7, -(y + 21), 10, NAVY, true);
+      text(state, 'Payable on the account', RIGHT - 7, -(y + 21), 6.6, MUTED, false, 'right');
+      y += boxH + 9;
+    }
+
+    /* ---- the KRA signature: the line that makes it a valid tax invoice ---- */
+    dashed();
+    center('KRA eTIMS', 6.4, MUTED, true);
+    y += 9.5;
+    center(doc.sig || '', 6.6, MUTED, false);
+    y += 9;
+    if (doc.verify) center(doc.verify, 6.4, MUTED, false);
+
+    if (doc.thanks) {
+      y += 13;
+      center(doc.thanks, 7.8, SYK, true);
+    }
+
+    y += 16;
+
+    /* Everything above was measured from the top down, because that is how a
+       slip is laid out. PDF counts from the bottom up, so the whole stream is
+       wrapped in one flip: `1 0 0 -1 0 H cm` puts local (x, y) at page
+       (x, H - y). One transform, applied once, at the end. */
+    const H = Math.ceil(y);
+    /* No mirror: the drawing above already negated y, so the stream is in
+       PDF's own up-is-positive space once it is lifted by the page height. */
+    page.ops = [
+      'q',
+      '1 0 0 1 0 ' + H.toFixed(2) + ' cm',
+      '1 1 1 rg',
+      '0 0 ' + W.toFixed(2) + ' ' + H.toFixed(2) + ' re f',
+      ...page.ops,
+      'Q',
+    ];
+
+    state.pages.forEach((pg) => { pg.h = H; });
+    return assemble(doc, state.pages, { w: W, h: H });
+  }
+
   /* ---- file assembly ---- */
 
-  function assemble(doc, pages) {
+  function assemble(doc, pages, sheet) {
+    /* A receipt is one page of its own height; a report is A4, page after
+       page. `sheet` is passed only by the receipt writer. */
+    const W = sheet ? sheet.w : SHEETS.a4.w;
+    const H = sheet ? sheet.h : SHEETS.a4.h;
     const objects = []; /* 1-based */
     const add = (body) => {
       objects.push(body);
@@ -357,8 +611,8 @@ const PDF = (() => {
 
     pages.forEach((p, i) => {
       const res = '<< /Font << /F1 ' + fontRegular + ' 0 R /F2 ' + fontBold + ' 0 R >> >>';
-      add('<< /Type /Page /Parent ' + pagesObj + ' 0 R /MediaBox [0 0 ' + PAGE.w.toFixed(2) + ' ' +
-        PAGE.h.toFixed(2) + '] /Resources ' + res + ' /Contents ' + (firstContent + i) + ' 0 R >>');
+      add('<< /Type /Page /Parent ' + pagesObj + ' 0 R /MediaBox [0 0 ' + W.toFixed(2) + ' ' +
+        H.toFixed(2) + '] /Resources ' + res + ' /Contents ' + (firstContent + i) + ' 0 R >>');
     });
 
     const kids = pages.map((p, i) => (firstPage + i) + ' 0 R').join(' ');

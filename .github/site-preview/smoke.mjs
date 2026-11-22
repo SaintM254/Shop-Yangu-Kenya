@@ -37,6 +37,7 @@ const PAGES = [
   { path: '/spec/', name: 'spec' },
   { path: '/login/', name: 'login' },
   { path: '/dashboard/', name: 'app', needsSignIn: true },
+  { path: '/import/', name: 'import', needsSignIn: true },
   { path: '/no-such-counter/', name: '404' },
 ];
 
@@ -181,6 +182,47 @@ for (const page of PAGES) {
       if (await tab.locator('a[href$="prototype.html"]').count()) fail('home: still links to the prototype');
       const brandMark = await tab.locator('.brand__mark svg path').count();
       if (!brandMark) fail('home: the logo mark is missing from the header');
+
+      /* The mark is the artwork itself: no plate behind it, on the page or in
+         the browser tab. */
+      const plate = await tab.evaluate(() => {
+        const m = document.querySelector('.brand__mark');
+        if (!m) return 'missing';
+        const cs = getComputedStyle(m);
+        return cs.backgroundColor !== 'rgba(0, 0, 0, 0)' ? 'background ' + cs.backgroundColor : '';
+      });
+      if (plate && plate !== 'missing') fail(`home: the logo still has a ${plate}`);
+
+      /* The hero is a real photograph of a shop counter, with the headline
+         beside it, per the landing reference. */
+      const hero = await tab.evaluate(() => {
+        const img = document.querySelector('.hero__photo img');
+        if (!img) return null;
+        const r = img.getBoundingClientRect();
+        const h1 = document.querySelector('.hero__title').getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height), complete: img.complete && img.naturalWidth > 0, beside: h1.right < r.left + 40 };
+      });
+      if (!hero) fail('home: the hero has no photograph');
+      else {
+        if (!hero.complete) fail('home: the hero photograph did not load');
+        if (hero.w < 200 || hero.h < 120) fail(`home: the hero photograph is ${hero.w}x${hero.h}`);
+        if (width >= 1000 && !hero.beside) fail('home: the headline does not sit beside the hero photograph');
+      }
+    }
+
+    /* Import records: a template that downloads, and instructions in the
+       same date format the app prints. */
+    if (page.name === 'import') {
+      const body = await tab.evaluate(() => document.body.innerText);
+      if (/YYYY-MM-DD/.test(body)) fail('import: the instructions still ask for YYYY-MM-DD');
+      if (!/DD\/MM\/YY/.test(body)) fail('import: the date format is not stated');
+      const waitTpl = tab.waitForEvent('download', { timeout: 15_000 });
+      await tab.click('[data-template="products"]');
+      await tab.waitForTimeout(250);
+      await tab.click('#dlTpl');
+      const tpl = await waitTpl;
+      if (!/\.xlsx$/.test(tpl.suggestedFilename())) fail(`import: the template is ${tpl.suggestedFilename()}`);
+      note(`ok import template (${tpl.suggestedFilename()})`);
     }
 
     /* Login page: the demo account is shown, and the form refuses a wrong
@@ -216,6 +258,12 @@ for (const page of PAGES) {
       /* A link to a file is a link to yesterday's site: every address the
          visitor can click must be a folder, never a .html. */
       if (/\.html(?:[?#]|$)/.test(href)) fail(`${page.name}@${width}: a link still ends in .html — ${href}`);
+      /* 404.html is the one page written from the site root: Pages serves it
+         at whatever address was mistyped, so a relative link would resolve
+         against the wrong folder. Every other page must stay relative. */
+      if (page.name !== '404' && /^\/(?!\/)/.test(href)) {
+        fail(`${page.name}@${width}: a link starts from the domain root — ${href}`);
+      }
     }
 
     /* Fonts and stylesheets must never be blocked or 404. A miss while
@@ -360,6 +408,49 @@ try {
   await tab.click('#s-inventory [data-menu-btn]');
   const xls = await grab('#s-inventory [data-export="products"][data-format="xlsx"]');
   if (!/\.xlsx$/.test(xls.name) || xls.size < 1500) fail(`app: the Excel export is wrong (${xls.name}, ${xls.size} bytes)`);
+
+  /* A receipt is a till slip, not a report: the PDF is 80mm wide (227pt) and
+     only as long as the sale, and it carries the mark. */
+  await gotoRoute('Point of sale', 'till');
+  await tab.evaluate(() => {
+    const add = document.querySelector('#s-pos [data-add]');
+    if (add) add.click();
+  });
+  await tab.click('#completeSale');
+  await tab.waitForTimeout(400);
+  const waitSlip = tab.waitForEvent('download', { timeout: 15_000 });
+  await tab.click('#pdfReceipt');
+  const slipDl = await waitSlip;
+  const slipPath = await slipDl.path();
+  const slipBuf = fs.readFileSync(slipPath);
+  if (!/\.pdf$/.test(slipDl.suggestedFilename())) fail(`app: the receipt is not a PDF (${slipDl.suggestedFilename()})`);
+  /* MediaBox [0 0 226.77 335] — 80mm wide, and shorter than an A4 page. */
+  const box = /MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(slipBuf.toString('latin1'));
+  if (!box) fail('app: the receipt PDF has no page box');
+  else {
+    const w = Number(box[1]), h = Number(box[2]);
+    if (Math.abs(w - 226.77) > 1) fail(`app: the receipt is ${w.toFixed(1)}pt wide, not 80mm (226.8pt)`);
+    if (h > 820) fail(`app: the receipt is ${h.toFixed(0)}pt tall — it was laid out for A4`);
+  }
+  note(`ok receipt slip (${slipDl.suggestedFilename()}, ${Math.round(slipBuf.length / 1024)} kB, ${box ? Math.round(Number(box[1])) + 'x' + Math.round(Number(box[2])) + 'pt' : '?'})`);
+
+  /* Settings: a person's name is editable, and renaming the owner renames
+     them in the rail without a reload. */
+  await gotoRoute('Settings', 'settings');
+  if (!(await tab.locator('[data-user-name]').count())) fail('app: user names are not editable in Settings');
+  const field = tab.locator('[data-user-name="u2"]');
+  await field.fill('Otieno Were (Till 1)');
+  await field.blur();
+  await tab.waitForTimeout(250);
+  const kept = await tab.inputValue('[data-user-name="u2"]');
+  if (kept !== 'Otieno Were (Till 1)') fail(`app: the renamed user came back as "${kept}"`);
+
+  /* The mark in the rail goes to the dashboard. It must never sign anyone out. */
+  await gotoRoute('Audit log', 'audit');
+  await tab.click('.railbrand');
+  await tab.waitForTimeout(350);
+  if (!/\/dashboard\/$/.test(tab.url())) fail(`app: the logo went to ${tab.url()}, not the dashboard`);
+  if (!(await tab.locator('#rail .navlink').count())) fail('app: clicking the logo signed the shop out');
 
   note(`ok app booted (${railItems} rail links, ${tabItems} tabs, ${shortDates.length} DD/MM/YY dates)`);
   note(`ok exports (${pdf.name} ${Math.round(pdf.size / 1024)} kB, ${xls.name} ${Math.round(xls.size / 1024)} kB)`);

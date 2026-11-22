@@ -282,8 +282,9 @@ batch.
 
 **Date handling is the part that goes wrong**, so it gets explicit rules:
 
-- Accept `YYYY-MM-DD` (canonical), `dd/mm/yyyy` (Kenyan convention — **never** read it as
-  `mm/dd`), and bare Excel serial integers.
+- Dates are written `DD/MM/YY` — `02/04/26` — the way every screen, receipt and report in
+  this product prints them. **Never** read that shape as `mm/dd`. `YYYY-MM-DD` and bare
+  Excel serial integers are accepted too, because Excel writes them.
 - Reject anything else **by row number, with the value shown**. Never guess.
 - A **sale** date in the future is rejected: a sale cannot happen tomorrow.
 - An **expiry** date in the future is of course allowed — do not reuse the sale rule.

@@ -2,7 +2,9 @@
   <!-- ============ side navigation, 900px and up ============ -->
   <nav class="nav" id="rail" aria-label="Main">
     <div class="railhead">
-      <a class="railbrand" href="../" aria-label="Shop Yangu Kenya — the site">
+      <!-- The mark goes to the dashboard, not out of the app. Signing out is
+           a deliberate action in the rail foot, never a mis-click on the logo. -->
+      <a class="railbrand" href="../dashboard/" data-home aria-label="Shop Yangu Kenya — dashboard">
         <span class="railbrand__mark" aria-hidden="true"><svg class="ic"><use href="#i-logo"/></svg></span>
         <span class="railbrand__text"><strong>Shop Yangu</strong><span>Kenya</span></span>
       </a>
@@ -20,13 +22,13 @@
     <button class="iconbtn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
       <svg class="ic"><use href="#i-menu"/></svg>
     </button>
-    <div class="brand">
-      <div class="brandmark"><svg class="ic"><use href="#i-store"/></svg></div>
+    <a class="brand" href="../dashboard/" data-home aria-label="Shop Yangu Kenya — dashboard">
+      <div class="brandmark"><svg class="ic"><use href="#i-logo"/></svg></div>
       <div style="min-width:0">
         <div class="brandname" id="topShopName">Shop Yangu Kenya</div>
         <div class="brandsub" id="topRole">Owner</div>
       </div>
-    </div>
+    </a>
     <div class="spacer"></div>
     <button class="iconbtn" id="bellBtn" aria-label="Notifications">
       <svg class="ic"><use href="#i-bell"/></svg>
@@ -270,7 +272,7 @@
             </button>
             <span class="menu" data-menu>
               <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
-                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+                <svg class="ic sm"><use href="#i-export"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
               </button>
               <span class="menu__pop" role="menu" data-menu-pop hidden>
                 <span class="menu__head">Stock sheet<small>One row per product</small></span>
@@ -332,7 +334,7 @@
           </div>
 <div class="pagehead__tools no-print"><span class="menu" data-menu>
               <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
-                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+                <svg class="ic sm"><use href="#i-export"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
               </button>
               <span class="menu__pop" role="menu" data-menu-pop hidden>
                 <span class="menu__head">Purchase orders<small>Suppliers, orders and what has arrived</small></span>
@@ -381,7 +383,7 @@
           <div style="display:flex;gap:8px" class="no-print">
             <span class="menu" data-menu>
               <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
-                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+                <svg class="ic sm"><use href="#i-export"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
               </button>
               <span class="menu__pop" role="menu" data-menu-pop hidden>
                 <span class="menu__head">Sales list<small>Every receipt and how it was paid</small></span>
@@ -413,7 +415,7 @@
           <div style="display:flex;gap:8px" class="no-print">
             <span class="menu" data-menu>
               <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
-                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+                <svg class="ic sm"><use href="#i-export"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
               </button>
               <span class="menu__pop" role="menu" data-menu-pop hidden>
                 <span class="menu__head">Customer sheet<small>Balances and credit limits</small></span>
@@ -459,7 +461,8 @@
           </div>
           <ol style="font-size:13px;line-height:1.7;padding-left:18px;color:var(--ink)">
             <li>Use the template for the sheet you are importing — the column names must match.</li>
-            <li>Write dates as <b>YYYY-MM-DD</b> (2026-04-01). Anything else is reported, not guessed.</li>
+            <li>Write dates as <b>DD/MM/YY</b> (01/04/26) — the same as every receipt and report. Anything else is reported, not guessed.</li>
+            <li>Leave a product's <b>SKU</b> or a sale's <b>receipt_no</b> blank and the app makes one — you never have to invent codes.</li>
             <li>Import the oldest records first: stock, then customers, then sales.</li>
           </ol>
         </div>
@@ -475,25 +478,25 @@
             <div class="setrow">
               <div><div class="t">Products / stock</div><div class="d">11 columns — opening quantity and cost</div></div>
               <button class="btn secondary sm" data-template="products">
-                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+                <svg class="ic sm"><use href="#i-download"/></svg>Download template
               </button>
             </div>
             <div class="setrow">
               <div><div class="t">Customers</div><div class="d">6 columns — opening balance and credit limit</div></div>
               <button class="btn secondary sm" data-template="customers">
-                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+                <svg class="ic sm"><use href="#i-download"/></svg>Download template
               </button>
             </div>
             <div class="setrow">
               <div><div class="t">Sales history</div><div class="d">10 columns — dated receipts, including paid and credit</div></div>
               <button class="btn secondary sm" data-template="sales">
-                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+                <svg class="ic sm"><use href="#i-download"/></svg>Download template
               </button>
             </div>
           </div>
           <p class="hint" style="margin-top:10px">
-            Excel opens these as a normal workbook with a coloured header row. If you edit them, keep the
-            header row exactly as it is and delete the sample row before saving your own data.
+            Each one opens in Excel with the header row already coloured, and a second sheet explaining every
+            column. Keep the header row as it is, delete the example row, and save as <b>CSV UTF-8</b> to import it.
           </p>
         </div>
 
@@ -553,7 +556,7 @@
           </div>
           <span class="menu" data-menu>
               <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
-                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+                <svg class="ic sm"><use href="#i-export"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
               </button>
               <span class="menu__pop" role="menu" data-menu-pop hidden>
                 <span class="menu__head">Sales report<small>The period shown on screen</small></span>
@@ -713,7 +716,7 @@
             <div><div class="t">Everything in this shop</div><div class="d">Products, customers, sales, purchases — PDF or Excel</div></div>
             <span class="menu" data-menu>
               <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
-                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+                <svg class="ic sm"><use href="#i-export"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
               </button>
               <span class="menu__pop" role="menu" data-menu-pop hidden>
                 <span class="menu__head">Everything<small>Products, customers, sales and purchases</small></span>
@@ -739,7 +742,7 @@
           </div>
           <span class="menu" data-menu>
               <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
-                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+                <svg class="ic sm"><use href="#i-export"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
               </button>
               <span class="menu__pop" role="menu" data-menu-pop hidden>
                 <span class="menu__head">Audit trail<small>Who did what, and when</small></span>
@@ -772,7 +775,7 @@
   <div class="navpanel" role="dialog" aria-modal="true" aria-label="Menu">
     <div class="navhead">
       <div style="display:flex;align-items:center;gap:10px">
-        <div class="brandmark"><svg class="ic"><use href="#i-store"/></svg></div>
+        <div class="brandmark"><svg class="ic"><use href="#i-logo"/></svg></div>
         <div>
           <strong id="drawerShopName">Shop Yangu Kenya</strong>
           <span class="who" id="drawerWho">Owner</span>

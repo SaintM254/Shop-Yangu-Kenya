@@ -331,25 +331,30 @@ const rel = (page, path) => (depth(page) ? '../' : '') + path;
 /* The 404 page is served at whatever address was mistyped, so a relative link
    in it would resolve against that wrong folder. It carries a <base> pointing
    at the site root — the one place an absolute path is the right answer. */
-const SITE_PATH = new URL(CANON).pathname;
+const SITE_PATH = new URL(CANON).pathname.replace(/\/$/, '');
+
+/* The 404 page is written from the site root rather than relatively: Pages
+   serves it at whatever address was mistyped, and it must still find the CSS.
+   This is the one page allowed to carry a root-absolute URL. */
+const siteUrl = (p) => SITE_PATH + '/' + p;
 
 function head({ title, description, page, styles }) {
-  const stylesheets = styles || [rel(page, 'styles.css')];
+  const fix = (p) => (page === '404' ? siteUrl(p) : rel(page, p));
+  const stylesheets = styles || [fix('styles.css')];
   return `<!doctype html>
 <html lang="en-KE">
 <head>
-${page === '404' ? `<base href="${SITE_PATH}" />` : ''}
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#023246" />
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
-<link rel="icon" href="${rel(page, 'favicon.svg')}" type="image/svg+xml" />
+<link rel="icon" href="${fix('favicon.svg')}" type="image/svg+xml" />
 <link rel="canonical" href="${CANON}/${page === 'index' || page === '404' ? '' : page + '/'}" />
 <meta property="og:title" content="${escapeHtml(title)}" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="website" />
-<link rel="apple-touch-icon" href="${rel(page, 'apple-touch-icon.png')}" />
+<link rel="apple-touch-icon" href="${fix('apple-touch-icon.png')}" />
 ${stylesheets.map((h) => `<link rel="stylesheet" href="${h}" />`).join('\n')}
 </head>`;
 }
@@ -365,7 +370,10 @@ function brandMark(cls) {
 
 function siteHeader(current) {
   /* Section anchors live on the home page; from any other page they need it first. */
-  const here = (href) => (href.startsWith('#') && current !== 'index' ? rel(current, '') + href : href);
+  const here = (href) => {
+    if (current === '404') return href.startsWith('#') ? siteUrl('') + href : siteUrl(href.replace(/^\.\//, ''));
+    return href.startsWith('#') && current !== 'index' ? rel(current, '') + href : href;
+  };
   const nav = [
     ['#what', 'What it does'],
     ['#start', 'Price'],
@@ -373,7 +381,7 @@ function siteHeader(current) {
   const isNav = (href) => href === current;
   return `<header class="hdr">
   <div class="wrap hdr__in">
-    <a class="brand" href="${current === 'index' ? './' : '../'}" aria-label="${escapeHtml(content.brand.name)} — home">
+    <a class="brand" href="${current === '404' ? siteUrl('') : current === 'index' ? './' : '../'}" aria-label="${escapeHtml(content.brand.name)} — home">
       ${brandMark('brand__mark')}
       <span class="brand__text">
         <span class="brand__name">${escapeHtml(content.brand.name)}</span>
@@ -388,7 +396,7 @@ function siteHeader(current) {
         )
         .join('\n      ')}
     </nav>
-    <a class="btn btn--primary btn--sm hdr__cta" href="${rel(current, 'login/')}">
+    <a class="btn btn--primary btn--sm hdr__cta" href="${current === '404' ? siteUrl('login/') : rel(current, 'login/')}">
       <span class="cta-full">Sign up / Log in</span><span class="cta-short">Log in</span>${icon('arrow', 'ic ic--sm')}
     </a>
   </div>
@@ -396,7 +404,10 @@ function siteHeader(current) {
 }
 
 function siteFooter(current) {
-  const here = (href) => (href.startsWith('#') && current !== 'index' ? rel(current, '') + href : href);
+  const here = (href) => {
+    if (current === '404') return href.startsWith('#') ? siteUrl('') + href : siteUrl(href.replace(/^\.\//, ''));
+    return href.startsWith('#') && current !== 'index' ? rel(current, '') + href : href;
+  };
   return `<footer class="ftr">
   <div class="wrap ftr__in">
     <div class="ftr__brand">
@@ -411,7 +422,7 @@ function siteFooter(current) {
         <p class="ftr__h">The system</p>
         <a href="${here('#what')}">What it does</a>
         <a href="${here('#start')}">Price and sign-up</a>
-        <a href="${rel(current, 'login/')}">Sign up / Log in</a>
+        <a href="${current === '404' ? siteUrl('login/') : rel(current, 'login/')}">Sign up / Log in</a>
       </div>
       <div>
         <p class="ftr__h">The price</p>
@@ -501,8 +512,17 @@ const receiptMock = `
   <p class="receipt__sign num">eTIMS · 1.2.156.1145.…· 8f3c · signed locally</p>
 </div>`;
 
+/* The hero: the headline on the left, a real Mombasa counter on the right.
+   The photograph is the argument — a till, an M-Pesa prompt and stock on the
+   shelf — so nothing is drawn on top of it. It dissolves into the page colour
+   at its left edge, under the words, and is cropped at the bottom, never
+   framed: a border would make it a picture on a poster instead of the shop. */
 const hero = `
 <section class="hero">
+  <div class="hero__photo">
+    <img src="hero.jpg" width="1400" height="739" fetchpriority="high" decoding="async"
+      alt="A shopkeeper at the counter, taking payment on a phone beside an M-Pesa till number, with sugar, flour and cooking oil behind him." />
+  </div>
   <div class="wrap hero__in">
     <div class="hero__copy">
       <h1 class="hero__title">${escapeHtml(content.hero.title)}</h1>
@@ -511,8 +531,24 @@ const hero = `
         <a class="btn btn--primary" href="${content.hero.primary_cta.href}">${escapeHtml(content.hero.primary_cta.label)}${icon('arrow')}</a>
         <a class="btn btn--ghost" href="${content.hero.secondary_cta.href}">${escapeHtml(content.hero.secondary_cta.label)}</a>
       </div>
-      <ul class="hero__notes">
-        ${content.hero.notes.map((n) => `<li>${icon('check', 'ic ic--sm')}${escapeHtml(n)}</li>`).join('\n        ')}
+    </div>
+  </div>
+</section>`;
+
+/* The counter itself, further down the page: the same sale, as the till shows
+   it. The hero carries the photograph and the promise; this carries the proof,
+   so a shopkeeper can see the screen before signing up for it. */
+const counterBand = `
+<section class="sec sec--dark" aria-labelledby="counter-h">
+  <div class="wrap counter">
+    <div class="counter__copy">
+      <p class="kicker">At the counter</p>
+      <h2 class="sec__title" id="counter-h">The part that used to need a second person.</h2>
+      <p class="sec__lede">Two items, a part-cash part-M-Pesa payment, and the shelf count already corrected. This is the screen a cashier works from, on the phone in their hand.</p>
+      <ul class="counter__list">
+        <li>${icon('check', 'ic ic--sm')}The M-Pesa prompt is sent from the till, so the money is confirmed, not guessed.</li>
+        <li>${icon('check', 'ic ic--sm')}Cash, M-Pesa and card split across one sale, with the shortfall on credit if needed.</li>
+        <li>${icon('check', 'ic ic--sm')}The receipt is eTIMS-signed before the customer leaves the counter.</li>
       </ul>
     </div>
     <div class="hero__art">
@@ -542,7 +578,7 @@ const features = `
   <div class="wrap">
     <header class="sec__head">
       <p class="kicker">What you get</p>
-      <h2 class="sec__title">The whole shop, in one simple app.</h2>
+      <h2 class="sec__title">Everything the shop does, on one screen at a time.</h2>
       <p class="sec__lede">Everything you need to sell, get paid, keep stock straight and know how the day went — without a book, a spreadsheet, or a second person to check the M-Pesa messages.</p>
     </header>
     <div class="features">
@@ -586,6 +622,7 @@ const indexBody = `
 <main id="main">
   ${hero}
   ${statsStrip}
+  ${counterBand}
   ${features}
   ${signup}
 </main>`;
@@ -944,6 +981,9 @@ for (const [from, to] of [
 
 fs.copyFileSync(path.join(root, 'src/logo/apple-touch-icon.png'), path.join(dist, 'apple-touch-icon.png'));
 fs.copyFileSync(path.join(root, 'src/logo/og.png'), path.join(dist, 'og.png'));
+/* The hero photograph. Cropped and re-encoded from Images/Hero Image.jpg by
+   tools/make-hero.mjs, so the 746 kB original never reaches a phone. */
+fs.copyFileSync(path.join(root, 'src/hero.jpg'), path.join(dist, 'hero.jpg'));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
 
 fs.mkdirSync(path.join(dist, 'fonts'), { recursive: true });
@@ -966,8 +1006,8 @@ write(
     <h1 class="missing__title">That shelf is empty.</h1>
     <p class="missing__lede">The page you asked for is not here. The home page and the door to the shop both are.</p>
     <div class="hero__cta">
-      <a class="btn btn--primary" href="./">Back home${icon('arrow')}</a>
-      <a class="btn btn--ghost" href="login/">Sign up / Log in</a>
+      <a class="btn btn--primary" href="${siteUrl('')}">Back home${icon('arrow')}</a>
+      <a class="btn btn--ghost" href="${siteUrl('login/')}">Sign up / Log in</a>
     </div>
   </div>
 </main>`,
@@ -995,6 +1035,7 @@ const assets = new Set([
   'og.png',
   'favicon.svg',
   'logo.svg',
+  'hero.jpg',
   'fonts/PublicSans-Regular.woff2',
   'fonts/PublicSans-Medium.woff2',
   'fonts/PublicSans-SemiBold.woff2',
@@ -1017,20 +1058,21 @@ function anchorsOf(html) {
 function targetOf(href, from) {
   if (!href) return from; /* a bare #anchor stays on this page */
   if (href.startsWith('#')) return from;
-  /* 404.html carries <base> to the site root, so every link in it is already
-     relative to that root, not to wherever it was served. */
-  if (from === '404.html') {
-    const clean = href.replace(/^\.\.?\//, '').replace(/^\//, '');
+  /* 404.html is written from the site root, so strip the mount point and
+     resolve the rest as a path below it. `link` rather than `path`: path is
+     the Node module used two lines down. */
+  let link = href;
+  if (from === '404.html' && SITE_PATH && link.startsWith(SITE_PATH)) {
+    link = link.slice(SITE_PATH.length) || '/';
+  }
+  if (link.startsWith('/')) {
+    const clean = link.replace(/^\//, '');
     if (!clean) return 'index.html';
     return clean.endsWith('/') ? clean + 'index.html' : clean;
   }
-  if (href.startsWith('/')) {
-    if (href === '/') return 'index.html';
-    return href.endsWith('/') ? href.slice(1) + 'index.html' : href.slice(1);
-  }
   const dir = path.posix.dirname(from);
-  const joined = path.posix.normalize(path.posix.join(dir === '.' ? '' : dir, href));
-  if (href.endsWith('/') || joined === '.' || joined === '') {
+  const joined = path.posix.normalize(path.posix.join(dir === '.' ? '' : dir, link));
+  if (link.endsWith('/') || joined === '.' || joined === '') {
     return path.posix.join(joined === '.' ? '' : joined, 'index.html');
   }
   return joined;
@@ -1043,9 +1085,6 @@ for (const page of pages) {
   for (const m of markup.matchAll(/\s(?:href|src)="([^"]+)"/g)) {
     const href = m[1];
     if (/^(https?:|mailto:|data:|tel:)/.test(href)) continue;
-    /* <base> names the folder this site is served from; it is a URL, not a
-       file to find in dist/. */
-    if (href === SITE_PATH) continue;
     const [rawPath, hash = ''] = href.split('#');
     const target = targetOf(rawPath, page);
     if (!assets.has(target)) {
