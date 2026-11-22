@@ -75,6 +75,16 @@ const ICONS = {
     '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v18H6.5A2.5 2.5 0 0 1 4 18.5z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H19"/>',
   rocket:
     '<path d="M13.5 4.5c3 3 4.5 6.5 3 10l-3 3-4-4 3-3c.5-1.5 1-4 1-6z"/><path d="M9.5 13.5 5 18l1 1 4.5-4.5"/><circle cx="15" cy="9" r="1.2"/>',
+  smartphone:
+    '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
+  eye:
+    '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff:
+    '<path d="M10.6 5.2A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.3 4.2"/><path d="M6.5 6.6A17 17 0 0 0 2 12s3.6 7 10 7a10.6 10.6 0 0 0 4.4-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2 22 22"/>',
+  lock:
+    '<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/>',
+  mail:
+    '<rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/>',
 };
 
 const icon = (name, cls = 'ic') =>
@@ -323,9 +333,8 @@ function siteHeader(current) {
   /* Section anchors live on the home page; from any other page they need the file. */
   const here = (href) => (href.startsWith('#') && current !== 'index' ? 'index.html' + href : href);
   const nav = [
-    ['#features', 'Features'],
-    ['#screens', 'Screens'],
-    ['spec.html', 'Spec'],
+    ['#what', 'What it does'],
+    ['#start', 'Price'],
   ];
   const isNav = (href) => href === current;
   return `<header class="hdr">
@@ -345,8 +354,8 @@ function siteHeader(current) {
         )
         .join('\n      ')}
     </nav>
-    <a class="btn btn--primary btn--sm hdr__cta" href="prototype.html">
-      <span class="cta-full">Open prototype</span><span class="cta-short">Prototype</span>${icon('arrow', 'ic ic--sm')}
+    <a class="btn btn--primary btn--sm hdr__cta" href="login.html">
+      <span class="cta-full">Sign up / Log in</span><span class="cta-short">Log in</span>${icon('arrow', 'ic ic--sm')}
     </a>
   </div>
 </header>`;
@@ -365,26 +374,26 @@ function siteFooter(current) {
     </div>
     <div class="ftr__cols">
       <div>
-        <p class="ftr__h">The product</p>
-        <a href="prototype.html">Working prototype</a>
-        <a href="spec.html">Build spec</a>
-        <a href="${here('#screens')}">Every screen</a>
+        <p class="ftr__h">The system</p>
+        <a href="${here('#what')}">What it does</a>
+        <a href="${here('#start')}">Price and sign-up</a>
+        <a href="login.html">Sign up / Log in</a>
       </div>
       <div>
         <p class="ftr__h">The price</p>
         <p class="ftr__price num">${kes(content.plan.price_kes)} <span>/ ${escapeHtml(content.plan.period)}</span></p>
-        <a href="${here('#features')}">What the till does</a>
+        <p class="ftr__meta">Free for ${content.plan.trial_days} days</p>
       </div>
       <div>
-        <p class="ftr__h">Shop details</p>
+        <p class="ftr__h">Talk to us</p>
         <p class="ftr__meta">${escapeHtml(content.brand.phone)}</p>
-        <p class="ftr__meta">KRA PIN ${escapeHtml(content.brand.kra)}</p>
+        <p class="ftr__meta">${escapeHtml(content.brand.branch)}</p>
       </div>
     </div>
   </div>
   <div class="wrap ftr__base">
-    <p>Static site on GitHub Pages · built by GitHub Actions · ${dmy(new Date())}</p>
-    <p>Prototype data is sample data. Reloading resets it.</p>
+    <p>${escapeHtml(content.brand.name)} · ${escapeHtml(content.brand.branch)} · ${dmy(new Date())}</p>
+    <p>${kes(content.plan.price_kes)} / ${escapeHtml(content.plan.period)} · free for ${content.plan.trial_days} days</p>
   </div>
 </footer>`;
 }
@@ -405,40 +414,39 @@ ${siteFooter(page)}
 /* index.html                                                          */
 /* ------------------------------------------------------------------ */
 
+/* The hero picture sells the headline: a real sale, with the M-Pesa prompt
+   already answered on the customer's phone. */
 const mock = `
-<div class="mock" role="img" aria-label="A mock of the Shop Yangu Kenya dashboard: a payment goal card reading Ksh 63,130 today, a takings sparkline, and four stat cards.">
+<div class="mock" role="img" aria-label="A till mid-sale: Sugar 2kg and Cooking oil at Ksh 1,480, paid Ksh 1,480 by M-Pesa, with the STK push confirmed on the customer's phone.">
   <div class="mock__bar">
     <span class="mock__mark" aria-hidden="true">${icon('box', 'ic ic--sm')}</span>
-    <span class="mock__title">Shop Yangu</span>
-    <span class="mock__pill">Owner</span>
+    <span class="mock__title">New sale</span>
+    <span class="mock__pill">Till 1</span>
   </div>
-  <div class="card goal">
-    <div class="goal__top">
-      <span class="goal__label">Payment Goal</span>
-      <span class="goal__btn" aria-hidden="true">${icon('arrow', 'ic ic--sm')}</span>
-    </div>
-    <p class="goal__caption">Total Balance</p>
-    <p class="goal__amount num">${kes(63130)}<span>.00</span></p>
-    <p class="goal__delta num"><span class="delta delta--up">▲ 12.4%</span> vs yesterday</p>
-    ${sparkline}
-    <div class="goal__actions">
-      <span class="pillbtn pillbtn--fill">Sell now ${icon('arrow', 'ic ic--sm')}</span>
-      <span class="pillbtn">Take payment</span>
-    </div>
+
+  <ul class="ticket num">
+    <li><span>Sugar 2kg <em>× 2</em></span><span>480</span></li>
+    <li><span>Cooking oil 2L <em>× 1</em></span><span>1,000</span></li>
+  </ul>
+
+  <div class="ticket__total num"><span>Total</span><span>${kes(1480)}</span></div>
+
+  <div class="paynow">
+    <span class="paynow__label">${icon('smartphone', 'ic ic--sm')}M-Pesa</span>
+    <span class="paynow__amt num">${kes(1480)}</span>
+    <span class="paynow__ok">${icon('check', 'ic ic--sm')}Paid</span>
   </div>
-  <div class="mock__stats num">
-    <div class="mini"><span>Sales today</span><strong>63,130</strong><em class="delta delta--up">▲ 12.4%</em></div>
-    <div class="mini"><span>Gross profit</span><strong>14,902</strong><em class="delta delta--down">▼ 3.1%</em></div>
-    <div class="mini"><span>Receipts</span><strong>38</strong><em class="delta delta--up">▲ 6</em></div>
-    <div class="mini"><span>Owed to you</span><strong>21,480</strong><em class="delta delta--down">▼ 1.8%</em></div>
+
+  <div class="phone">
+    <p class="phone__top num">M-PESA</p>
+    <p class="phone__msg">Enter your M-PESA PIN to pay <b class="num">Ksh 1,480.00</b> to <b>SHOP YANGU KENYA</b>.</p>
+    <p class="phone__pin num" aria-hidden="true"><i></i><i></i><i></i><i></i></p>
+    <p class="phone__ok">${icon('check', 'ic ic--sm')}Confirmed · receipt printed</p>
   </div>
+
   <div class="mock__row">
-    <span class="tag tag--warn">Low stock</span>
-    <span class="mock__rowtext">Unga Jogoo 2kg · 4 left</span>
-  </div>
-  <div class="mock__row">
-    <span class="tag tag--ok">eTIMS</span>
-    <span class="mock__rowtext">37 sent · 1 waiting</span>
+    <span class="tag tag--ok">Stock</span>
+    <span class="mock__rowtext">Sugar 2kg 18 → 16 on the shelf</span>
   </div>
 </div>`;
 
@@ -446,7 +454,7 @@ const receiptMock = `
 <div class="receipt" aria-label="Example of a rendered receipt">
   <p class="receipt__shop">${escapeHtml(content.brand.name)}</p>
   <p class="receipt__meta">${escapeHtml(content.brand.branch)} · ${escapeHtml(content.brand.phone)}<br />KRA PIN ${escapeHtml(content.brand.kra)}</p>
-  <p class="receipt__no num">Receipt 00124 · 22/11/2026 14:08</p>
+  <p class="receipt__no num">Receipt 00124 · ${dmy(new Date())} 14:08</p>
   <ul class="receipt__lines num">
     <li><span>Sugar 2kg × 2</span><span>480</span></li>
     <li><span>Rice Pishori 5kg × 1</span><span>760</span></li>
@@ -463,7 +471,6 @@ const hero = `
 <section class="hero">
   <div class="wrap hero__in">
     <div class="hero__copy">
-      <p class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span>${escapeHtml(content.hero.eyebrow)}</p>
       <h1 class="hero__title">${escapeHtml(content.hero.title)}</h1>
       <p class="hero__lede">${escapeHtml(content.hero.lede)}</p>
       <div class="hero__cta">
@@ -497,12 +504,12 @@ const statsStrip = `
 </section>`;
 
 const features = `
-<section class="sec" id="features">
+<section class="sec" id="what">
   <div class="wrap">
     <header class="sec__head">
-      <p class="kicker">What it does</p>
-      <h2 class="sec__title">Six things the till gets right, and most systems don't.</h2>
-      <p class="sec__lede">Every one of these is a working screen in the prototype, not a roadmap promise. The constraints that shaped them: most users are on a phone, and money must be honest.</p>
+      <p class="kicker">What you get</p>
+      <h2 class="sec__title">The whole shop, in one simple app.</h2>
+      <p class="sec__lede">Everything you need to sell, get paid, keep stock straight and know how the day went — without a book, a spreadsheet, or a second person to check the M-Pesa messages.</p>
     </header>
     <div class="features">
       ${content.features
@@ -518,28 +525,26 @@ const features = `
   </div>
 </section>`;
 
-const screens = `
-<section class="sec" id="screens">
+/* The close of the advert: what it costs, and one way in. */
+const signup = `
+<section class="sec sec--close" id="start">
   <div class="wrap">
-    <header class="sec__head sec__head--split">
-      <div>
-        <p class="kicker">The product</p>
-        <h2 class="sec__title">Every screen, working.</h2>
-        <p class="sec__lede">Open the prototype and use it — the till, the stock sheet, the credit payments, the receipts. Sample data, in memory.</p>
+    <div class="close">
+      <div class="close__plan">
+        <p class="kicker">The plan</p>
+        <p class="close__price num">${kes(content.plan.price_kes)}<span> / ${escapeHtml(content.plan.period)}</span></p>
+        <p class="close__trial">Free for ${content.plan.trial_days} days. No card needed to start.</p>
+        <ul class="close__list">
+          ${content.plan.includes.map((i) => `<li>${icon('check', 'ic ic--sm')}${escapeHtml(i)}</li>`).join('\n          ')}
+        </ul>
       </div>
-      <a class="btn btn--primary btn--sm" href="prototype.html">Open the prototype ${icon('arrow', 'ic ic--sm')}</a>
-    </header>
-    <ol class="menulist">
-      ${content.screens
-        .map(
-          (s) => `<li class="menulist__row">
-        <span class="menulist__n num">${s.n}</span>
-        <span class="menulist__name">${escapeHtml(s.name)}</span>
-        <span class="menulist__aud">${escapeHtml(s.audience === 'Owner' ? 'Owner' : 'Owner + sales')}</span>
-      </li>`
-        )
-        .join('\n      ')}
-    </ol>
+      <div class="close__cta">
+        <h2 class="close__title">Start with today's sales.</h2>
+        <p class="close__lede">Sign in and ring up your first sale in a couple of minutes. If you already have a shop with us, your stock and customers are waiting.</p>
+        <a class="btn btn--primary btn--lg" href="login.html">Sign up / Log in ${icon('arrow')}</a>
+        <p class="close__fine">Owner and cashier accounts. Each cashier sees only their own till.</p>
+      </div>
+    </div>
   </div>
 </section>`;
 
@@ -548,7 +553,7 @@ const indexBody = `
   ${hero}
   ${statsStrip}
   ${features}
-  ${screens}
+  ${signup}
 </main>`;
 
 /* ------------------------------------------------------------------ */
@@ -630,6 +635,177 @@ function prototypePage() {
 }
 
 /* ------------------------------------------------------------------ */
+/* login.html — the advert's door                                      */
+/* ------------------------------------------------------------------ */
+
+function loginPage() {
+  const demo = content.demo_account;
+  const body = `<main id="main" class="auth">
+  <div class="wrap auth__in">
+    <div class="auth__aside">
+      <h1 class="auth__title">Welcome back.</h1>
+      <p class="auth__lede">Sign in to ring up a sale, check the drawer and see what sold today.</p>
+      <ul class="auth__list">
+        <li>${icon('smartphone', 'ic ic--sm')}<span>Sell with cash or M-Pesa, and split a payment across both.</span></li>
+        <li>${icon('receipt', 'ic ic--sm')}<span>Print the receipt as soon as the sale is paid.</span></li>
+        <li>${icon('box', 'ic ic--sm')}<span>Stock comes off the shelf by itself, every sale.</span></li>
+      </ul>
+      <div class="auth__demo">
+        <p class="auth__demo-h">${icon('lock', 'ic ic--sm')} Demo account</p>
+        <dl class="auth__demo-list">
+          <div><dt>Email</dt><dd class="mono">${escapeHtml(demo.email)}</dd></div>
+          <div><dt>Password</dt><dd class="mono">${escapeHtml(demo.password)}</dd></div>
+        </dl>
+        <button type="button" class="btn btn--ghost btn--sm" id="fillDemo">Fill these in for me</button>
+      </div>
+    </div>
+
+    <div class="auth__card">
+      <form class="auth__form" id="loginForm" novalidate>
+        <div class="field-group">
+          <label class="label" for="email">Email address</label>
+          <div class="inputwrap">
+            ${icon('mail', 'ic ic--sm')}
+            <input class="field" id="email" name="email" type="email" inputmode="email"
+                   autocomplete="username" autocapitalize="none" spellcheck="false"
+                   placeholder="you@yourshop.co.ke" required />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="label" for="password">Password</label>
+          <div class="inputwrap">
+            ${icon('lock', 'ic ic--sm')}
+            <input class="field" id="password" name="password" type="password"
+                   autocomplete="current-password" placeholder="Your password" required />
+            <button type="button" class="reveal" id="reveal" aria-label="Show password" aria-pressed="false">
+              ${icon('eye', 'ic ic--sm')}
+            </button>
+          </div>
+        </div>
+
+        <div class="auth__row">
+          <label class="check">
+            <input type="checkbox" id="remember" checked />
+            <span>Keep me signed in</span>
+          </label>
+          <span class="auth__help">Forgot your password? Call the shop owner.</span>
+        </div>
+
+        <p class="auth__error" id="loginError" role="alert" hidden></p>
+
+        <button class="btn btn--primary btn--lg btn--block" id="loginBtn" type="submit">
+          Log in${icon('arrow')}
+        </button>
+        <p class="auth__fine">Trouble signing in? The demo details are on the left.</p>
+      </form>
+
+      <div class="auth__done" id="loginDone" hidden>
+        <span class="auth__tick" aria-hidden="true">${icon('check')}</span>
+        <h2 class="auth__done-h">You're in, ${escapeHtml(demo.name.split(' ')[0])}.</h2>
+        <p class="auth__done-p" id="loginDoneP">Signed in to ${escapeHtml(demo.shop)} as ${escapeHtml(demo.role)}.</p>
+        <a class="btn btn--primary btn--lg btn--block" href="prototype.html">
+          Open the till${icon('arrow')}
+        </a>
+        <button class="btn btn--ghost btn--block" type="button" id="signOut">Sign out</button>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  var DEMO = ${JSON.stringify({ email: demo.email, password: demo.password, name: demo.name, role: demo.role, shop: demo.shop })};
+  var form = document.getElementById('loginForm');
+  var email = document.getElementById('email');
+  var password = document.getElementById('password');
+  var error = document.getElementById('loginError');
+  var done = document.getElementById('loginDone');
+  var btn = document.getElementById('loginBtn');
+
+  /* Plain checks, no regex: three layers of escaping (Python, the template
+     literal, the browser) made a backslash class unreadable and wrong. */
+  function looksLikeEmail(v) {
+    if (!v || v.indexOf(' ') !== -1) return false;
+    var parts = v.split('@');
+    if (parts.length !== 2) return false;
+    var domain = parts[1];
+    return parts[0].length > 0 && domain.indexOf('.') > 0 &&
+           domain.indexOf('.') < domain.length - 1;
+  }
+
+  function showError(msg, which) {
+    error.textContent = msg;
+    error.hidden = false;
+    [email, password].forEach(function (f) { f.setAttribute('aria-invalid', 'false'); });
+    if (which) which.setAttribute('aria-invalid', 'true');
+    (which || email).focus();
+  }
+
+  document.getElementById('fillDemo').onclick = function () {
+    email.value = DEMO.email;
+    password.value = DEMO.password;
+    error.hidden = true;
+    btn.focus();
+  };
+
+  document.getElementById('reveal').onclick = function () {
+    var showing = password.type === 'text';
+    password.type = showing ? 'password' : 'text';
+    this.setAttribute('aria-pressed', String(!showing));
+    this.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    this.innerHTML = showing
+      ? '<svg class="ic ic--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ICONS.eye}</svg>'
+      : '<svg class="ic ic--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ICONS.eyeOff}</svg>';
+    password.focus();
+  };
+
+  form.onsubmit = function (ev) {
+    ev.preventDefault();
+    error.hidden = true;
+
+    var e = email.value.trim().toLowerCase();
+    var p = password.value;
+    if (!e) return showError('Enter the email address you use for the shop.', email);
+    if (!looksLikeEmail(e)) return showError('That does not look like an email address.', email);
+    if (!p) return showError('Enter your password.', password);
+
+    if (e !== DEMO.email.toLowerCase() || p !== DEMO.password) {
+      return showError('That email and password do not match. Use the demo details shown on this page.', password);
+    }
+
+    try {
+      sessionStorage.setItem('syk-signed-in', JSON.stringify({ email: DEMO.email, name: DEMO.name, at: Date.now() }));
+    } catch (_) {}
+
+    form.hidden = true;
+    done.hidden = false;
+    document.getElementById('loginDoneP').textContent =
+      'Signed in to ' + DEMO.shop + ' as ' + DEMO.role + '.';
+    done.querySelector('a').focus();
+  };
+
+  document.getElementById('signOut').onclick = function () {
+    try { sessionStorage.removeItem('syk-signed-in'); } catch (_) {}
+    done.hidden = true;
+    form.hidden = false;
+    email.focus();
+  };
+
+  email.focus();
+})();
+</script>`;
+
+  return document({
+    title: `Log in — ${content.brand.name}`,
+    description:
+      'Sign in to Shop Yangu Kenya to take sales, send M-Pesa prompts, print receipts and see your stock and daily reports.',
+    page: 'login',
+    body,
+    bodyClass: 'page-auth',
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* write                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -658,6 +834,7 @@ write('prototype.html', prototypePage());
 
 
 write('spec.html', specPage());
+write('login.html', loginPage());
 
 fs.copyFileSync(path.join(root, 'src/styles.css'), path.join(dist, 'styles.css'));
 fs.writeFileSync(path.join(dist, 'favicon.svg'), FAVICON);

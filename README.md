@@ -9,7 +9,8 @@ This repository holds two things:
 
 | What | Where | Why it is here |
 |---|---|---|
-| **The product page** — the brief, six capability cards, and a one-line list of every screen | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
+| **The advert** — headline, what it does, the price, and one way in | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
+| **The login page** — the door the advert opens | `build.js` (`loginPage`) + `content.demo_account` | Demo credentials in one place, shown on the page |
 | **The reference prototype** — every screen, working, in one self-contained file | `shop-yangu-kenya.html` | The truth when the spec is ambiguous |
 | **The build spec** — roles, data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
 
@@ -80,7 +81,9 @@ No install step. Node 20 or newer.
 
 | To change | Edit |
 |---|---|
-| Any sentence on the product page, the screens list, the money rules, the deploy copy | `src/content.json` |
+| Any sentence on the advert — headline, body, the six promises, the price bullets | `src/content.json` |
+| The demo email or password | `demo_account` in `src/content.json` |
+| The login page's layout or behaviour | `loginPage()` in `build.js` |
 | Colours, type, spacing, layout | `src/styles.css` |
 | Page structure, icons, the spec renderer | `build.js` |
 | The spec text itself | `shop-yangu-kenya.md` (rendered to `spec.html` at build time) |
@@ -120,12 +123,28 @@ SITE_URL=https://saintm254.github.io/Shop-Yangu-Kenya CHROME_PATH=/usr/bin/googl
 
 ---
 
-## The page is deliberately short
+## The home page is an advert
 
-It ends after the screens list. The money rules, the import rules, the data model and the
-deploy guide used to sit below it; they are all still in `shop-yangu-kenya.md`, which
-`spec.html` renders in full. The landing page is the brief, what the till does, and a
-one-line index of the eleven screens — the prototype is where they are actually used.
+Its reader is a shop owner behind a counter, not the engineer who built the system. So it
+carries: the headline, the M-Pesa / stock / receipts / reports / credit story, the price,
+and one button — **Sign up / Log in**, which goes to `login.html`. Nothing else. No screen
+counts, no pixel widths, no database notes, no prototype link.
+
+All of that engineering detail still exists, one click away in `spec.html` and in the
+prototype itself; it is just not what sells a till.
+
+### Demo sign-in
+
+| | |
+|---|---|
+| Email | `owner@shopyangu.co.ke` |
+| Password | `Owner@2026` |
+
+These live in `src/content.json` under `demo_account`, are printed on the login page, and
+can be filled with one tap. The app in this repository runs entirely in the browser, so the
+page checks the pair in JavaScript and sets a `sessionStorage` flag — **it is a
+demonstration of the flow, not a security boundary.** A real deployment would post to an
+API that returns a JWT in an httpOnly cookie, as §9 of the spec describes.
 
 ## Conventions the product follows everywhere
 
