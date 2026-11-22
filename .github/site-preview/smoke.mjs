@@ -22,6 +22,16 @@ const note = (line) => {
   fs.writeFileSync(REPORT, notes.join('\n') + '\n');
 };
 
+/* A crash outside the sections' own try/catch would end the run with nothing
+   but an exit code: the summary loop never runs and the report looks clean.
+   These two keep the reason, in the report and in the log. */
+const crash = (what, err) => {
+  const detail = (err && (err.stack || err.message)) || String(err);
+  note(`CRASH ${what}: ${detail.split('\n').slice(0, 6).join(' / ')}`);
+};
+process.on('uncaughtException', (e) => { crash('uncaughtException', e); process.exit(1); });
+process.on('unhandledRejection', (e) => { crash('unhandledRejection', e); process.exit(1); });
+
 const BASE = (process.env.SITE_URL || '').replace(/\/$/, '');
 if (!BASE) {
   console.error('SITE_URL is not set');
