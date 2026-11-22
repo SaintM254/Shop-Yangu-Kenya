@@ -1,0 +1,7 @@
+# build output — produced by `node build.js`, never committed
+dist/
+
+# tooling
+node_modules/
+.DS_Store
+*.log

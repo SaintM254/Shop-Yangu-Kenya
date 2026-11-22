@@ -1,0 +1,67 @@
+# After every deploy, load the live site in a real browser and prove it.
+#
+# build.js already checks the HTML on disk (links, anchors, headings, no
+# external assets). This job checks the thing that only exists once published:
+# the pages a real browser gets back over HTTPS at 360 / 768 / 1280 px.
+#
+# It runs on the GitHub-hosted runner, which ships Chromium and Node, so it
+# installs one package and drives the system browser — no browser download.
+name: Check the live site
+
+on:
+  workflow_run:
+    workflows: ['Build and deploy site']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: URL to check
+        required: false
+        default: https://saintm254.github.io/Shop-Yangu-Kenya
+
+permissions:
+  contents: read
+  pages: read
+
+jobs:
+  smoke:
+    name: Browser smoke test
+    # Only after a real publish (push to main) — a pull request builds but does
+    # not deploy, so there would be nothing new to check.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ github.event.inputs.site_url || 'https://saintm254.github.io/Shop-Yangu-Kenya' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Install playwright-core
+        working-directory: .github/site-preview
+        run: npm install --no-save --no-fund --no-audit playwright-core@1
+
+      - name: Wait for the deploy to be served
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL/?cachebust=$i")
+            echo "attempt $i → $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "site did not answer with 200 within 5 minutes"
+          exit 1
+
+      - name: Run browser checks
+        working-directory: .github/site-preview
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node smoke.mjs
