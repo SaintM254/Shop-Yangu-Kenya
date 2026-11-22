@@ -1,0 +1,233 @@
+{
+  "brand": {
+    "name": "Shop Yangu Kenya",
+    "tagline": "Wholesale & retail management",
+    "branch": "Mombasa Branch",
+    "phone": "0722 000 111",
+    "kra": "P051234567X"
+  },
+  "plan": {
+    "price_kes": 1500,
+    "period": "month",
+    "trial_days": 14,
+    "includes": [
+      "Every screen on this page, on one account",
+      "Unlimited products, receipts and staff",
+      "KRA eTIMS signing and transmission",
+      "Excel migration, branded PDF and CSV export",
+      "Offline till that keeps selling when the signal drops"
+    ]
+  },
+  "hero": {
+    "eyebrow": "Built for Kenyan wholesalers & large retailers",
+    "title": "Sell, split the payment, keep the stock honest.",
+    "lede": "A phone-first shop system for the person at the till, not just the owner with a laptop. Take a sale across cash, M-Pesa and card, let a known customer go into credit, keep expiry and stock straight, and print a KRA eTIMS receipt that adds up to the shilling.",
+    "primary_cta": { "label": "Open the working prototype", "href": "prototype.html" },
+    "secondary_cta": { "label": "Read the build spec", "href": "spec.html" },
+    "notes": [
+      "No build step inside the prototype — one self-contained file, works offline",
+      "Sample data, in memory: reload resets it"
+    ]
+  },
+  "stats": [
+    { "value": "11", "label": "screens", "note": "every one checked at 360 px" },
+    { "value": "16%", "label": "VAT, inclusive", "note": "total × 16 / 116, never added on top" },
+    { "value": "3", "label": "payment parts", "note": "cash, M-Pesa, card on one sale" },
+    { "value": "0", "label": "floats", "note": "money is numeric(12,2), always" }
+  ],
+  "features": [
+    {
+      "icon": "wallet",
+      "title": "Split payments, honestly",
+      "body": "Up to three payment parts per sale, each with its own amount and a Fill/Rest button that inserts what is still unpaid. Overpay and the till shows change; come up short and it names the customer taking the credit."
+    },
+    {
+      "icon": "phone",
+      "title": "A till that fits a thumb",
+      "body": "Designed at 360 px first, then allowed to grow. 52 px steppers, inputmode=\"numeric\" quantity fields that select on focus, and a bottom tab bar instead of a cramped sidebar."
+    },
+    {
+      "icon": "box",
+      "title": "Stock that actually counts",
+      "body": "Quantity is a count, not a delta — the sheet says so. Quick-add chips for +1/+6/+12/+24/+48, reorder levels, expiry dates, and low/out-of-stock surfaced on the dashboard before a customer asks."
+    },
+    {
+      "icon": "users",
+      "title": "Credit with a name on it",
+      "body": "A walk-in cannot hold a balance. Shortfalls are written against a named customer, the balance is derived from sales minus payments, stored for speed, and repaired by a nightly job if the two ever disagree."
+    },
+    {
+      "icon": "upload",
+      "title": "Migration without tears",
+      "body": "Three real .xlsx templates with coloured header rows. Preview and a row-by-row validation report before a single write; three bad dates are reported as three rows, not a failed import. One press undoes the batch."
+    },
+    {
+      "icon": "shield",
+      "title": "eTIMS that never blocks the till",
+      "body": "Sign locally, transmit asynchronously, retry with backoff. Device and PIN block on its own screen, test transmission, and every signature on the receipt."
+    }
+  ],
+  "screens": [
+    {
+      "n": "01",
+      "name": "Dashboard",
+      "audience": "Owner",
+      "body": "Greeting, branch, the payment-goal card with today's takings, and four stat cards with deltas against yesterday. A week-on-week bar chart, then needs-attention: low stock, out of stock, customers near their limit.",
+      "sales": "Sales variant: my sales today, my receipts, no profit and no credit figures."
+    },
+    {
+      "n": "02",
+      "name": "Point of sale",
+      "audience": "Both",
+      "body": "Search by name or barcode, category chips, a basket with a large stepper, and per-part payment methods. Totals show subtotal, VAT included, total, and exactly one of change or goes-to-credit.",
+      "sales": "Cashiers complete sales and print; the receipt renders inline and saves as PDF from a phone."
+    },
+    {
+      "n": "03",
+      "name": "Stock",
+      "audience": "Both",
+      "body": "Products, value at cost, low stock and out of stock. Cards on a phone, a table from 760 px, both built from one array. The product sheet is the piece to get right on mobile.",
+      "sales": "Sales users see the same rows without cost or margin columns."
+    },
+    {
+      "n": "04",
+      "name": "Purchases",
+      "audience": "Both",
+      "body": "Purchase orders that move draft → ordered → received, with a Receive action that puts quantities on the shelf. Suppliers with their terms and what is owed."
+    },
+    {
+      "n": "05",
+      "name": "Sales",
+      "audience": "Both",
+      "body": "Every receipt, newest first, filterable by method and by 'on credit'. Each row prints as branded A4/PDF or reopens in the till's receipt block.",
+      "sales": "Sales users see only their own receipts, and the filter counts match what they can see."
+    },
+    {
+      "n": "06",
+      "name": "Customers",
+      "audience": "Owner",
+      "body": "Balance, credit limit and a usage bar per customer. Take payment against a balance; overpaying leaves them in credit and the UI says so. Ledger shows dated sales and payments."
+    },
+    {
+      "n": "07",
+      "name": "Import records",
+      "audience": "Owner",
+      "body": "Choose products, customers or sales history, drop a file, read the full validation report, then press Import. Opening balances and opening quantities become the real thing."
+    },
+    {
+      "n": "08",
+      "name": "Reports",
+      "audience": "Owner",
+      "body": "Today, this week, this month, this quarter. Receipts, gross sales, VAT included, cost of goods, gross profit, expenses, net profit, credit, margin — then a category breakdown and the expense list."
+    },
+    {
+      "n": "09",
+      "name": "KRA eTIMS",
+      "audience": "Owner",
+      "body": "Transmitted today, waiting to send, VAT collected this month, next filing date, device and PIN block, test transmission, and recent signatures."
+    },
+    {
+      "n": "10",
+      "name": "Settings",
+      "audience": "Owner",
+      "body": "Plan card with the price read from shop.plan_kes, shop profile that brands every receipt, users and roles, preferences for credit/SMS/offline selling, and full exports."
+    },
+    {
+      "n": "11",
+      "name": "Audit log",
+      "audience": "Owner",
+      "body": "Who did what, when, filterable. Append-only by design: no edit, no delete, no clear button anywhere in the UI."
+    }
+  ],
+  "money": {
+    "title": "The rules that keep the money honest",
+    "body": "Every figure on screen is a real sum of stored rows. Round each line to two decimals, then sum — never the other way round.",
+    "formulas": [
+      ["subtotal", "total × 100 / 116"],
+      ["vat", "total × 16 / 116"],
+      ["total", "sum(line.qty × line.unit_price)"],
+      ["paid", "sum(payments)"],
+      ["change", "max(0, paid − total)"],
+      ["credit", "max(0, total − paid)"]
+    ],
+    "cases": [
+      {
+        "title": "Paid in full",
+        "detail": "One method, blank amount means the exact total. The cashier never types the same number twice.",
+        "result": "Change Ksh 0 · Credit Ksh 0",
+        "tone": "ok"
+      },
+      {
+        "title": "Overpaid",
+        "detail": "Cash Ksh 1,000 against a Ksh 980 basket. Change is shown; credit is untouched.",
+        "result": "Change Ksh 20 · Credit Ksh 0",
+        "tone": "ok"
+      },
+      {
+        "title": "Come up short",
+        "detail": "The till asks who is taking the credit, then writes the difference to that customer's balance and decrements stock.",
+        "result": "Change Ksh 0 · Credit Ksh 180",
+        "tone": "warn"
+      },
+      {
+        "title": "Credit turned off",
+        "detail": "If the shop has 'allow credit' off, a shortfall cannot complete at all — and a walk-in can never hold a balance.",
+        "result": "Sale blocked",
+        "tone": "stop"
+      }
+    ]
+  },
+  "import_section": {
+    "templates": [
+      {
+        "sheet": "Products",
+        "columns": "sku, name, category, unit, cost_price, selling_price, opening_qty, reorder_level, expiry_date, supplier, barcode"
+      },
+      {
+        "sheet": "Customers",
+        "columns": "name, phone, credit_limit, opening_balance, since, notes"
+      },
+      {
+        "sheet": "Sales history",
+        "columns": "receipt_no, date, customer, sku, qty, unit_price, amount_paid, payment_method, cashier, notes"
+      }
+    ],
+    "rules": [
+      "Dates: accept YYYY-MM-DD, dd/mm/yyyy (the Kenyan convention — never read as mm/dd) and bare Excel serial integers.",
+      "Reject anything else by row number with the value shown. Never guess, never silently swap day and month.",
+      "A sale dated in the future is rejected; an expiry date in the future is of course fine.",
+      "An imported sale keeps its own date — it lands in that quarter's report and never in today's takings.",
+      "A duplicate receipt_no or sku is skipped, never doubled, and reported.",
+      "Failed rows are left out, the rest go in, and the report says how many of each."
+    ]
+  },
+  "data_model": {
+    "note": "Postgres. Money as numeric(12,2). Timestamps as timestamptz, business dates as plain date — a receipt belongs to a day, not an instant.",
+    "sql": "shop            (id, name, branch, phone, kra_pin, plan_kes, plan_renews_on, created_at)\nuser            (id, shop_id, name, phone unique, role enum('owner','sales'),\n                 password_hash, active, last_seen_at)\ncategory        (id, shop_id, name, position)\nproduct         (id, shop_id, sku, name, category_id, unit, cost_price, selling_price,\n                 qty, reorder_level, expiry_date, barcode, created_at, updated_at)\nsupplier        (id, shop_id, name, phone, terms, balance_owed)\npurchase_order  (id, shop_id, supplier_id, no, status, ordered_on, received_on, total)\ncustomer        (id, shop_id, name, phone, credit_limit, balance, since, notes)\nsale            (id, shop_id, receipt_no, sold_at, sold_on, customer_id, cashier_id,\n                 subtotal, vat, total, credit_amount, created_at)\nsale_line       (id, sale_id, product_id, name_snapshot, qty, unit_price,\n                 unit_cost_snapshot)\nsale_payment    (id, sale_id, method, amount)\npayment         (id, shop_id, customer_id, received_at, amount, method, user_id)\nexpense         (id, shop_id, spent_on, description, category, amount)\netims_transmission (id, sale_id, status, signature, sent_at, response)\naudit_entry     (id, shop_id, user_id, at, action, detail)",
+    "rules": [
+      "sale_line snapshots name, price and cost. Editing a product later must not rewrite history.",
+      "receipt_no is unique per shop and never reused, even after a void.",
+      "customer.balance is derived but stored — recalculated nightly and in every test.",
+      "sale.credit_amount is an explicit column so the credit figure cannot drift."
+    ]
+  },
+  "deploy": {
+    "summary": "This page is built and published by GitHub Actions. One setting has to be switched on by hand, once; after that every push to main rebuilds and redeploys.",
+    "manual_steps": [
+      {
+        "where": "Repository → Settings → Pages",
+        "action": "Under Build and deployment, set Source to GitHub Actions.",
+        "note": "This is the only manual step. Without it the workflow runs, uploads an artifact and fails at deploy."
+      }
+    ],
+    "automatic": [
+      "Every push to main runs .github/workflows/pages.yml.",
+      "ubuntu-latest + Node 24 installs nothing (zero dependencies) and runs node build.js.",
+      "The build renders index.html, resolves the internal-link check and copies the prototype and the spec into dist/.",
+      "actions/upload-pages-artifact packages dist/, actions/deploy-pages publishes it, and the run URL is printed in the step summary."
+    ]
+  },
+  "footer": {
+    "note": "Sample data in the prototype is a Mombasa wholesale shop, not lorem ipsum. Every figure derives from it, so changing the seed changes every number on screen."
+  }
+}

@@ -1,0 +1,74 @@
+# Builds the Shop Yangu Kenya site and publishes it to GitHub Pages.
+# Nothing needs installing: build.js has zero dependencies, so there is no
+# npm step, no cache to restore and nothing that can break on a registry
+# outage. `node build.js` itself fails the job if a page is missing an <h1>,
+# a link points at a file that was not built, an anchor does not exist, or
+# the site tries to load an asset it does not ship.
+name: Build and deploy site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time. Queued, not cancelled: half-published sites are worse
+# than a slightly later one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Build site
+        run: node build.js
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+          include-hidden-files: true # keeps .nojekyll in the artifact
+
+  deploy:
+    name: Deploy
+    # Pull requests build (so breakage is caught) but never publish.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Print the live URL
+        run: |
+          {
+            echo "### Published"
+            echo ""
+            echo "${{ steps.deployment.outputs.page_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
