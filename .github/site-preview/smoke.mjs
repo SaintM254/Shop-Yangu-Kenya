@@ -145,11 +145,17 @@ for (const page of PAGES) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 780 } });
   const tab = await ctx.newPage();
   await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
-  const navItems = await tab.locator('nav a, [data-go]').count();
+  /* The app paints two navs: the desktop rail (.navlink buttons, 11 entries for
+     an owner) and the phone tab bar (5). Count both, and require the money the
+     dashboard renders — that proves the shell and the first route both painted. */
+  const railItems = await tab.locator('#rail .navlink').count();
+  const tabItems = await tab.locator('#tabbar button').count();
+  if (railItems < 8) fail(`prototype: rail did not render (${railItems} links, expected 11 for an owner)`);
+  if (tabItems < 4) fail(`prototype: tab bar did not render (${tabItems} items, expected 5)`);
   const bodyText = await tab.evaluate(() => document.body.innerText);
-  if (navItems < 3) fail(`prototype: navigation did not render (${navItems} items)`);
+  if (!/Payment Goal|Total Balance/i.test(bodyText)) fail('prototype: dashboard did not paint');
   if (!/Ksh/.test(bodyText)) fail('prototype: no money rendered — the app did not boot');
-  console.log(`  ok prototype booted (${navItems} nav items)`);
+  console.log(`  ok prototype booted (${railItems} rail links, ${tabItems} tabs)`);
   await ctx.close();
 }
 
