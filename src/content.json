@@ -22,7 +22,7 @@
     "lede": "A simple shop system for managing your stock, making sales at the till (POS) and issuing receipts. Customers pay by cash, or M-Pesa. With M-Pesa, you send an STK push to their phone and they just enter their PIN, just like at the supermarket. Keep track of your stock and daily reports, and use it on your phone or laptop.",
     "primary_cta": {
       "label": "Sign up / Log in",
-      "href": "/login/"
+      "href": "login/"
     },
     "secondary_cta": {
       "label": "See what it does",

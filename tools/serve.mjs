@@ -12,6 +12,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+/* Pages serves the site from /Shop-Yangu-Kenya/, not the domain root. Set
+   SUBPATH=/Shop-Yangu-Kenya to reproduce that exactly; every link is relative,
+   so both mounts must work. */
+const base = (process.env.SUBPATH || '').replace(/\/$/, '');
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || '0.0.0.0';
 
@@ -29,6 +33,13 @@ const TYPES = {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://' + req.headers.host);
   let rel = decodeURIComponent(url.pathname);
+  if (base) {
+    if (!rel.startsWith(base + '/')) {
+      res.writeHead(302, { location: base + '/' });
+      return res.end();
+    }
+    rel = rel.slice(base.length);
+  }
   if (rel.endsWith('/')) rel += 'index.html';
   const file = path.join(root, rel);
 

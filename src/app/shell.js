@@ -58,8 +58,21 @@ const ROUTES = {
   audit: '/audit',
 };
 const ROUTE_IDS = Object.keys(ROUTES);
+
+/* Where does this site start? Pages serves it from /Shop-Yangu-Kenya/, so the
+   app must not assume the domain root. Everything below is built from this. */
+const SITE_ROOT = (() => {
+  if (location.protocol === 'file:') return '';
+  /* the folder the app is in is <root><route>/, so take the route off */
+  const parts = location.pathname.split('/').filter(Boolean);
+  parts.pop();
+  return '/' + parts.slice(0, -1).concat(['']).join('/');
+})();
+
 const idForPath = (p) => {
-  const clean = String(p || '').replace(/\/+$/, '').replace(/\/index\.html$/, '').toLowerCase();
+  let clean = String(p || '').replace(/\/+$/, '').replace(/\/index\.html$/, '');
+  if (SITE_ROOT && clean.indexOf(SITE_ROOT) === 0) clean = clean.slice(SITE_ROOT.length - 1);
+  clean = clean.toLowerCase();
   const hit = ROUTE_IDS.find((id) => ROUTES[id] === clean);
   return hit || null;
 };
@@ -74,9 +87,11 @@ function idFromHash(hash) {
 }
 
 function pathFor(id) {
-  /* When the app is opened from disk there is no server to answer /sales,
-     so stay on a hash address rather than a 404. */
-  return location.protocol === 'file:' ? '#/' + id : ROUTES[id];
+  /* When the app is opened from disk there is no server to answer /sales, so
+     stay on a hash address rather than a 404. */
+  if (location.protocol === 'file:') return '#/' + id;
+  /* A relative URL from a page at <root><route>/: ../sales/ */
+  return '..' + ROUTES[id] + '/';
 }
 
 let route = 'dashboard';
@@ -94,9 +109,7 @@ function go(id, opts) {
   paintNav();
   const url = pathFor(id);
   if (opts && opts.replace) history.replaceState({ route: id }, '', url);
-  else if (!(opts && opts.silent) && location.pathname + location.hash !== url) {
-    history.pushState({ route: id }, '', url);
-  }
+  else if (!(opts && opts.silent)) history.pushState({ route: id }, '', url);
   document.title = titleFor(id);
   if (!(opts && opts.keepScroll)) window.scrollTo({ top: 0 });
   RENDER[id] && RENDER[id]();
@@ -281,9 +294,13 @@ function sessionUser() {
 function requireSession() {
   const user = sessionUser();
   if (user) return user;
-  /* Straight to the till without signing in: send them to the door. */
-  if (location.protocol !== 'file:') location.replace('/login/?next=' + encodeURIComponent(location.pathname));
-  else location.replace('login.html');
+  /* Straight to the till without signing in: send them to the door, and bring
+     them back to the screen they asked for. */
+  if (location.protocol !== 'file:') {
+    location.replace('../login/?next=' + encodeURIComponent(location.pathname.split('/').filter(Boolean).pop()));
+  } else {
+    location.replace('../../login/index.html');
+  }
   return null;
 }
 
@@ -291,5 +308,5 @@ function signOut() {
   try {
     sessionStorage.removeItem(SIGNED_IN_KEY);
   } catch (err) {}
-  location.href = location.protocol === 'file:' ? 'login.html' : '/login/';
+  location.href = location.protocol === 'file:' ? '../../login/index.html' : '../login/';
 }
