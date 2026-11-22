@@ -29,14 +29,15 @@ if (!BASE) {
 }
 
 const WIDTHS = [360, 768, 1280];
+/* Every address is a folder. '/dashboard/' is the app, behind the demo login. */
 const PAGES = [
   // '/' is fetched and re-served with a <base> so a cached edge copy can never
   // leave us checking yesterday's markup. The rest are plain navigations.
   { path: '/', name: 'home', viaBase: true },
-  { path: '/spec.html', name: 'spec' },
-  { path: '/prototype.html', name: 'prototype' },
-  { path: '/login.html', name: 'login' },
-  { path: '/404.html', name: '404' },
+  { path: '/spec/', name: 'spec' },
+  { path: '/login/', name: 'login' },
+  { path: '/dashboard/', name: 'app', needsSignIn: true },
+  { path: '/no-such-counter/', name: '404' },
 ];
 
 const launchOptions = {
@@ -76,6 +77,18 @@ for (const page of PAGES) {
     });
     tab.on('requestfailed', (r) => errors.push('requestfailed: ' + r.url()));
 
+    /* The app is behind the demo door. Sign in first, in this context, so the
+       visit below is an ordinary navigation a real person could make. */
+    if (page.needsSignIn) {
+      await tab.goto(`${BASE}/login/`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      await tab.fill('#email', 'owner@shopyangu.co.ke');
+      await tab.fill('#password', 'Owner@2026');
+      await tab.click('#loginBtn');
+      await tab.locator('#loginDone a[href="/dashboard/"]').click();
+      await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
+      await tab.waitForTimeout(300);
+    }
+
     let status = 200;
     if (page.viaBase) {
       const fetched = await tab.request.get(`${BASE}${page.path}`, { timeout: 45_000 });
@@ -95,7 +108,8 @@ for (const page of PAGES) {
       status = res ? res.status() : 0;
     }
 
-    if (status < 200 || status >= 400) fail(`${page.name}@${width}: HTTP ${status}`);
+    const want = page.name === '404' ? 404 : 200;
+    if (status !== want) fail(`${page.name}@${width}: HTTP ${status}, expected ${want}`);
 
     const overflow = await tab.evaluate(() => {
       const doc = document.documentElement;
@@ -128,12 +142,16 @@ for (const page of PAGES) {
       fail(`${page.name}@${width}: scrolls sideways by ${overflow.over}px — ${detail}`);
     }
 
-    if (page.name !== 'prototype') {
+    {
       const fontOk = await tab.evaluate(() => document.fonts.check('700 16px "Public Sans"'));
       if (!fontOk) fail(`${page.name}@${width}: Public Sans did not load`);
 
-      const h1 = await tab.locator('h1').count();
-      if (h1 !== 1) fail(`${page.name}@${width}: expected 1 <h1>, found ${h1}`);
+      /* One heading per page. The app keeps one per screen and shows one at a
+         time, so count what is actually visible. */
+      const h1 = await tab.evaluate(() =>
+        [...document.querySelectorAll('h1')].filter((h) => h.getClientRects().length > 0).length
+      );
+      if (h1 !== 1) fail(`${page.name}@${width}: expected 1 visible <h1>, found ${h1}`);
     }
 
     /* The home page is an advert: no build notes, no screen inventory, and
@@ -151,8 +169,16 @@ for (const page of PAGES) {
           .map((a) => a.getAttribute('href'))
       );
       if (cta.length < 2) fail(`home: expected a sign-up CTA, found ${cta.length}`);
-      if (cta.some((h) => h !== 'login.html')) fail(`home: a sign-up CTA points at ${cta.join(', ')}`);
-      if (await tab.locator('a[href="prototype.html"]').count()) fail('home: still links to the prototype');
+      if (cta.some((h) => h !== '/login/')) fail(`home: a sign-up CTA points at ${cta.join(', ')}`);
+      const fileLinks = await tab.evaluate(() =>
+        [...document.querySelectorAll('a[href]')]
+          .map((a) => a.getAttribute('href'))
+          .filter((h) => /\.html(?:[?#]|$)/.test(h))
+      );
+      if (fileLinks.length) fail(`home: an address still ends in .html — ${fileLinks.slice(0, 3).join(', ')}`);
+      if (await tab.locator('a[href$="prototype.html"]').count()) fail('home: still links to the prototype');
+      const brandMark = await tab.locator('.brand__mark svg path').count();
+      if (!brandMark) fail('home: the logo mark is missing from the header');
     }
 
     /* Login page: the demo account is shown, and the form refuses a wrong
@@ -172,7 +198,7 @@ for (const page of PAGES) {
       await tab.click('#loginBtn');
       await tab.waitForTimeout(200);
       if (await tab.locator('#loginDone').isHidden()) fail('login: the demo credentials did not sign in');
-      if (!(await tab.locator('#loginDone a[href="prototype.html"]').count())) fail('login: no way through to the till');
+      if (!(await tab.locator('#loginDone a[href="/dashboard/"]').count())) fail('login: no way through to the shop');
     }
 
     /* Every internal link on the page must resolve. */
@@ -185,13 +211,15 @@ for (const page of PAGES) {
       const url = new URL(href, `${BASE}${page.path}`).toString();
       const r = await tab.request.get(url);
       if (!r.ok()) fail(`${page.name}@${width}: ${href} → ${r.status()}`);
+      /* A link to a file is a link to yesterday's site: every address the
+         visitor can click must be a folder, never a .html. */
+      if (/\.html(?:[?#]|$)/.test(href)) fail(`${page.name}@${width}: a link still ends in .html — ${href}`);
     }
 
-    /* Inline CSS/JS is what the prototype uses; only the real pages must be
-       asset-clean, so the request-failure filter is relaxed for it. */
-    /* Fonts and stylesheet must never be blocked or 404. */
+    /* Fonts and stylesheets must never be blocked or 404. A miss while
+       checking the 404 page is the point of that page. */
     const realErrors = errors.filter(
-      (e) => !/favicon\.ico/.test(e) && !/404\.html/.test(e)
+      (e) => !/favicon\.ico/.test(e) && !(page.name === '404' && /\/no-such-counter\//.test(e))
     );
     if (realErrors.length) fail(`${page.name}@${width}: ${realErrors.slice(0, 3).join(' | ')}`);
 
@@ -213,70 +241,86 @@ for (const page of PAGES) {
   }
 }
 
-/* The advert's path: home -> Sign up / Log in -> the till. Follow it once. */
+/* The advert's path: home -> Sign up / Log in -> the shop. Follow it once
+   with real clicks, at a laptop width, exactly as a customer would. */
 try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const tab = await ctx.newPage();
   await tab.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await tab.locator('a.btn', { hasText: 'Sign up / Log in' }).first().click();
-  await tab.waitForURL(/login\.html/, { timeout: 15_000 });
+  await tab.waitForURL(/\/login\/$/, { timeout: 15_000 });
   await tab.fill('#email', 'owner@shopyangu.co.ke');
   await tab.fill('#password', 'Owner@2026');
   await tab.click('#loginBtn');
   await tab.waitForTimeout(250);
-  await tab.locator('#loginDone a[href="prototype.html"]').click();
-  await tab.waitForURL(/prototype\.html/, { timeout: 15_000 });
-  await tab.waitForTimeout(400);
+  await tab.locator('#loginDone a[href="/dashboard/"]').click();
+  await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
+  await tab.waitForTimeout(500);
   const booted = await tab.locator('#rail .navlink').count();
-  if (booted < 8) fail(`path home -> login -> till: the till did not boot (${booted} links)`);
-  note(`ok path home -> login -> till (${booted} rail links after sign-in)`);
+  if (booted < 8) fail(`path home -> login -> shop: the shop did not boot (${booted} links)`);
+  note(`ok path home -> login -> shop (${booted} rail links after sign-in)`);
   await ctx.close();
 } catch (e) {
-  fail(`path home -> login -> till: ${e.message.split('\n')[0]}`);
+  fail(`path home -> login -> shop: ${e.message.split('\n')[0]}`);
 }
 
-/* The prototype must actually boot: its JS builds the whole app, the till must
-   let the cashier name the customer, and every date must read DD/MM/YY. */
+/* The shop itself: it boots, its addresses are real addresses, the rail
+   collapses, the till lets a cashier name the customer, and every date reads
+   DD/MM/YY. One context, signed in through the real form. */
 try {
-  /* The rail is the desktop nav (>=900px); on a phone only the tab bar shows.
-     Use a desktop viewport so the rail links are real, clickable targets. */
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
   const tab = await ctx.newPage();
-  await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
-  /* The app paints two navs: the desktop rail (.navlink buttons, 11 entries for
-     an owner) and the phone tab bar (5). Count both, and require the money the
-     dashboard renders — that proves the shell and the first route both painted. */
+  await tab.goto(`${BASE}/login/`, { waitUntil: 'networkidle' });
+  await tab.fill('#email', 'owner@shopyangu.co.ke');
+  await tab.fill('#password', 'Owner@2026');
+  await tab.click('#loginBtn');
+  await tab.locator('#loginDone a[href="/dashboard/"]').click();
+  await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
+  await tab.waitForTimeout(400);
+
   const railItems = await tab.locator('#rail .navlink').count();
   const tabItems = await tab.locator('#tabbar button').count();
-  if (railItems < 8) fail(`prototype: rail did not render (${railItems} links, expected 11 for an owner)`);
-  if (tabItems < 4) fail(`prototype: tab bar did not render (${tabItems} items, expected 5)`);
+  if (railItems < 8) fail(`app: rail did not render (${railItems} links, expected 11 for an owner)`);
+  if (tabItems < 4) fail(`app: tab bar did not render (${tabItems} items, expected 5)`);
   const bodyText = await tab.evaluate(() => document.body.innerText);
-  if (!/Payment Goal|Total Balance/i.test(bodyText)) fail('prototype: dashboard did not paint');
-  if (!/Ksh/.test(bodyText)) fail('prototype: no money rendered — the app did not boot');
+  if (!/Payment goal|Total Balance|Sales today/i.test(bodyText)) fail('app: dashboard did not paint');
+  if (!/Ksh/.test(bodyText)) fail('app: no money rendered — the app did not boot');
 
-  /* Click a rail link by its label, falling back to a JS click so a CSS
-     display:none at some width cannot turn into a 30 s timeout. */
-  const gotoRoute = async (label) => {
+  /* The rail collapses, and the choice survives a reload. */
+  await tab.click('#railToggle');
+  await tab.waitForTimeout(250);
+  const closed = await tab.getAttribute('#app', 'data-rail');
+  if (closed !== 'closed') fail(`app: the menu did not collapse (data-rail=${closed})`);
+  const widthClosed = await tab.evaluate(() => document.getElementById('rail').getBoundingClientRect().width);
+  await tab.reload({ waitUntil: 'networkidle' });
+  await tab.waitForTimeout(300);
+  const stillClosed = await tab.getAttribute('#app', 'data-rail');
+  if (stillClosed !== 'closed') fail('app: the collapsed menu was forgotten after a reload');
+  await tab.click('#railToggle');
+  await tab.waitForTimeout(200);
+  const widthOpen = await tab.evaluate(() => document.getElementById('rail').getBoundingClientRect().width);
+  if (!(widthClosed < widthOpen - 80)) fail(`app: collapsed rail is ${Math.round(widthClosed)}px, open is ${Math.round(widthOpen)}px`);
+
+  /* Click a rail link by its label; the address must change with it. */
+  const gotoRoute = async (label, url) => {
     await tab.evaluate((text) => {
       const b = [...document.querySelectorAll('#rail .navlink')]
         .find((el) => el.textContent.trim().toLowerCase().includes(text.toLowerCase()));
       if (b) b.click();
     }, label);
-    await tab.waitForTimeout(250);
+    await tab.waitForTimeout(300);
+    if (url && !new RegExp(url + '/$').test(tab.url())) fail(`app: ${label} did not move to /${url}/ (${tab.url()})`);
   };
 
-  /* Open the till and prove the customer control is there and usable. */
-  await gotoRoute('Point of sale');
-  if (!(await tab.locator('#posCustomer').count())) fail('prototype: till has no customer control');
-  if (!(await tab.locator('#walkInBtn').count())) fail('prototype: till has no Walk-in button');
+  await gotoRoute('Point of sale', 'till');
+  if (!(await tab.locator('#posCustomer').count())) fail('app: the till has no customer control');
 
-  /* Dates: DD/MM/YY, never a four-digit year, on the Sales screen. */
-  await gotoRoute('Sales');
+  await gotoRoute('Sales', 'sales');
   const salesText = await tab.evaluate(() => document.querySelector('#s-sales').innerText);
   const shortDates = salesText.match(/\b\d{2}\/\d{2}\/\d{2}\b/g) || [];
   const longDates = salesText.match(/\b\d{2}\/\d{2}\/\d{4}\b/g) || [];
-  if (!shortDates.length) fail('prototype: no DD/MM/YY dates found on Sales');
-  if (longDates.length) fail(`prototype: ${longDates.length} date(s) still show a 4-digit year`);
+  if (!shortDates.length) fail('app: no DD/MM/YY dates found on Sales');
+  if (longDates.length) fail(`app: ${longDates.length} date(s) still show a 4-digit year`);
 
   /* Status must read at full strength: no tinted capsule behind a pill. */
   const tintedPills = await tab.evaluate(() =>
@@ -285,34 +329,41 @@ try {
       return bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
     }).length
   );
-  if (tintedPills) fail(`prototype: ${tintedPills} pill(s) still painted a tinted background`);
-  note(`ok prototype booted (${railItems} rail links, ${tabItems} tabs, ${shortDates.length} DD/MM/YY dates)`);
-  await ctx.close();
-} catch (e) {
-  fail(`prototype: threw — ${e.message.split('\n')[0]}`);
-}
+  if (tintedPills) fail(`app: ${tintedPills} pill(s) still painted a tinted background`);
 
-/* And the back-link into the site must be present. */
-try {
-  /* The rail is the desktop nav (>=900px); on a phone only the tab bar shows.
-     Use a desktop viewport so the rail links are real, clickable targets. */
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  const tab = await ctx.newPage();
-  await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
-  const back = await tab.locator('#protoBar a[href="index.html"]').count();
-  if (back !== 1) fail('prototype: back-to-site link missing');
-  await tab.evaluate(() => {
-    const b = [...document.querySelectorAll('#rail .navlink')]
-      .find((el) => /point of sale/i.test(el.textContent));
-    if (b) b.click();
-  });
-  await tab.waitForTimeout(300);
-  fs.mkdirSync('shots', { recursive: true });
-  await tab.screenshot({ path: 'shots/prototype-till-390.png', fullPage: false, animations: 'disabled' });
-  note('ok back-to-site link present');
+  /* Every export is a menu of exactly two: a PDF and an Excel file. Both must
+     really download, from the shop's own data. */
+  await gotoRoute('Stock', 'stock');
+  const menus = await tab.locator('[data-menu]').count();
+  if (menus < 1) fail('app: no export menu on Stock');
+  await tab.click('#s-inventory [data-menu-btn]');
+  await tab.waitForTimeout(150);
+  const choices = await tab.locator('#s-inventory [data-menu-pop] button').count();
+  if (choices !== 2) fail(`app: the export menu offers ${choices} choices, expected 2`);
+  if (!(await tab.locator('#s-inventory [data-export="products"][data-format="pdf"]').count())) fail('app: no PDF export');
+  if (!(await tab.locator('#s-inventory [data-export="products"][data-format="xlsx"]').count())) fail('app: no Excel export');
+
+  const grab = async (selector) => {
+    const wait = tab.waitForEvent('download', { timeout: 15_000 });
+    await tab.click(selector);
+    const dl = await wait;
+    const file = await dl.path();
+    const size = fs.statSync(file).size;
+    return { name: dl.suggestedFilename(), size };
+  };
+  await tab.click('#s-inventory [data-menu-btn]');
+  const pdf = await grab('#s-inventory [data-export="products"][data-format="pdf"]');
+  if (!/\.pdf$/.test(pdf.name) || pdf.size < 3000) fail(`app: the PDF export is wrong (${pdf.name}, ${pdf.size} bytes)`);
+  if (pdf.size > 40_000) fail(`app: the PDF is ${pdf.size} bytes — the logo may be inlined twice`);
+  await tab.click('#s-inventory [data-menu-btn]');
+  const xls = await grab('#s-inventory [data-export="products"][data-format="xlsx"]');
+  if (!/\.xlsx$/.test(xls.name) || xls.size < 1500) fail(`app: the Excel export is wrong (${xls.name}, ${xls.size} bytes)`);
+
+  note(`ok app booted (${railItems} rail links, ${tabItems} tabs, ${shortDates.length} DD/MM/YY dates)`);
+  note(`ok exports (${pdf.name} ${Math.round(pdf.size / 1024)} kB, ${xls.name} ${Math.round(xls.size / 1024)} kB)`);
   await ctx.close();
 } catch (e) {
-  fail(`prototype back-link: threw — ${e.message.split('\n')[0]}`);
+  fail(`app: threw — ${e.message.split('\n')[0]}`);
 }
 
 await browser.close().catch(() => {});

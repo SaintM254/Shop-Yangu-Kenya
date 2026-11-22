@@ -1,0 +1,814 @@
+<div class="app" id="app" data-rail="open">
+  <!-- ============ side navigation, 900px and up ============ -->
+  <nav class="nav" id="rail" aria-label="Main">
+    <div class="railhead">
+      <a class="railbrand" href="/" aria-label="Shop Yangu Kenya — the site">
+        <span class="railbrand__mark" aria-hidden="true"><svg class="ic"><use href="#i-logo"/></svg></span>
+        <span class="railbrand__text"><strong>Shop Yangu</strong><span>Kenya</span></span>
+      </a>
+      <button class="railtoggle" id="railToggle" type="button" aria-expanded="true" aria-controls="rail"
+              aria-label="Collapse the menu" title="Collapse the menu">
+        <svg class="ic"><use href="#i-panel-left"/></svg>
+      </button>
+    </div>
+    <div class="raillinks" id="railLinks"></div>
+    <div class="railfoot" id="railFoot"></div>
+  </nav>
+
+  <!-- ============ phone top bar ============ -->
+  <div class="topbar">
+    <button class="iconbtn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
+      <svg class="ic"><use href="#i-menu"/></svg>
+    </button>
+    <div class="brand">
+      <div class="brandmark"><svg class="ic"><use href="#i-store"/></svg></div>
+      <div style="min-width:0">
+        <div class="brandname" id="topShopName">Shop Yangu Kenya</div>
+        <div class="brandsub" id="topRole">Owner</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="bellBtn" aria-label="Notifications">
+      <svg class="ic"><use href="#i-bell"/></svg>
+      <span class="dotbadge" id="bellDot"></span>
+    </button>
+  </div>
+
+  <div class="shell">
+    <main id="main">
+      <!-- ================================================== DASHBOARD -->
+      <section class="screen active" id="s-dashboard" data-title="Dashboard">
+        <div class="pagehead">
+          <div>
+            <h1 id="greeting">Karibu, Wanjiku</h1>
+            <p class="sub" id="todayLine">Thursday, 20 November 2026 · Mombasa Branch</p>
+          </div>
+          <div class="row" style="display:flex;gap:8px">
+            <button class="btn secondary sm" data-role-switch>
+              <svg class="ic sm"><use href="#i-user-round"/></svg>
+              <span id="roleSwitchLabel">Viewing as Owner</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="cols two" style="margin-top:0">
+          <div>
+            <!-- the payment goal card, as in the reference -->
+            <div class="goal">
+              <div class="ghead">
+                <div>
+                  <h2>Payment Goal</h2>
+                  <div class="sub">Total amount goal</div>
+                </div>
+                <button class="go" aria-label="Open the goal">
+                  <svg class="ic sm"><use href="#i-arrow-up-right"/></svg>
+                </button>
+              </div>
+              <div class="gbody">
+                <div class="glabel">Total Balance</div>
+                <div class="gamount num" id="goalAmount">Ksh 32,678<span class="cents">.90</span></div>
+              </div>
+              <div class="spark" id="goalSpark"></div>
+              <div class="gactions">
+                <button class="btn" data-goto="pos">
+                  Sell
+                  <svg class="ic sm"><use href="#i-arrow-up-right"/></svg>
+                </button>
+                <button class="btn secondary" data-goto="purchases">
+                  Receive
+                  <svg class="ic sm"><use href="#i-arrow-down-left"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="statgrid">
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-shopping-cart"/></svg>Sales today</div>
+                <div class="v num" id="statSales">Ksh 48,250</div>
+                <div class="f"><span class="delta up"><svg class="ic"><use href="#i-trending-up"/></svg>12.4%</span> vs yesterday</div>
+              </div>
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-wallet"/></svg>Gross profit</div>
+                <div class="v num" id="statProfit">Ksh 9,140</div>
+                <div class="f"><span class="delta down"><svg class="ic"><use href="#i-trending-down"/></svg>3.1%</span> vs yesterday</div>
+              </div>
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-receipt"/></svg>Receipts</div>
+                <div class="v num" id="statReceipts">37</div>
+                <div class="f">Average Ksh 1,304</div>
+              </div>
+              <div class="stat">
+                <div class="k"><svg class="ic"><use href="#i-credit-card"/></svg>Owed to you</div>
+                <div class="v num" id="statOwed">Ksh 61,400</div>
+                <div class="f"><span class="delta down"><svg class="ic"><use href="#i-trending-down"/></svg>8.2%</span> overdue</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>This week</h2>
+                  <div class="sub">Sales against last week</div>
+                </div>
+                <span class="pill info">7 days</span>
+              </div>
+              <div class="bars" id="weekBars"></div>
+              <div class="legend">
+                <span><i style="background:var(--syk)"></i>This week</span>
+                <span><i style="background:#A9C6D6"></i>Last week</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Needs attention</h2>
+                  <div class="sub">Stock and credit</div>
+                </div>
+              </div>
+              <div id="attention"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cols two">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Recent receipts</h2>
+                <div class="sub">The last six sales</div>
+              </div>
+              <button class="btn ghost sm" data-goto="pos">Open till</button>
+            </div>
+            <div id="recentSales"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Top movers</h2>
+                <div class="sub">By value sold this week</div>
+              </div>
+            </div>
+            <div id="topMovers"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== POINT OF SALE -->
+      <section class="screen" id="s-pos" data-title="Point of sale">
+        <div class="pagehead">
+          <div>
+            <h1>Point of sale</h1>
+            <p class="sub">Sell, split the payment, print a KRA-valid receipt.</p>
+          </div>
+          <span class="pill info" id="posBranch">Mombasa Branch</span>
+        </div>
+
+        <div class="pos">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>New sale</h2>
+                <div class="sub">Search the shelf, or pick a fast mover</div>
+              </div>
+            </div>
+            <div class="searchbox">
+              <svg class="ic"><use href="#i-search"/></svg>
+              <input class="field" id="posSearch" placeholder="Search by product or barcode" autocomplete="off" />
+            </div>
+            <div class="chips" style="margin-top:9px" id="posChips"></div>
+            <div id="posResults" style="margin-top:11px"></div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Customer</h2>
+                  <div class="sub">Who is buying — printed on the receipt</div>
+                </div>
+                <button class="btn ghost sm" id="walkInBtn">Walk-in</button>
+              </div>
+              <div id="posCustomer"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Basket</h2>
+                  <div class="sub" id="basketCount">Nothing in it yet</div>
+                </div>
+                <button class="btn ghost sm" id="clearBasket">Clear</button>
+              </div>
+              <div id="basket"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Payment</h2>
+                  <div class="sub">Split it across up to three methods</div>
+                </div>
+              </div>
+              <div class="paygrid" id="payMethods"></div>
+              <div id="payDetail" style="margin-top:10px"></div>
+
+              <div class="totals">
+                <div class="line"><span>Subtotal</span><span class="num" id="tSub">Ksh 0</span></div>
+                <div class="line"><span>VAT 16% (included)</span><span class="num" id="tVat">Ksh 0</span></div>
+                <div class="line total"><span>Total</span><span class="num" id="tTotal">Ksh 0</span></div>
+                <div class="line" id="tChangeRow" hidden><span>Change</span><span class="num" id="tChange">Ksh 0</span></div>
+                <div class="line neg" id="tCreditRow" hidden><span>Goes to credit</span><span class="num" id="tCredit">Ksh 0</span></div>
+              </div>
+
+              <button class="btn block" style="margin-top:11px;min-height:52px;font-size:16px" id="completeSale" disabled>
+                <svg class="ic"><use href="#i-circle-check"/></svg>
+                Complete sale
+              </button>
+              <p class="hint" style="text-align:center">
+                A negative balance is allowed — the customer goes into credit and it is carried forward.
+              </p>
+            </div>
+
+            <div class="card" id="receiptCard" hidden>
+              <div class="card-head">
+                <div>
+                  <h2>Receipt</h2>
+                  <div class="sub" id="receiptNo">No. —</div>
+                </div>
+                <div style="display:flex;gap:7px" class="no-print">
+                  <button class="btn secondary sm" id="printReceipt">
+                    <svg class="ic sm"><use href="#i-printer"/></svg>Print
+                  </button>
+                  <button class="btn secondary sm" id="pdfReceipt">
+                    <svg class="ic sm"><use href="#i-file-text"/></svg>PDF
+                  </button>
+                  <button class="btn secondary sm" id="xlsxReceipt">
+                    <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel
+                  </button>
+                </div>
+              </div>
+              <div class="receipt" id="receiptBody"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== INVENTORY -->
+      <section class="screen" id="s-inventory" data-title="Stock">
+        <div class="pagehead">
+          <div>
+            <h1>Stock</h1>
+            <p class="sub">What is on the shelf, what it cost, and what to reorder.</p>
+          </div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <button class="btn secondary sm" id="importBtn">
+              <svg class="ic sm"><use href="#i-upload"/></svg>Import
+            </button>
+            <span class="menu" data-menu>
+              <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+              </button>
+              <span class="menu__pop" role="menu" data-menu-pop hidden>
+                <span class="menu__head">Stock sheet<small>One row per product</small></span>
+                <button type="button" role="menuitem" data-export="products" data-format="pdf">
+                  <svg class="ic"><use href="#i-file-text"/></svg>
+                  <span><b>PDF</b><small>Designed, with the logo — ready to print</small></span>
+                </button>
+                <button type="button" role="menuitem" data-export="products" data-format="xlsx">
+                  <svg class="ic"><use href="#i-file-spreadsheet"/></svg>
+                  <span><b>Excel</b><small>One sheet, opens in Excel or Sheets</small></span>
+                </button>
+              </span>
+            </span>
+            <button class="btn sm" data-add-product>
+              <svg class="ic sm"><use href="#i-plus"/></svg>Add product
+            </button>
+          </div>
+        </div>
+
+        <div class="statgrid" style="margin-top:0">
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-boxes"/></svg>Products</div>
+            <div class="v num" id="invCount">0</div>
+            <div class="f">On the price list</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-banknote"/></svg>Stock value</div>
+            <div class="v num" id="invValue">Ksh 0</div>
+            <div class="f">At cost price</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-alert"/></svg>Low stock</div>
+            <div class="v num" id="invLow">0</div>
+            <div class="f">At or under reorder level</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-truck"/></svg>Out of stock</div>
+            <div class="v num" id="invOut">0</div>
+            <div class="f">Cannot be sold today</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="chips" id="invChips" style="margin-bottom:11px"></div>
+          <div class="searchbox" style="margin-bottom:11px">
+            <svg class="ic"><use href="#i-search"/></svg>
+            <input class="field" id="invSearch" placeholder="Search stock" autocomplete="off" />
+          </div>
+          <div id="invList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== PURCHASES -->
+      <section class="screen" id="s-purchases" data-title="Purchases">
+        <div class="pagehead">
+          <div>
+            <h1>Purchases</h1>
+            <p class="sub">Stock coming in from suppliers, and what it is owed.</p>
+          </div>
+<div class="pagehead__tools no-print"><span class="menu" data-menu>
+              <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+              </button>
+              <span class="menu__pop" role="menu" data-menu-pop hidden>
+                <span class="menu__head">Purchase orders<small>Suppliers, orders and what has arrived</small></span>
+                <button type="button" role="menuitem" data-export="purchases" data-format="pdf">
+                  <svg class="ic"><use href="#i-file-text"/></svg>
+                  <span><b>PDF</b><small>Designed, with the logo — ready to print</small></span>
+                </button>
+                <button type="button" role="menuitem" data-export="purchases" data-format="xlsx">
+                  <svg class="ic"><use href="#i-file-spreadsheet"/></svg>
+                  <span><b>Excel</b><small>One sheet, opens in Excel or Sheets</small></span>
+                </button>
+              </span>
+            </span></div>
+                    <button class="btn sm" data-new-po>
+            <svg class="ic sm"><use href="#i-plus"/></svg>New purchase order
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Purchase orders</h2>
+              <div class="sub">Draft, ordered, received</div>
+            </div>
+            <span class="pill neutral" id="poCount">0 orders</span>
+          </div>
+          <div id="poList"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Suppliers</h2>
+              <div class="sub">Who you buy from</div>
+            </div>
+          </div>
+          <div id="supplierList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== SALES LIST -->
+      <section class="screen" id="s-sales" data-title="Sales">
+        <div class="pagehead">
+          <div>
+            <h1>Sales</h1>
+            <p class="sub">Every receipt, newest first.</p>
+          </div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <span class="menu" data-menu>
+              <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+              </button>
+              <span class="menu__pop" role="menu" data-menu-pop hidden>
+                <span class="menu__head">Sales list<small>Every receipt and how it was paid</small></span>
+                <button type="button" role="menuitem" data-export="sales" data-format="pdf">
+                  <svg class="ic"><use href="#i-file-text"/></svg>
+                  <span><b>PDF</b><small>Designed, with the logo — ready to print</small></span>
+                </button>
+                <button type="button" role="menuitem" data-export="sales" data-format="xlsx">
+                  <svg class="ic"><use href="#i-file-spreadsheet"/></svg>
+                  <span><b>Excel</b><small>One sheet, opens in Excel or Sheets</small></span>
+                </button>
+              </span>
+            </span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="chips" id="salesChips" style="margin-bottom:11px"></div>
+          <div id="salesList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== CUSTOMERS -->
+      <section class="screen" id="s-customers" data-title="Customers">
+        <div class="pagehead">
+          <div>
+            <h1>Customers</h1>
+            <p class="sub">Balances, credit limits and payment history.</p>
+          </div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <span class="menu" data-menu>
+              <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+              </button>
+              <span class="menu__pop" role="menu" data-menu-pop hidden>
+                <span class="menu__head">Customer sheet<small>Balances and credit limits</small></span>
+                <button type="button" role="menuitem" data-export="customers" data-format="pdf">
+                  <svg class="ic"><use href="#i-file-text"/></svg>
+                  <span><b>PDF</b><small>Designed, with the logo — ready to print</small></span>
+                </button>
+                <button type="button" role="menuitem" data-export="customers" data-format="xlsx">
+                  <svg class="ic"><use href="#i-file-spreadsheet"/></svg>
+                  <span><b>Excel</b><small>One sheet, opens in Excel or Sheets</small></span>
+                </button>
+              </span>
+            </span>
+            <button class="btn sm" data-add-customer>
+              <svg class="ic sm"><use href="#i-plus"/></svg>Add
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="searchbox" style="margin-bottom:11px">
+            <svg class="ic"><use href="#i-search"/></svg>
+            <input class="field" id="custSearch" placeholder="Search customers" autocomplete="off" />
+          </div>
+          <div id="custList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== MIGRATION -->
+      <section class="screen" id="s-migration" data-title="Import records">
+        <div class="pagehead">
+          <div>
+            <h1>Import your records</h1>
+            <p class="sub">Bring your old stock, customers and sales across from Excel.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Before you start</h2>
+              <div class="sub">Three things make an import go through cleanly</div>
+            </div>
+          </div>
+          <ol style="font-size:13px;line-height:1.7;padding-left:18px;color:var(--ink)">
+            <li>Use the template for the sheet you are importing — the column names must match.</li>
+            <li>Write dates as <b>YYYY-MM-DD</b> (2026-04-01). Anything else is reported, not guessed.</li>
+            <li>Import the oldest records first: stock, then customers, then sales.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Templates</h2>
+              <div class="sub">Each one carries the exact columns the importer expects</div>
+            </div>
+          </div>
+          <div style="display:grid;gap:9px">
+            <div class="setrow">
+              <div><div class="t">Products / stock</div><div class="d">11 columns — opening quantity and cost</div></div>
+              <button class="btn secondary sm" data-template="products">
+                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+              </button>
+            </div>
+            <div class="setrow">
+              <div><div class="t">Customers</div><div class="d">6 columns — opening balance and credit limit</div></div>
+              <button class="btn secondary sm" data-template="customers">
+                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+              </button>
+            </div>
+            <div class="setrow">
+              <div><div class="t">Sales history</div><div class="d">10 columns — dated receipts, including paid and credit</div></div>
+              <button class="btn secondary sm" data-template="sales">
+                <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel / CSV
+              </button>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:10px">
+            Excel opens these as a normal workbook with a coloured header row. If you edit them, keep the
+            header row exactly as it is and delete the sample row before saving your own data.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Import a sheet</h2>
+              <div class="sub">A CSV file — what Excel's "Save as" produces</div>
+            </div>
+          </div>
+          <div class="segmented" id="importTarget" style="margin-bottom:11px">
+            <button aria-pressed="true" data-target="products">Products</button>
+            <button aria-pressed="false" data-target="customers">Customers</button>
+            <button aria-pressed="false" data-target="sales">Sales</button>
+          </div>
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose a CSV file">
+            <div class="big"><svg class="ic"><use href="#i-upload"/></svg></div>
+            <div style="font-weight:600;font-size:14px">Tap to choose a file, or drop it here</div>
+            <div class="hint">Up to about 5,000 rows. In Excel: File → Save as → CSV UTF-8, then drop it here.
+              Nothing is written until you press Import.</div>
+          </div>
+          <div id="importReport" style="margin-top:12px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Date-sensitive rules</h2>
+              <div class="sub">How the importer treats an old record</div>
+            </div>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Sales dated before today</div><div class="d">Kept on their own date, so last quarter's reports still balance. They never appear as today's takings.</div></div>
+            <span class="pill ok">Kept</span>
+          </div>
+          <div class="setrow">
+            <div><div class="t">A date in the future</div><div class="d">Rejected and reported by row number — a sale cannot happen tomorrow.</div></div>
+            <span class="pill out">Rejected</span>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Stock already counted</div><div class="d">Opening quantity replaces the count only if you tick "overwrite" in the import report.</div></div>
+            <span class="pill low">Asks first</span>
+          </div>
+          <div class="setrow">
+            <div><div class="t">A duplicate receipt number</div><div class="d">Skipped, never doubled — the receipt already exists.</div></div>
+            <span class="pill neutral">Skipped</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================== REPORTS -->
+      <section class="screen" id="s-reports" data-title="Reports">
+        <div class="pagehead">
+          <div>
+            <h1>Reports</h1>
+            <p class="sub">Money in, money out, and what is left.</p>
+          </div>
+          <span class="menu" data-menu>
+              <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+              </button>
+              <span class="menu__pop" role="menu" data-menu-pop hidden>
+                <span class="menu__head">Sales report<small>The period shown on screen</small></span>
+                <button type="button" role="menuitem" data-export="report" data-format="pdf">
+                  <svg class="ic"><use href="#i-file-text"/></svg>
+                  <span><b>PDF</b><small>Designed, with the logo — ready to print</small></span>
+                </button>
+                <button type="button" role="menuitem" data-export="report" data-format="xlsx">
+                  <svg class="ic"><use href="#i-file-spreadsheet"/></svg>
+                  <span><b>Excel</b><small>One sheet, opens in Excel or Sheets</small></span>
+                </button>
+              </span>
+            </span>
+        </div>
+        <div class="card">
+          <div class="chips" id="reportChips" style="margin-bottom:11px"></div>
+          <div id="reportTable"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== E-TIMS -->
+      <section class="screen" id="s-etims" data-title="KRA eTIMS">
+        <div class="pagehead">
+          <div>
+            <h1>KRA eTIMS</h1>
+            <p class="sub">Every sale signed and transmitted the way KRA requires.</p>
+          </div>
+          <span class="pill ok"><span class="dot"></span>Connected</span>
+        </div>
+
+        <div class="statgrid" style="margin-top:0">
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-badge-check"/></svg>Transmitted today</div>
+            <div class="v num" id="etimsSent">37</div>
+            <div class="f">Of 37 receipts</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-wifi-off"/></svg>Waiting to send</div>
+            <div class="v num" id="etimsQueue">0</div>
+            <div class="f">Held safely offline</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-percent"/></svg>VAT collected</div>
+            <div class="v num" id="etimsVat">Ksh 6,655</div>
+            <div class="f">16% on this month's sales</div>
+          </div>
+          <div class="stat">
+            <div class="k"><svg class="ic"><use href="#i-calendar-days"/></svg>Next filing</div>
+            <div class="v num" style="font-size:18px">20 Dec 2026</div>
+            <div class="f">Monthly, before the 20th</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="card-head">
+            <div>
+              <h2>Device and PIN</h2>
+              <div class="sub">Registered against this shop</div>
+            </div>
+            <span class="pill info">Sandbox</span>
+          </div>
+          <dl class="kv">
+            <dt>Business name</dt><dd id="etimsShop">Shop Yangu Kenya</dd>
+            <dt>KRA PIN</dt><dd class="num">P051234567X</dd>
+            <dt>Device serial</dt><dd class="num">KRA-ETIMS-0004821</dd>
+            <dt>Last successful transmission</dt><dd id="etimsLast">Today, 14:12</dd>
+            <dt>Signature</dt><dd class="num">RSA-2048, rotated monthly</dd>
+          </dl>
+          <button class="btn secondary block" style="margin-top:12px" id="etimsTest">
+            <svg class="ic sm"><use href="#i-scan-line"/></svg>Send a test transmission
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Recent transmissions</h2>
+              <div class="sub">Signed receipts, newest first</div>
+            </div>
+          </div>
+          <div id="etimsList"></div>
+        </div>
+      </section>
+
+      <!-- ================================================== SETTINGS -->
+      <section class="screen" id="s-settings" data-title="Settings">
+        <div class="pagehead">
+          <div>
+            <h1>Settings</h1>
+            <p class="sub">The shop, the people, and the plan.</p>
+          </div>
+        </div>
+
+        <div class="planbox">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div>
+              <div style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--syk)">Current plan</div>
+              <div class="price num"><span data-plan-price>Ksh 1,500</span><small> / month</small></div>
+              <div class="hint">One shop · unlimited products, receipts and users</div>
+            </div>
+            <span class="pill ok"><span class="dot"></span>Active</span>
+          </div>
+          <div class="progress" style="margin-top:12px"><span style="width:53%"></span></div>
+          <div class="hint" style="margin-top:6px">14 of 30 days used · renews 4 December 2026</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="card-head"><div><h2>Shop profile</h2><div class="sub">Printed on every receipt and export</div></div></div>
+          <div class="formrow"><label class="lbl" for="setShop">Shop name</label>
+            <input class="field" id="setShop" value="Shop Yangu Kenya" /></div>
+          <div class="formrow"><label class="lbl" for="setBranch">Branch</label>
+            <input class="field" id="setBranch" value="Mombasa Branch" /></div>
+          <div class="formrow"><label class="lbl" for="setPhone">Phone on receipts</label>
+            <input class="field" id="setPhone" value="0722 000 111" /></div>
+          <div class="formrow"><label class="lbl" for="setKra">KRA PIN</label>
+            <input class="field" id="setKra" value="P051234567X" /></div>
+          <button class="btn block" style="margin-top:14px" data-save-settings>Save profile</button>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>Users and roles</h2><div class="sub">Owner and Sales</div></div>
+            <button class="btn ghost sm" data-add-user><svg class="ic sm"><use href="#i-plus"/></svg>Add</button></div>
+          <div id="userList"></div>
+          <p class="hint" style="margin-top:10px">
+            The owner sees everything. Sales can take payments, look up stock and prices, and see their own
+            receipts — not costs, profit, reports, eTIMS settings or the user list.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>Preferences</h2><div class="sub">How the till behaves</div></div></div>
+          <div class="setrow">
+            <div><div class="t">Allow credit (negative balance)</div>
+              <div class="d">A sale can be part-paid, and the rest carried on the customer's account.</div></div>
+            <button class="toggle" data-toggle="allowCredit" aria-checked="true" aria-label="Allow credit"></button>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Ask for a customer on every sale</div>
+              <div class="d">Off means a walk-in customer is used and no balance is kept.</div></div>
+            <button class="toggle" data-toggle="askCustomer" aria-checked="false" aria-label="Ask for a customer"></button>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Send receipts by SMS</div>
+              <div class="d">Includes the eTIMS signature, so the customer keeps a valid receipt.</div></div>
+            <button class="toggle" data-toggle="smsReceipt" aria-checked="true" aria-label="Send SMS receipts"></button>
+          </div>
+          <div class="setrow">
+            <div><div class="t">Keep selling offline</div>
+              <div class="d">Sales are held on the device and transmitted when the signal returns.</div></div>
+            <button class="toggle" data-toggle="offline" aria-checked="true" aria-label="Keep selling offline"></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>Your data</h2><div class="sub">Export anything, any time</div></div></div>
+          <div class="setrow">
+            <div><div class="t">Everything in this shop</div><div class="d">Products, customers, sales, purchases — PDF or Excel</div></div>
+            <span class="menu" data-menu>
+              <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+              </button>
+              <span class="menu__pop" role="menu" data-menu-pop hidden>
+                <span class="menu__head">Everything<small>Products, customers, sales and purchases</small></span>
+                <button type="button" role="menuitem" data-export="all" data-format="pdf">
+                  <svg class="ic"><use href="#i-file-text"/></svg><span><b>PDF</b><small>Designed, with the logo — ready to print</small></span>
+                </button>
+                <button type="button" role="menuitem" data-export="all" data-format="xlsx">
+                  <svg class="ic"><use href="#i-file-spreadsheet"/></svg><span><b>Excel</b><small>Every row, on its own sheet</small></span>
+                </button>
+              </span>
+            </span>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- ================================================== AUDIT -->
+      <section class="screen" id="s-audit" data-title="Audit log">
+        <div class="pagehead">
+          <div>
+            <h1>Audit log</h1>
+            <p class="sub">Who did what, and when. Nothing here can be edited.</p>
+          </div>
+          <span class="menu" data-menu>
+              <button class="btn secondary sm" type="button" data-menu-btn aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic sm"><use href="#i-download"/></svg>Export<svg class="ic sm chev"><use href="#i-chevron-down"/></svg>
+              </button>
+              <span class="menu__pop" role="menu" data-menu-pop hidden>
+                <span class="menu__head">Audit trail<small>Who did what, and when</small></span>
+                <button type="button" role="menuitem" data-export="audit" data-format="pdf">
+                  <svg class="ic"><use href="#i-file-text"/></svg>
+                  <span><b>PDF</b><small>Designed, with the logo — ready to print</small></span>
+                </button>
+                <button type="button" role="menuitem" data-export="audit" data-format="xlsx">
+                  <svg class="ic"><use href="#i-file-spreadsheet"/></svg>
+                  <span><b>Excel</b><small>One sheet, opens in Excel or Sheets</small></span>
+                </button>
+              </span>
+            </span>
+        </div>
+        <div class="card">
+          <div class="chips" id="auditChips" style="margin-bottom:11px"></div>
+          <div id="auditList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ phone tab bar ============ -->
+  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+</div>
+
+<!-- ============ drawer for phones ============ -->
+<div class="navdrawer" id="drawer" aria-hidden="true">
+  <div class="scrim" data-close-drawer></div>
+  <div class="navpanel" role="dialog" aria-modal="true" aria-label="Menu">
+    <div class="navhead">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="brandmark"><svg class="ic"><use href="#i-store"/></svg></div>
+        <div>
+          <strong id="drawerShopName">Shop Yangu Kenya</strong>
+          <span class="who" id="drawerWho">Owner</span>
+        </div>
+      </div>
+      <button class="iconbtn" data-close-drawer aria-label="Close menu">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div id="drawerLinks" style="display:flex;flex-direction:column;gap:2px"></div>
+    <div class="plan">
+      <b>Plan: Malipo ya mwezi</b>
+      <span data-plan-line>Ksh 1,500 / month</span> · 14 days left
+    </div>
+  </div>
+</div>
+
+<!-- ============ sheet host ============ -->
+<div class="sheet" id="sheet" aria-hidden="true">
+  <div class="scrim" data-close-sheet></div>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="grab"></div>
+    <div class="shead">
+      <div>
+        <h2 id="sheetTitle">Title</h2>
+        <p class="sub" id="sheetSub"></p>
+      </div>
+      <button class="iconbtn" data-close-sheet aria-label="Close">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="sbody" id="sheetBody"></div>
+    <div class="sfoot" id="sheetFoot"></div>
+  </div>
+</div>
+
+<div class="toastwrap" id="toasts" aria-live="polite"></div>
+<div id="printSheet"></div>
+<input type="file" id="filePicker" accept=".csv,text/csv" hidden />

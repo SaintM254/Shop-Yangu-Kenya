@@ -1714,3 +1714,550 @@ a:hover {
   padding-top: 7px;
   width: 100%;
 }
+/* ------------------------------------------------------------ sign in
+
+   Two columns on a laptop: what you get on the left, the form on the right.
+   On a phone the left column's list folds away — the demo details stay,
+   because without them there is no way in. Lost once to a CSS sweep; every
+   selector in build.js's loginPage() has a rule here. */
+
+.page-auth .hdr__nav {
+  display: none;
+}
+
+.auth {
+  background: var(--cream);
+  border-bottom: 1px solid var(--sand);
+  padding: clamp(28px, 5vw, 64px) 0 clamp(40px, 6vw, 80px);
+}
+
+.auth__in {
+  display: grid;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .auth__in {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+    gap: 56px;
+    align-items: start;
+  }
+}
+
+.auth__aside {
+  max-width: 46ch;
+}
+
+.auth__title {
+  font-size: clamp(30px, 4.6vw, 46px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  color: var(--syk-dark);
+}
+
+.auth__lede {
+  margin-top: 12px;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.auth__list {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--sand);
+}
+
+.auth__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--sand);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.auth__list .ic {
+  flex: none;
+  margin-top: 2px;
+  color: var(--syk);
+}
+
+/* The demo account: a card the reader can copy from, not a fixture. */
+.auth__demo {
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px solid var(--sand);
+  border-radius: var(--r-panel);
+  background: var(--paper);
+}
+
+.auth__demo-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--syk);
+}
+
+.auth__demo-h .ic {
+  color: var(--syk);
+}
+
+.auth__demo-list {
+  margin: 12px 0 0;
+  display: grid;
+  gap: 0;
+}
+
+.auth__demo-list > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sand-soft);
+}
+
+.auth__demo-list dt {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+.auth__demo-list dd {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--syk-dark);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.auth__demo .btn {
+  margin-top: 14px;
+}
+
+.auth__card {
+  border: 1px solid var(--sand);
+  border-radius: var(--r-panel);
+  background: var(--paper);
+  padding: clamp(18px, 3vw, 28px);
+}
+
+@media (min-width: 900px) {
+  .auth__card {
+    padding: 28px;
+  }
+}
+
+.auth__form {
+  display: grid;
+  gap: 18px;
+}
+
+.field-group {
+  display: grid;
+  gap: 7px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--syk-dark);
+}
+
+/* The input sits inside a bordered shell that draws the focus ring, so the
+   icon, the text and the reveal button share one frame. */
+.inputwrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  min-height: 48px;
+  border: 1px solid var(--sand);
+  border-radius: var(--r-input);
+  background: var(--cream);
+}
+
+.inputwrap:focus-within {
+  border-color: var(--syk);
+  background: var(--paper);
+}
+
+.inputwrap > .ic {
+  flex: none;
+  color: var(--ink-muted);
+}
+
+.inputwrap:focus-within > .ic {
+  color: var(--syk);
+}
+
+.field {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink);
+  padding: 13px 0;
+}
+
+.field::placeholder {
+  color: #8a938a;
+}
+
+.field[aria-invalid='true'] {
+  color: var(--danger);
+}
+
+.inputwrap:has(.field[aria-invalid='true']) {
+  border-color: var(--danger);
+  background: var(--paper);
+}
+
+.field:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 100px var(--paper) inset;
+}
+
+.reveal {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.reveal:hover {
+  background: var(--cream-deep);
+  color: var(--syk-dark);
+}
+
+.auth__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-top: -4px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.check input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--syk);
+  cursor: pointer;
+}
+
+.auth__help {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+.auth__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 13px;
+  border: 1px solid var(--danger);
+  border-radius: var(--r-input);
+  background: var(--danger-tint);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.auth__fine {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.btn--lg {
+  padding: 15px 24px;
+  font-size: 15.5px;
+}
+
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+.auth__done {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  text-align: left;
+}
+
+.auth__tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--forest);
+  border-radius: var(--r-pill);
+  color: var(--forest);
+}
+
+.auth__done-h {
+  font-size: 22px;
+  letter-spacing: -0.025em;
+  color: var(--syk-dark);
+}
+
+.auth__done-p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+.auth__done .btn + .btn {
+  margin-top: -4px;
+}
+
+/* the inline demo card carries the logo, so the page feels like the till */
+.auth__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 18px;
+  text-decoration: none;
+  color: var(--syk-dark);
+}
+
+.auth__brand svg.auth__mark {
+  width: 26px;
+  height: 30px;
+  flex: none;
+  color: var(--syk);
+}
+
+.auth__brand span {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--syk);
+}
+
+.auth__cardhead {
+  margin-bottom: 20px;
+}
+
+.auth__cardh {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--syk-dark);
+}
+
+.auth__cardp {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+/* On a phone the list is the first thing to go: the demo details are what the
+   reader actually needs, and the card must not start below the fold. */
+@media (max-width: 899px) {
+  .auth__list {
+    display: none;
+  }
+
+  .auth__title {
+    font-size: 32px;
+  }
+
+  .auth__demo {
+    margin-top: 18px;
+  }
+}
+
+@media (min-width: 900px) {
+  .auth__aside {
+    position: sticky;
+    top: 24px;
+  }
+}
+
+/* ------------------------------------------------------------- the mark
+   The supplied artwork is one filled path — a shopping bag with SYK in it.
+   It is not a line icon, so it must not inherit the 1.75 stroke. */
+
+.brand__mark svg {
+  width: 19px;
+  height: 22px;
+  display: block;
+  stroke: none;
+  fill: currentColor;
+}
+
+.brand__mark {
+  color: var(--syk);
+  background: var(--cream);
+  border: 1px solid var(--sand);
+}
+
+.brand__mark--light {
+  background: var(--cream);
+  border-color: transparent;
+  color: var(--syk);
+}
+
+/* The app's body class. It exists so a page can be told apart in a stylesheet
+   and in a screenshot; the app's own rules live in app.css. */
+.page-app {
+  background: var(--cream);
+}
+
+/* ------------------------------------------------------- the closing band
+   The price, what it includes, and the one way in. Two columns on a laptop,
+   one stack on a phone, and the same flat surfaces as the rest of the site. */
+
+.sec--close {
+  padding: clamp(44px, 7vw, 88px) 0;
+}
+
+.close {
+  display: grid;
+  gap: 24px;
+  border: 1px solid var(--sand);
+  border-radius: var(--r-dialog);
+  background: var(--paper);
+  padding: clamp(20px, 3vw, 36px);
+}
+
+@media (min-width: 900px) {
+  .close {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 44px;
+    align-items: start;
+  }
+
+  .close__cta {
+    border-left: 1px solid var(--sand);
+    padding-left: 44px;
+  }
+}
+
+.close__plan {
+  min-width: 0;
+}
+
+.close__price {
+  margin-top: 10px;
+  font-size: clamp(34px, 5vw, 46px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--syk-dark);
+  line-height: 1;
+}
+
+.close__price span {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink-muted);
+}
+
+.close__trial {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+.close__list {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--sand);
+}
+
+.close__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sand);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.close__list .ic {
+  flex: none;
+  margin-top: 3px;
+  color: var(--forest);
+}
+
+.close__title {
+  font-size: clamp(24px, 3.4vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--syk-dark);
+}
+
+.close__lede {
+  margin-top: 12px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.close__cta .btn {
+  margin-top: 22px;
+}
+
+.close__fine {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+/* The hero's left column: an explicit block, so the art cannot wrap under it
+   on a narrow laptop. */
+.hero__copy {
+  min-width: 0;
+}
+
+/* A code block in the spec with a language tag of its own. */
+.codeblock--sql .codeblock__lang {
+  color: var(--syk);
+}
+
+/* The spec page's own body class, mirroring .page-auth and .page-app. */
+.page-doc {
+  background: var(--cream);
+}
