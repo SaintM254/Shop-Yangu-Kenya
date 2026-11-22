@@ -1,0 +1,349 @@
+/* ============================================================ import from Excel / CSV */
+const SCHEMAS = {
+  products: {
+    label: 'Products / stock',
+    cols: ['sku', 'name', 'category', 'unit', 'cost_price', 'selling_price', 'opening_qty', 'reorder_level', 'expiry_date', 'supplier', 'barcode'],
+    sample: ['GRC-001', 'Sugar 2kg', 'Grocery', 'packet', '205', '240', '68', '24', '', 'Kwa Nguvu Distributors', '6001234500012']
+  },
+  customers: {
+    label: 'Customers',
+    cols: ['name', 'phone', 'credit_limit', 'opening_balance', 'since', 'notes'],
+    sample: ['Mama Zawadi Kiosk', '0722118044', '20000', '8650', '2024-03-11', 'Kiosk on Moi Avenue']
+  },
+  sales: {
+    label: 'Sales history',
+    cols: ['receipt_no', 'date', 'customer', 'sku', 'qty', 'unit_price', 'amount_paid', 'payment_method', 'cashier', 'notes'],
+    sample: ['R-2101', '2026-04-01', 'Hotel Bahari', 'DRK-001', '24', '50', '1200', 'M-Pesa', 'Otieno Were', 'March order, settled']
+  }
+};
+let importTarget = 'products';
+let parsed = null;
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-target]');
+  if (t) {
+    importTarget = t.dataset.target;
+    $$('#importTarget button').forEach(b => b.setAttribute('aria-pressed', String(b === t)));
+    parsed = null;
+    $('#importReport').innerHTML = '';
+    $('#dropzone').querySelector('div:nth-child(2)').textContent = 'Tap to choose a file, or drop it here';
+  }
+  const tpl = e.target.closest('[data-template]');
+  if (tpl) showTemplate(tpl.dataset.template);
+});
+
+function showTemplate(kind) {
+  const sc = SCHEMAS[kind];
+  const mock = sc.cols.map((c, i) => '<tr><td><b>' + esc(c) + '</b></td><td class="hint">' + kindHint(kind, c) + '</td><td>' + esc(sc.sample[i] || '') + '</td></tr>').join('');
+  sheet({
+    title: sc.label + ' template', sub: sc.cols.length + ' columns', wide: true,
+    body: '<div class="tablewrap"><table><thead><tr><th>Column</th><th>What goes in it</th><th>Example</th></tr></thead><tbody>' + mock + '</tbody></table></div>' +
+      '<div style="display:flex;gap:9px;margin-top:12px;flex-wrap:wrap">' +
+      '<button class="btn" id="dlTpl">' + icon('download', 'sm') + 'Download .xlsx</button>' +
+      '<button class="btn secondary" id="copyTpl">' + icon('file-text', 'sm') + 'Copy as CSV</button></div>' +
+      '<p class="hint" style="margin-top:10px">The workbook opens in Excel with the header row already coloured. If a download is blocked here, copy the CSV instead — the columns are identical.</p>',
+    actions: [{ label: 'Close' }]
+  });
+  $('#dlTpl').onclick = () => {
+    const b64 = XLSX_B64[kind];
+    if (b64) downloadB64('shop-yangu-' + kind + '-template.xlsx', b64,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    else downloadFile('shop-yangu-' + kind + '-template.csv', csvOf([sc.cols, sc.sample]));
+  };
+  $('#copyTpl').onclick = () => {
+    const txt = csvOf([sc.cols, sc.sample]);
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast('Copied. Paste into Excel.', 'good'), () => toast('Could not copy here.', 'bad'));
+    else toast('Copying is not available in this browser.', 'bad');
+  };
+}
+function kindHint(kind, c) {
+  const h = {
+    sku: 'Your own code, must be unique', name: 'Product name as you say it', category: 'Must match an existing category',
+    unit: 'packet, bottle, kg, piece', cost_price: 'What you pay, in Ksh', selling_price: 'What you charge, in Ksh',
+    opening_qty: 'Count on the shelf today', reorder_level: 'Warn me at this number', expiry_date: 'YYYY-MM-DD, or blank',
+    supplier: 'Free text, matched by name', barcode: 'EAN, optional',
+    phone: '07.. digits', credit_limit: 'Ksh, 0 means cash only', opening_balance: 'Ksh owed to you today',
+    since: 'YYYY-MM-DD', notes: 'Anything you like',
+    receipt_no: 'Must be unique, never reused', date: 'YYYY-MM-DD, not in the future',
+    customer: 'Name, or blank for walk-in', qty: 'Units sold', unit_price: 'Ksh per unit',
+    amount_paid: 'Leave blank if unpaid', payment_method: 'Cash, M-Pesa, Card', cashier: 'Who sold it'
+  };
+  return h[c] || '';
+}
+function csvOf(rows) {
+  return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? '"' + String(c).replace(/"/g, '""') + '"' : String(c)).join(',')).join('\r\n');
+}
+function downloadB64(name, b64, type) {
+  try {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: type || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast('Downloaded ' + name + '. It opens in Excel.', 'good');
+  } catch (err) { toast('This preview blocked the download. Use Copy as CSV.', 'bad'); }
+}
+function downloadFile(name, text, type) {
+  try {
+    const blob = new Blob([text], { type: type || 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  } catch (err) { toast('This preview blocked the download. Use Copy as CSV.', 'bad'); }
+}
+
+/* ---- reading a CSV ---- */
+/* note: no top-level name may shadow a built-in used elsewhere — `sum` is the app's own */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = '', q = false;
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cell += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+
+/* ---- date handling, the part that matters ---- */
+function readDate(s, allowFuture) {
+  const v = String(s || '').trim();
+  if (!v) return { ok: true, date: null };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const d = new Date(v + 'T00:00:00');
+    if (isNaN(d)) return { ok: false, why: 'not a real date' };
+    const back = ymd(d);
+    if (back !== v) return { ok: false, why: 'not a real date' };
+    return finishDate(d, allowFuture);
+  }
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
+    /* dd/mm/yyyy, the Kenyan convention — never mm/dd */
+    const [dd, mm, yy] = v.split('/').map(Number);
+    const d = new Date(yy, mm - 1, dd);
+    if (d.getDate() !== dd || d.getMonth() !== mm - 1) return { ok: false, why: 'not a real date' };
+    return finishDate(d, allowFuture);
+  }
+  if (/^\d{5}$/.test(v)) {
+    /* an Excel serial date, what a raw export often holds */
+    const d = new Date(Date.UTC(1899, 11, 30) + Number(v) * 86400000);
+    if (isNaN(d)) return { ok: false, why: 'not a real date' };
+    return finishDate(d, allowFuture);
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(v)) {
+    const d = new Date(v);
+    if (!isNaN(d)) return finishDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()), allowFuture);
+  }
+  return { ok: false, why: 'use YYYY-MM-DD' };
+}
+function finishDate(d, allowFuture) {
+  if (!allowFuture && d > today()) return { ok: false, why: 'in the future', date: d };
+  return { ok: true, date: d };
+}
+
+function validate(kind, rows) {
+  const sc = SCHEMAS[kind];
+  const head = rows[0].map(h => String(h).trim().toLowerCase());
+  const missing = sc.cols.filter(c => !head.includes(c));
+  const extra = head.filter(h => h && !sc.cols.includes(h));
+  const seenSku = new Map(), seenReceipt = new Map();
+  const good = [], bad = [];
+  for (let r = 1; r < rows.length; r++) {
+    const raw = rows[r];
+    const o = {};
+    sc.cols.forEach(c => { o[c] = String(raw[head.indexOf(c)] == null ? '' : raw[head.indexOf(c)]).trim(); });
+    const errs = [];
+
+    if (kind === 'products') {
+      if (!o.name) errs.push('no name');
+      if (!o.sku) errs.push('no sku');
+      else if (seenSku.has(o.sku)) errs.push('sku repeats row ' + seenSku.get(o.sku));
+      else seenSku.set(o.sku, r + 1);
+      if (o.selling_price && isNaN(Number(o.selling_price))) errs.push('selling_price is not a number');
+      if (o.cost_price && isNaN(Number(o.cost_price))) errs.push('cost_price is not a number');
+      if (o.opening_qty && (!/^\d+$/.test(o.opening_qty))) errs.push('opening_qty must be a whole number');
+      /* an expiry date is normally in the future; only a sale cannot be */
+      const d = readDate(o.expiry_date, true);
+      if (!d.ok) errs.push('expiry_date ' + d.why);
+      o._date = d.date;
+    }
+    if (kind === 'customers') {
+      if (!o.name) errs.push('no name');
+      if (o.opening_balance && isNaN(Number(o.opening_balance))) errs.push('opening_balance is not a number');
+      const d = readDate(o.since);
+      if (!d.ok) errs.push('since ' + d.why);
+      o._date = d.date;
+    }
+    if (kind === 'sales') {
+      if (!o.receipt_no) errs.push('no receipt_no');
+      else if (seenReceipt.has(o.receipt_no)) errs.push('receipt already imported');
+      else seenReceipt.set(o.receipt_no, r + 1);
+      if (!o.sku) errs.push('no sku');
+      if (!/^\d+(\.\d+)?$/.test(o.qty || '')) errs.push('qty must be a number');
+      if (!/^\d+(\.\d+)?$/.test(o.unit_price || '')) errs.push('unit_price must be a number');
+      const d = readDate(o.date);
+      if (!d.ok) errs.push('date ' + d.why + ' (' + o.date + ')');
+      o._date = d.date;
+      if (o.amount_paid && isNaN(Number(o.amount_paid))) errs.push('amount_paid is not a number');
+    }
+    if (errs.length) bad.push({ row: r + 1, errs, o });
+    else good.push(o);
+  }
+  return { head, missing, extra, good, bad, total: rows.length - 1 };
+}
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCSV(String(reader.result));
+    if (!rows.length) { toast('That file is empty.', 'bad'); return; }
+    parsed = { kind: importTarget, rows };
+    renderImportReport(validate(importTarget, rows), rows);
+  };
+  reader.onerror = () => toast('Could not read that file.', 'bad');
+  reader.readAsText(file);
+}
+
+function renderImportReport(v, rows) {
+  const preview = rows.slice(0, 6);
+  const head = rows[0];
+  const pctOk = v.total ? Math.round((v.good.length / v.total) * 100) : 0;
+  let html = '<div class="card" style="margin:0">' +
+    '<div class="card-head"><div><h2>' + (v.good.length) + ' of ' + v.total + ' row' + (v.total === 1 ? '' : 's') +
+    (v.good.length === 1 ? ' is' : ' are') + ' ready</h2>' +
+    '<div class="sub">Nothing has been written yet</div></div>' +
+    '<span class="pill ' + (v.bad.length ? 'low' : 'ok') + '">' + pctOk + '%</span></div>' +
+    '<div class="progress"><span style="width:' + pctOk + '%"></span></div>';
+
+  if (v.missing.length) {
+    html += '<div class="errmsg" style="margin-top:11px">' + icon('alert') + '<span>Missing column' + (v.missing.length > 1 ? 's' : '') + ': <b>' + v.missing.map(esc).join(', ') + '</b>. Download the template and keep its header row.</span></div>';
+  }
+  if (v.extra.length) {
+    html += '<p class="hint" style="margin-top:8px">Ignored extra column' + (v.extra.length > 1 ? 's' : '') + ': ' + v.extra.map(esc).join(', ') + '.</p>';
+  }
+  if (v.bad.length) {
+    html += '<h3 style="font-size:13.5px;font-weight:600;margin:13px 0 6px">Rows that need fixing</h3>' +
+      '<div class="tablewrap"><table><thead><tr><th>Row</th><th>Problem</th></tr></thead><tbody>' +
+      v.bad.slice(0, 8).map(b => '<tr><td class="num">' + b.row + '</td><td>' + b.errs.map(esc).join('; ') + '</td></tr>').join('') +
+      '</tbody></table></div>' +
+      (v.bad.length > 8 ? '<p class="hint">…and ' + (v.bad.length - 8) + ' more.</p>' : '');
+  }
+  html += '<h3 style="font-size:13.5px;font-weight:600;margin:13px 0 6px">First rows</h3>' +
+    '<div class="tablewrap"><table><thead><tr>' + head.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
+    preview.slice(1).map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') +
+    '</tbody></table></div>';
+
+  const dates = v.good.map(g => g._date).filter(Boolean);
+  if (dates.length) {
+    const oldest = dates.reduce((a, b) => (a < b ? a : b));
+    const newest = dates.reduce((a, b) => (a > b ? a : b));
+    html += '<p class="hint" style="margin-top:10px">' + icon('calendar-days', 'sm') + ' Dates run from <b>' + dmy(oldest) + '</b> to <b>' + dmy(newest) +
+      '</b>. Old records keep their own date, so they land in the right month and never in today’s takings.</p>';
+  }
+  html += '</div>';
+
+  $('#importReport').innerHTML = html;
+
+  /* the commit button lives outside the sheet: rebuild it next to the report */
+  const commit = el('div', '', '');
+  commit.style.marginTop = '11px';
+  commit.innerHTML = '<button class="btn block" id="commitImport"' + (v.good.length ? '' : ' disabled') + '>' +
+    icon('upload') + 'Import ' + v.good.length + ' row' + (v.good.length === 1 ? '' : 's') + '</button>' +
+    (v.good.length ? '<p class="hint" style="text-align:center">Rows that failed are left out. You can fix the file and import only the rest — duplicates are skipped, never doubled.</p>' : '');
+  $('#importReport').appendChild(commit);
+  $('#commitImport').onclick = () => commitImport(v);
+}
+
+function commitImport(v) {
+  const kind = parsed.kind;
+  /* kept so the whole batch can be undone in one move */
+  const snapshot = JSON.parse(JSON.stringify({ products: S.products, customers: S.customers, sales: S.sales }));
+  let added = 0, skipped = 0;
+  if (kind === 'products') {
+    v.good.forEach(r => {
+      if (S.products.some(p => p.sku === r.sku)) { skipped++; return; }
+      S.products.push({
+        id: 'p' + (S.products.length + 1) + 'i', sku: r.sku, name: r.name,
+        cat: S.cats.includes(r.category) ? r.category : S.cats[0],
+        unit: r.unit || 'piece', cost: Number(r.cost_price) || 0, price: Number(r.selling_price) || 0,
+        qty: Number(r.opening_qty) || 0, reorder: Number(r.reorder_level) || 0,
+        exp: r._date ? ymd(r._date) : ''
+      });
+      added++;
+    });
+  }
+  if (kind === 'customers') {
+    v.good.forEach(r => {
+      if (S.customers.some(c => c.name.toLowerCase() === r.name.toLowerCase())) { skipped++; return; }
+      S.customers.push({
+        id: 'c' + (S.customers.length + 1) + 'i', name: r.name, phone: r.phone,
+        limit: Number(r.credit_limit) || 0, bal: Number(r.opening_balance) || 0,
+        since: r._date ? ymd(r._date) : ymd(today())
+      });
+      added++;
+    });
+  }
+  if (kind === 'sales') {
+    v.good.forEach(r => {
+      if (S.sales.some(s => s.no === r.receipt_no)) { skipped++; return; }
+      const p = S.products.find(x => x.sku === r.sku);
+      if (!p) { skipped++; return; }
+      const qty = Number(r.qty) || 1;
+      const price = Number(r.unit_price) || p.price;
+      const total = qty * price;
+      const paidAmt = r.amount_paid === '' ? total : Number(r.amount_paid) || 0;
+      const d = r._date || today();
+      const at = new Date(d); at.setHours(11, 30, 0, 0);
+      const c = S.customers.find(x => x.name.toLowerCase() === String(r.customer || '').toLowerCase());
+      S.sales.push({
+        no: r.receipt_no, at: at.toISOString(),
+        items: [{ id: p.id, name: p.name, qty, price, cost: p.cost, unit: p.unit }],
+        total, paid: paidAmt ? [{ m: r.payment_method || 'Cash', amt: paidAmt }] : [],
+        credit: Math.max(0, total - paidAmt), customer: c ? c.id : 'c6',
+        cashier: r.cashier || S.me.name, etims: { status: 'imported', sig: '—' }
+      });
+      added++;
+    });
+    S.sales.sort((a, b) => new Date(b.at) - new Date(a.at));
+  }
+  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Imported ' + SCHEMAS[kind].label, detail: added + ' added, ' + skipped + ' skipped' });
+  parsed = null;
+  $('#importReport').innerHTML = '<div class="card" style="margin:0"><div class="empty" style="padding:20px">' +
+    '<div class="big">' + icon('circle-check') + '</div><b>' + added + ' row' + (added === 1 ? '' : 's') + ' imported</b>' +
+    '<p>' + (skipped ? skipped + ' were skipped because they already existed. ' : '') + 'The rest of the file had nothing wrong with it.</p>' +
+    '<button class="btn secondary sm" id="undoImport">Undo this import</button></div></div>';
+  refreshAll();
+  toast(added + ' imported, ' + skipped + ' skipped', 'good');
+  $('#undoImport').onclick = () => {
+    S.products = snapshot.products; S.customers = snapshot.customers; S.sales = snapshot.sales;
+    $('#importReport').innerHTML = '<div class="card" style="margin:0"><div class="empty" style="padding:20px">' +
+      '<div class="big">' + icon('upload') + '</div><b>Import undone</b>' +
+      '<p>Everything in that batch was removed. Your records are exactly as they were.</p></div></div>';
+    refreshAll();
+    toast('Import undone. Nothing was kept.', 'bad');
+  };
+  RENDER[route] && RENDER[route]();
+}
+
+$('#dropzone').onclick = () => $('#filePicker').click();
+$('#dropzone').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') $('#filePicker').click(); };
+$('#filePicker').onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(ev => $('#dropzone').addEventListener(ev, e => { e.preventDefault(); $('#dropzone').classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => $('#dropzone').addEventListener(ev, e => { e.preventDefault(); $('#dropzone').classList.remove('over'); }));
+$('#dropzone').addEventListener('drop', e => {
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+$('#importBtn').onclick = () => go('migration');

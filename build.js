@@ -5,10 +5,16 @@
  * to install, so the Pages deploy cannot break on a registry outage or a lockfile
  * drift. Everything the site needs is in this repository.
  *
- * Inputs:  src/content.json, src/styles.css, shop-yangu-kenya.html,
- *          shop-yangu-kenya.md, src/fonts/*
- * Outputs: dist/index.html, dist/prototype.html, dist/spec.html,
- *          dist/fonts/*, dist/favicon.svg, dist/.nojekyll, dist/404.html
+ * Inputs:  src/content.json, src/styles.css, src/app/*, src/logo/*,
+ *          Images/Icon.svg, shop-yangu-kenya.md, src/fonts/*
+ * Outputs: dist/index.html, dist/login/index.html, dist/spec/index.html,
+ *          dist/<route>/index.html for every screen in the app,
+ *          dist/app/app.css, dist/app/app.js, dist/fonts/*, dist/logo.svg,
+ *          dist/favicon.svg, dist/apple-touch-icon.png, dist/og.png,
+ *          dist/.nojekyll, dist/404.html
+ *
+ * Every address is a folder. No page links to a .html file, and the build
+ * fails if one does.
  */
 
 import fs from 'node:fs';
@@ -311,7 +317,11 @@ function renderMarkdown(md) {
 /* shared chrome                                                       */
 /* ------------------------------------------------------------------ */
 
-function head({ title, description, page }) {
+/* Every address on the published site is a folder — /login/, /dashboard/ —
+   never a .html file. GitHub Pages answers the folder with its index.html. */
+const CANON = 'https://saintm254.github.io/Shop-Yangu-Kenya';
+
+function head({ title, description, page, styles = ['/styles.css'] }) {
   return `<!doctype html>
 <html lang="en-KE">
 <head>
@@ -320,18 +330,28 @@ function head({ title, description, page }) {
 <meta name="theme-color" content="#023246" />
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
-<link rel="icon" href="favicon.svg" type="image/svg+xml" />
-<link rel="canonical" href="https://saintm254.github.io/Shop-Yangu-Kenya/${page === 'index' ? '' : page + '.html'}" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="canonical" href="${CANON}/${page === 'index' ? '' : page + '/'}" />
 <meta property="og:title" content="${escapeHtml(title)}" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="website" />
-<link rel="stylesheet" href="styles.css" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+${styles.map((h) => `<link rel="stylesheet" href="${h}" />`).join('\n')}
 </head>`;
 }
 
+/* The mark from Images/Icon.svg, recoloured to the palette and inlined once
+   per page, so the site, the login card and the app's rail all wear the same
+   logo. A CSS background image would be a second request for 2 kB. */
+function brandMark(cls) {
+  const d = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
+  return `<span class="${cls}" aria-hidden="true">` +
+    `<svg viewBox="0 0 636 722" fill="currentColor"><path d="${d}"/></svg></span>`;
+}
+
 function siteHeader(current) {
-  /* Section anchors live on the home page; from any other page they need the file. */
-  const here = (href) => (href.startsWith('#') && current !== 'index' ? 'index.html' + href : href);
+  /* Section anchors live on the home page; from any other page they need it first. */
+  const here = (href) => (href.startsWith('#') && current !== 'index' ? '/' + href : href);
   const nav = [
     ['#what', 'What it does'],
     ['#start', 'Price'],
@@ -339,8 +359,8 @@ function siteHeader(current) {
   const isNav = (href) => href === current;
   return `<header class="hdr">
   <div class="wrap hdr__in">
-    <a class="brand" href="index.html" aria-label="${escapeHtml(content.brand.name)} — home">
-      <span class="brand__mark" aria-hidden="true">${icon('box', 'ic ic--sm')}</span>
+    <a class="brand" href="/" aria-label="${escapeHtml(content.brand.name)} — home">
+      ${brandMark('brand__mark')}
       <span class="brand__text">
         <span class="brand__name">${escapeHtml(content.brand.name)}</span>
         <span class="brand__sub">${escapeHtml(content.brand.tagline)}</span>
@@ -354,7 +374,7 @@ function siteHeader(current) {
         )
         .join('\n      ')}
     </nav>
-    <a class="btn btn--primary btn--sm hdr__cta" href="login.html">
+    <a class="btn btn--primary btn--sm hdr__cta" href="/login/">
       <span class="cta-full">Sign up / Log in</span><span class="cta-short">Log in</span>${icon('arrow', 'ic ic--sm')}
     </a>
   </div>
@@ -362,11 +382,11 @@ function siteHeader(current) {
 }
 
 function siteFooter(current) {
-  const here = (href) => (href.startsWith('#') && current !== 'index' ? 'index.html' + href : href);
+  const here = (href) => (href.startsWith('#') && current !== 'index' ? '/' + href : href);
   return `<footer class="ftr">
   <div class="wrap ftr__in">
     <div class="ftr__brand">
-      <span class="brand__mark brand__mark--light" aria-hidden="true">${icon('box', 'ic ic--sm')}</span>
+      ${brandMark('brand__mark brand__mark--light')}
       <div>
         <p class="ftr__name">${escapeHtml(content.brand.name)}</p>
         <p class="ftr__sub">${escapeHtml(content.brand.tagline)} · ${escapeHtml(content.brand.branch)}</p>
@@ -377,7 +397,7 @@ function siteFooter(current) {
         <p class="ftr__h">The system</p>
         <a href="${here('#what')}">What it does</a>
         <a href="${here('#start')}">Price and sign-up</a>
-        <a href="login.html">Sign up / Log in</a>
+        <a href="/login/">Sign up / Log in</a>
       </div>
       <div>
         <p class="ftr__h">The price</p>
@@ -398,8 +418,8 @@ function siteFooter(current) {
 </footer>`;
 }
 
-function document({ title, description, page, body, bodyClass = '' }) {
-  return `${head({ title, description, page })}
+function document({ title, description, page, body, bodyClass = '', styles = ['/styles.css'] }) {
+  return `${head({ title, description, page, styles })}
 <body class="${bodyClass}">
 <a class="skip" href="#main">Skip to content</a>
 ${siteHeader(page)}
@@ -541,7 +561,7 @@ const signup = `
       <div class="close__cta">
         <h2 class="close__title">Start with today's sales.</h2>
         <p class="close__lede">Sign in and ring up your first sale in a couple of minutes. If you already have a shop with us, your stock and customers are waiting.</p>
-        <a class="btn btn--primary btn--lg" href="login.html">Sign up / Log in ${icon('arrow')}</a>
+        <a class="btn btn--primary btn--lg" href="/login/">Sign up / Log in ${icon('arrow')}</a>
         <p class="close__fine">Owner and cashier accounts. Each cashier sees only their own till.</p>
       </div>
     </div>
@@ -573,13 +593,13 @@ function specPage() {
   const body = `<main id="main" class="docwrap">
   <div class="wrap">
     <nav class="crumbs" aria-label="Breadcrumb">
-      <a href="index.html">Home</a><span aria-hidden="true">/</span><span>Build spec</span>
+      <a href="/">Home</a><span aria-hidden="true">/</span><span>Build spec</span>
     </nav>
     <div class="doc">
       <aside class="doc__toc" aria-label="On this page">
         <p class="doc__toc-h">Contents</p>
         ${toc}
-        <a class="doc__back" href="prototype.html">${icon('arrow', 'ic ic--sm')} Open the prototype</a>
+        <a class="doc__back" href="/login/">${icon('arrow', 'ic ic--sm')} Open the shop</a>
       </aside>
       <article class="doc__body prose">
         ${html}
@@ -599,39 +619,88 @@ function specPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/* prototype.html — the reference file, served as its own page         */
+/* the app — /dashboard, /till, /stock … one shell, one page per route  */
 /* ------------------------------------------------------------------ */
 
-function prototypePage() {
-  const raw = read('shop-yangu-kenya.html');
-  const meta = [
-    '<meta name="description" content="Shop Yangu Kenya — the working interactive prototype. Sell, split a payment across cash, M-Pesa and card, hold credit, check stock and print an eTIMS receipt. Sample data in memory." />',
-    '<link rel="canonical" href="https://saintm254.github.io/Shop-Yangu-Kenya/prototype.html" />',
-    '<meta property="og:title" content="Prototype — Shop Yangu Kenya" />',
-    '<meta property="og:description" content="Every screen of the shop system, working, in one self-contained file." />',
-    '<link rel="icon" href="favicon.svg" type="image/svg+xml" />',
-  ].join('\n');
+/* The screens moved out of `shop-yangu-kenya.html` and into src/app/: a
+   shell, a stylesheet and one script per job. build.js inlines them into one
+   page — no bundler, no network cost per screen — and writes that page into a
+   folder per route, so every address is a real web address without .html. */
 
-  return raw
-    .replace(/<title>([\s\S]*?)<\/title>/, (_, t) => `<title>${t.trim()} — prototype</title>`)
-    .replace(/(<meta name="viewport"[^>]*>)/, `$1\n${meta}`)
-    .replace(
-      /<body([^>]*)>/,
-      `<body$1>
-<div id="protoBar" style="position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9999;display:flex;gap:6px;font:600 12px/1 'Public Sans',system-ui,sans-serif">
-  <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#023246;color:#FFF8E1;text-decoration:none;border:1px solid #023246">&#8592; Back to the site</a>
-  <a href="spec.html" style="display:inline-flex;align-items:center;padding:9px 14px;border-radius:999px;background:#FFF8E1;color:#023246;text-decoration:none;border:1px solid #E7DDB5">Spec</a>
-</div>
-<script>
-  /* The prototype's own bottom tab bar sits at the bottom on a phone; lift the
-     bar above it so the two never fight for the same thumb space. */
-  addEventListener('load', function () {
-    var bar = document.getElementById('protoBar');
-    var tabs = document.querySelector('.tabbar');
-    if (bar && tabs) bar.style.bottom = (tabs.offsetHeight + 12) + 'px';
-  });
-</script>`
-    );
+const APP_ROUTES = {
+  dashboard: 'Dashboard',
+  till: 'Point of sale',
+  stock: 'Stock',
+  purchases: 'Purchases',
+  sales: 'Sales',
+  customers: 'Customers',
+  import: 'Import records',
+  reports: 'Reports',
+  etims: 'KRA eTIMS',
+  settings: 'Settings',
+  audit: 'Audit log',
+};
+
+const APP_SCRIPTS = [
+  'lib.js',
+  'data.js',
+  'ui.js',
+  'dashboard.js',
+  'pos.js',
+  'stock.js',
+  'people.js',
+  'reports.js',
+  'import.js',
+  'backend.js',
+  'excel.js',
+  'pdf.js',
+  'exports.js',
+  'shell.js',
+  'boot.js',
+];
+
+function appScript() {
+  return APP_SCRIPTS.map((f) => `/* ---------- src/app/${f} */\n` + read('src/app/' + f)).join('\n') + '\n';
+}
+
+function appPage(route) {
+  const markD = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
+  const icons = read('src/app/icons.svg').trim().replace(
+    /(<symbol id="i-logo"[^>]*><path d=")[^"]*/,
+    `$1${markD}`
+  );
+  const shell = read('src/app/shell.html').trim();
+  const title = (APP_ROUTES[route] || 'Dashboard') + ' — ' + content.brand.name;
+
+  return `<!doctype html>
+<html lang="en-KE" data-shell="app">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#023246" />
+<title>${escapeHtml(title)}</title>
+<meta name="robots" content="noindex" />
+<meta name="description" content="Shop Yangu Kenya — the shop's own screens: sell, take payment, check stock and print the receipt." />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/app/app.css" />
+</head>
+<body class="page-app">
+${icons}
+${shell}
+<script src="/app/app.js" defer></script>
+</body>
+</html>
+`;
+}
+
+/* One file per route: /dashboard/index.html and so on. The folder is what
+   makes the address clean. */
+function writeRoute(route) {
+  fs.mkdirSync(path.join(dist, route), { recursive: true });
+  fs.writeFileSync(path.join(dist, route, 'index.html'), appPage(route));
+  pages.add(route + '/index.html');
 }
 
 /* ------------------------------------------------------------------ */
@@ -640,9 +709,13 @@ function prototypePage() {
 
 function loginPage() {
   const demo = content.demo_account;
+  const markD = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
+  const logo = `<svg class="auth__mark" viewBox="0 0 636 722" role="img" aria-label="` +
+    escapeHtml(content.brand.name) + `"><path fill="currentColor" d="` + markD + `"/></svg>`;
   const body = `<main id="main" class="auth">
   <div class="wrap auth__in">
     <div class="auth__aside">
+      <a class="auth__brand" href="/">${logo}<span>${escapeHtml(content.brand.name)}</span></a>
       <h1 class="auth__title">Welcome back.</h1>
       <p class="auth__lede">Sign in to ring up a sale, check the drawer and see what sold today.</p>
       <ul class="auth__list">
@@ -661,6 +734,10 @@ function loginPage() {
     </div>
 
     <div class="auth__card">
+      <div class="auth__cardhead">
+        <h2 class="auth__cardh">Log in</h2>
+        <p class="auth__cardp">This is the demo shop. Nothing is charged, and nothing leaves your browser.</p>
+      </div>
       <form class="auth__form" id="loginForm" novalidate>
         <div class="field-group">
           <label class="label" for="email">Email address</label>
@@ -697,15 +774,15 @@ function loginPage() {
         <button class="btn btn--primary btn--lg btn--block" id="loginBtn" type="submit">
           Log in${icon('arrow')}
         </button>
-        <p class="auth__fine">Trouble signing in? The demo details are on the left.</p>
+        <p class="auth__fine">Trouble signing in? The demo details are just above.</p>
       </form>
 
       <div class="auth__done" id="loginDone" hidden>
         <span class="auth__tick" aria-hidden="true">${icon('check')}</span>
         <h2 class="auth__done-h">You're in, ${escapeHtml(demo.name.split(' ')[0])}.</h2>
         <p class="auth__done-p" id="loginDoneP">Signed in to ${escapeHtml(demo.shop)} as ${escapeHtml(demo.role)}.</p>
-        <a class="btn btn--primary btn--lg btn--block" href="prototype.html">
-          Open the till${icon('arrow')}
+        <a class="btn btn--primary btn--lg btn--block" href="/dashboard/">
+          Open the shop${icon('arrow')}
         </a>
         <button class="btn btn--ghost btn--block" type="button" id="signOut">Sign out</button>
       </div>
@@ -815,6 +892,7 @@ fs.mkdirSync(dist, { recursive: true });
 const pages = new Set();
 
 function write(name, html) {
+  fs.mkdirSync(path.dirname(path.join(dist, name)), { recursive: true });
   fs.writeFileSync(path.join(dist, name), html);
   pages.add(name);
 }
@@ -830,14 +908,28 @@ write(
   })
 );
 
-write('prototype.html', prototypePage());
+write('spec/index.html', specPage());
+write('login/index.html', loginPage());
 
+/* the app: one page, one folder per screen */
+for (const route of Object.keys(APP_ROUTES)) writeRoute(route);
 
-write('spec.html', specPage());
-write('login.html', loginPage());
+/* assets */
+fs.cpSync(path.join(root, 'src/styles.css'), path.join(dist, 'styles.css'));
+fs.mkdirSync(path.join(dist, 'app'), { recursive: true });
+fs.copyFileSync(path.join(root, 'src/app/app.css'), path.join(dist, 'app', 'app.css'));
+fs.writeFileSync(path.join(dist, 'app', 'app.js'), appScript());
 
-fs.copyFileSync(path.join(root, 'src/styles.css'), path.join(dist, 'styles.css'));
-fs.writeFileSync(path.join(dist, 'favicon.svg'), FAVICON);
+/* the logo, used by the browser tab and the app's rail */
+for (const [from, to] of [
+  ['src/logo/favicon.svg', 'favicon.svg'],
+  ['src/logo/mark-syk.svg', 'logo.svg'],
+]) {
+  fs.copyFileSync(path.join(root, from), path.join(dist, to));
+}
+
+fs.copyFileSync(path.join(root, 'src/logo/apple-touch-icon.png'), path.join(dist, 'apple-touch-icon.png'));
+fs.copyFileSync(path.join(root, 'src/logo/og.png'), path.join(dist, 'og.png'));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
 
 fs.mkdirSync(path.join(dist, 'fonts'), { recursive: true });
@@ -847,21 +939,21 @@ for (const f of fs.readdirSync(path.join(root, 'src/fonts'))) {
   }
 }
 
-/* 404 → home, so a mistyped URL still lands somewhere useful. */
+/* 404 → the shop's front door, so a mistyped address still lands somewhere. */
 write(
   '404.html',
   document({
     title: `Page not found — ${content.brand.name}`,
-    description: 'That page does not exist. Head back to the home page or open the prototype.',
+    description: 'That page does not exist. Head back to the home page or sign in to the shop.',
     page: '404',
     body: `<main id="main" class="missing">
   <div class="wrap">
     <p class="kicker">404</p>
     <h1 class="missing__title">That shelf is empty.</h1>
-    <p class="missing__lede">The page you asked for is not here. The prototype and the spec both are.</p>
+    <p class="missing__lede">The page you asked for is not here. The home page and the door to the shop both are.</p>
     <div class="hero__cta">
-      <a class="btn btn--primary" href="index.html">Back home${icon('arrow')}</a>
-      <a class="btn btn--ghost" href="prototype.html">Open the prototype</a>
+      <a class="btn btn--primary" href="/">Back home${icon('arrow')}</a>
+      <a class="btn btn--ghost" href="/login/">Sign up / Log in</a>
     </div>
   </div>
 </main>`,
@@ -883,7 +975,12 @@ const check = (ok, msg) => {
 const assets = new Set([
   ...pages,
   'styles.css',
+  'app/app.css',
+  'app/app.js',
+  'apple-touch-icon.png',
+  'og.png',
   'favicon.svg',
+  'logo.svg',
   'fonts/PublicSans-Regular.woff2',
   'fonts/PublicSans-Medium.woff2',
   'fonts/PublicSans-SemiBold.woff2',
@@ -899,35 +996,83 @@ function anchorsOf(html) {
   ]);
 }
 
+/* /login/ → login/index.html; / → index.html; /styles.css stays a file. */
+function targetOf(href, from) {
+  if (!href) return from; /* a bare #anchor stays on this page */
+  if (href.startsWith('/')) {
+    if (href === '/') return 'index.html';
+    return href.endsWith('/') ? href.slice(1) + 'index.html' : href.slice(1);
+  }
+  if (href.startsWith('#')) return from;
+  return path.posix.normalize(path.posix.join(path.posix.dirname(from), href));
+}
+
 for (const page of pages) {
   const html = fs.readFileSync(path.join(dist, page), 'utf8');
   const markup = html.replace(/<script[\s\S]*?<\/script>/gi, '');
   const anchors = anchorsOf(html);
-  for (const m of markup.matchAll(/\shref="([^"]+)"/g)) {
+  for (const m of markup.matchAll(/\s(?:href|src)="([^"]+)"/g)) {
     const href = m[1];
     if (/^(https?:|mailto:|data:|tel:)/.test(href)) continue;
     const [rawPath, hash = ''] = href.split('#');
-    const target = rawPath || page;
+    const target = targetOf(rawPath, page);
     if (!assets.has(target)) {
       check(false, `${page}: broken link → ${href}`);
       continue;
     }
-    if (hash && target === page && !anchors.has(hash)) {
-      check(false, `${page}: missing anchor → #${hash}`);
-    }
-    if (hash && target !== page) {
-      const other = fs.readFileSync(path.join(dist, target), 'utf8');
-      if (!anchorsOf(other).has(hash)) {
-        // Section anchors that only exist on the home page are fine from elsewhere.
-        const homeHas = anchorsOf(fs.readFileSync(path.join(dist, 'index.html'), 'utf8')).has(hash);
-        if (!homeHas || target !== 'index.html') {
-          check(false, `${page}: missing anchor → ${target}#${hash}`);
-        }
-      }
+    if (hash) {
+      const same = target === page;
+      const other = same ? html : fs.readFileSync(path.join(dist, target), 'utf8');
+      const has = anchorsOf(other).has(hash);
+      const homeHas = hash && anchorsOf(fs.readFileSync(path.join(dist, 'index.html'), 'utf8')).has(hash);
+      if (!has && !homeHas) check(false, `${page}: missing anchor → ${href}`);
     }
   }
   check(/<h1[ >]/.test(html), `${page}: no <h1>`);
-  check(/<meta name="description" content="[^"]{20,}/.test(html), `${page}: thin description`);
+  if (page !== '404.html') {
+    check(/<meta name="description" content="[^"]{20,}/.test(html), `${page}: thin description`);
+  }
+  /* No address may end in .html — that is the file, not the site. */
+  for (const m of markup.matchAll(/\s(?:href|src)="([^"]+\.html[^"]*)"/g)) {
+    check(false, `${page}: .html in a link → ${m[1]}`);
+  }
+}
+
+/* Every class a page uses must have a rule in a stylesheet it loads. This is
+   the check that catches the bug this site actually had: the login page kept
+   its markup while its CSS quietly disappeared, so the form rendered as a
+   bullet list. A class with no rule is a bug, not a warning. */
+const CSS_BY_PAGE = (page) =>
+  page.startsWith('index.html') || page === '404.html' || !page.includes('/')
+    ? read('src/styles.css')
+    : page.startsWith('spec/')
+      ? read('src/styles.css')
+      : page.startsWith('login/')
+        ? read('src/styles.css')
+        : read('src/styles.css') + '\n' + read('src/app/app.css');
+
+/* These are hooks with no styling of their own by design — they exist for
+   JavaScript to find an element, or for print. */
+const UNSTYLED_BY_DESIGN = new Set(['paygrid', 'is-hidden', 'active']);
+
+for (const page of pages) {
+  if (page === '404.html') continue;
+  const html = fs.readFileSync(path.join(dist, page), 'utf8');
+  const markup = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  const css = CSS_BY_PAGE(page);
+  const used = new Set();
+  for (const m of markup.matchAll(/\sclass="([^"]+)"/g)) {
+    m[1].split(/\s+/).filter(Boolean).forEach((c) => used.add(c));
+  }
+  /* classes the script builds at run time are checked against the same file,
+     so a rendered row is covered too */
+  for (const m of html.matchAll(/class=\\?"([a-zA-Z][\w -]*)/g)) {
+    m[1].split(/\s+/).filter(Boolean).forEach((c) => used.add(c));
+  }
+  const missing = [...used].filter(
+    (c) => !UNSTYLED_BY_DESIGN.has(c) && !new RegExp('\\.' + c + '(?![\\w-])').test(css)
+  );
+  if (missing.length) check(false, `${page}: ${missing.length} class(es) with no CSS — ${missing.slice(0, 6).join(', ')}`);
 }
 
 /* The published pages must not reach for anything we do not ship. */

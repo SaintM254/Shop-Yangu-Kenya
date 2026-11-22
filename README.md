@@ -5,14 +5,29 @@ cash/M-Pesa/card, let a known customer go into credit, keep stock and expiry str
 import years of old records from Excel, and print KRA eTIMS-valid receipts.
 **Ksh 1,500 a month.**
 
-This repository holds two things:
+This repository holds three things:
 
 | What | Where | Why it is here |
 |---|---|---|
 | **The advert** — headline, what it does, the price, and one way in | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
-| **The login page** — the door the advert opens | `build.js` (`loginPage`) + `content.demo_account` | Demo credentials in one place, shown on the page |
-| **The reference prototype** — every screen, working, in one self-contained file | `shop-yangu-kenya.html` | The truth when the spec is ambiguous |
+| **The door** — `/login/` | `build.js` (`loginPage`) + `content.demo_account` | Demo credentials in one place, shown on the page |
+| **The shop** — `/dashboard/`, `/till/`, `/stock/` … | `src/app/` → `dist/<route>/index.html` | A real front end: one shell, real addresses, no `.html` |
 | **The build spec** — roles, data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
+
+## The addresses are real addresses
+
+| You type | You get |
+|---|---|
+| `/` | the advert |
+| `/login/` | the door |
+| `/dashboard/` `/till/` `/stock/` `/purchases/` `/sales/` `/customers/` `/import/` `/reports/` `/etims/` `/settings/` `/audit/` | the shop, on that screen |
+| anything else | `404.html` |
+
+No `.html` in any link, and the address bar changes as you move around the shop — Back and
+Forward work, and a screen can be bookmarked. GitHub Pages serves static files, so each
+route is a folder with an `index.html`; `build.js` writes them all from one shell. The app
+itself routes in the browser (`history.pushState`), and if the folder is opened straight
+from disk it falls back to `#/till` style addresses so nothing 404s.
 
 **Live site:** https://saintm254.github.io/Shop-Yangu-Kenya/
 
@@ -71,11 +86,13 @@ a deploy.
 ## Working on it locally
 
 ```bash
-node build.js          # writes dist/ and runs the checks
-npx serve dist         # or: python3 -m http.server -d dist 8080
+node build.js           # writes dist/ and runs the checks
+node tools/serve.mjs    # serves dist/ at http://localhost:8080, folders like Pages
 ```
 
-No install step. Node 20 or newer.
+No install step. Node 20 or newer. Use `tools/serve.mjs`, not a plain file server: the
+clean addresses only work when `/till` redirects to `/till/` and a folder answered with
+its `index.html`, and that is what it does.
 
 ### Where to change things
 
@@ -87,7 +104,12 @@ No install step. Node 20 or newer.
 | Colours, type, spacing, layout | `src/styles.css` |
 | Page structure, icons, the spec renderer | `build.js` |
 | The spec text itself | `shop-yangu-kenya.md` (rendered to `spec.html` at build time) |
-| The prototype | `shop-yangu-kenya.html` (copied to `prototype.html`) |
+| A screen in the shop | `src/app/` — `shell.js` (routing, the collapsible rail), `pos.js`, `stock.js`, `reports.js` … |
+| The shop's look | `src/app/app.css` (shares the tokens in `src/styles.css`) |
+| PDF exports | `src/app/pdf.js` + the payloads in `src/app/exports.js` |
+| Excel exports | `src/app/excel.js` (a real `.xlsx`, zipped in the browser) |
+| The logo | `Images/Icon.svg` is the source; `src/logo/mark.svg` is the recoloured mark the site and the PDFs use |
+| The prototype (kept for reference) | `shop-yangu-kenya.html` — no longer published |
 
 The price is read from `plan.price_kes` in `src/content.json` — change it to `1200` and
 every mention of Ksh 1,500 updates, exactly the rule the product itself has to obey.
@@ -99,10 +121,8 @@ every mention of Ksh 1,500 updates, exactly the rule the product itself has to o
 - links to a file that is not in `dist/`, or to an anchor that does not exist;
 - has no `<h1>`, or a description shorter than 20 characters;
 - loads an asset from anywhere other than this site (fonts are self-hosted on purpose);
-- contains an unescaped `undefined`, `NaN`, `[object Object]` or a leaked `${`.
-
-Two renderers are checked this way: `index.html` and `spec.html` (including the markdown
-converter, which is why a broken table or an unclosed code fence cannot slip through).
+- contains an unescaped `undefined`, `NaN`, `[object Object]` or a leaked `${`;
+- puts `.html` in a link anywhere. That is the file, not the site.
 
 ### The browser check
 
@@ -127,11 +147,11 @@ SITE_URL=https://saintm254.github.io/Shop-Yangu-Kenya CHROME_PATH=/usr/bin/googl
 
 Its reader is a shop owner behind a counter, not the engineer who built the system. So it
 carries: the headline, the M-Pesa / stock / receipts / reports / credit story, the price,
-and one button — **Sign up / Log in**, which goes to `login.html`. Nothing else. No screen
+and one button — **Sign up / Log in**, which goes to `/login/`. Nothing else. No screen
 counts, no pixel widths, no database notes, no prototype link.
 
-All of that engineering detail still exists, one click away in `spec.html` and in the
-prototype itself; it is just not what sells a till.
+All of that engineering detail still exists, one click away in `/spec/` and in the shop
+itself; it is just not what sells a till.
 
 ### Demo sign-in
 
@@ -145,6 +165,34 @@ can be filled with one tap. The app in this repository runs entirely in the brow
 page checks the pair in JavaScript and sets a `sessionStorage` flag — **it is a
 demonstration of the flow, not a security boundary.** A real deployment would post to an
 API that returns a JWT in an httpOnly cookie, as §9 of the spec describes.
+
+## Exports: a PDF and an Excel file, everywhere
+
+Every export control is a menu with exactly two answers, and both are real files built in
+the browser from the shop's own data — no server, no print dialog:
+
+| | How | What you get |
+|---|---|---|
+| **PDF** | `src/app/pdf.js` writes the PDF byte by byte | A4, cream, one rule colour, the logo top-left, a summary band, a clean table, page numbers. Long lists break across pages properly |
+| **Excel** | `src/app/excel.js` zips the workbook itself | A real `.xlsx`: frozen styled header, money as numbers Excel can add, print setup, one sheet per section |
+
+They sit on top of `exports.js`, which turns the live data into rows. When Postgres arrives
+that is the only file that has to learn where the rows come from — and `src/app/backend.js`
+is already the seam for it (see below).
+
+## Where the database plugs in
+
+`src/app/backend.js` is the only place the app knows about a server:
+
+```js
+BACKEND.base = 'https://api.shopyangu.co.ke';  // the new API
+BACKEND.live = true;                            // and the screens keep working
+```
+
+It documents the exact shape `S` has to keep, the money and date rules, and the one write
+that must be a transaction (a sale, its payments and the stock decrement together). Nothing
+in `shell.js`, the screens or the exports needs changing: `load()` fills `S` before the
+first paint, `save()` writes changes back, and `persist()` is already called from the till.
 
 ## Conventions the product follows everywhere
 
