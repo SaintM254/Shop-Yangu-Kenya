@@ -35,6 +35,7 @@ const PAGES = [
   { path: '/', name: 'home', viaBase: true },
   { path: '/spec.html', name: 'spec' },
   { path: '/prototype.html', name: 'prototype' },
+  { path: '/login.html', name: 'login' },
   { path: '/404.html', name: '404' },
 ];
 
@@ -135,18 +136,43 @@ for (const page of PAGES) {
       if (h1 !== 1) fail(`${page.name}@${width}: expected 1 <h1>, found ${h1}`);
     }
 
-    /* The landing page ends at the screens: the detail lives in spec.html. */
+    /* The home page is an advert: no build notes, no screen inventory, and
+       every call to action leads to the login page. */
     if (page.name === 'home') {
-      const rows = await tab.locator('.menulist__row').count();
-      if (rows !== 11) fail(`home: screens list shows ${rows} rows, expected 11`);
-      for (const gone of ['#deploy', '#money', '#data', '#import']) {
-        if (await tab.locator(gone).count()) fail(`home: ${gone} section is still on the page`);
+      const h1 = await tab.locator('h1').first().textContent();
+      if (!/^Make the sale/.test((h1 || '').trim())) fail(`home: headline is "${(h1 || '').trim()}"`);
+      const text = await tab.evaluate(() => document.body.innerText);
+      for (const banned of ['Built for Kenyan wholesalers', '360 px', 'Every screen, working', 'data model', 'numeric(12,2)']) {
+        if (text.includes(banned)) fail(`home: build language still on the page — "${banned}"`);
       }
-      const lastSectionId = await tab.evaluate(() => {
-        const secs = [...document.querySelectorAll('main > section')];
-        return secs.length ? secs[secs.length - 1].id : '(none)';
-      });
-      if (lastSectionId !== 'screens') fail(`home: last section is ${lastSectionId}, expected screens`);
+      const cta = await tab.evaluate(() =>
+        [...document.querySelectorAll('a.btn')]
+          .filter((a) => /sign up|log in/i.test(a.textContent))
+          .map((a) => a.getAttribute('href'))
+      );
+      if (cta.length < 2) fail(`home: expected a sign-up CTA, found ${cta.length}`);
+      if (cta.some((h) => h !== 'login.html')) fail(`home: a sign-up CTA points at ${cta.join(', ')}`);
+      if (await tab.locator('a[href="prototype.html"]').count()) fail('home: still links to the prototype');
+    }
+
+    /* Login page: the demo account is shown, and the form refuses a wrong
+       password before it accepts the right one. */
+    if (page.name === 'login') {
+      const body = await tab.evaluate(() => document.body.innerText);
+      if (!body.includes('owner@shopyangu.co.ke')) fail('login: demo email is not on the page');
+      if (!/Owner@2026/.test(body)) fail('login: demo password is not on the page');
+
+      await tab.fill('#email', 'owner@shopyangu.co.ke');
+      await tab.fill('#password', 'definitely-wrong');
+      await tab.click('#loginBtn');
+      await tab.waitForTimeout(150);
+      if (await tab.locator('#loginError').isHidden()) fail('login: a wrong password was not refused');
+
+      await tab.fill('#password', 'Owner@2026');
+      await tab.click('#loginBtn');
+      await tab.waitForTimeout(200);
+      if (await tab.locator('#loginDone').isHidden()) fail('login: the demo credentials did not sign in');
+      if (!(await tab.locator('#loginDone a[href="prototype.html"]').count())) fail('login: no way through to the till');
     }
 
     /* Every internal link on the page must resolve. */
@@ -185,6 +211,28 @@ for (const page of PAGES) {
       note((e.stack || '').split('\n').slice(0, 4).join('\n'));
     }
   }
+}
+
+/* The advert's path: home -> Sign up / Log in -> the till. Follow it once. */
+try {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const tab = await ctx.newPage();
+  await tab.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+  await tab.locator('a.btn', { hasText: 'Sign up / Log in' }).first().click();
+  await tab.waitForURL(/login\.html/, { timeout: 15_000 });
+  await tab.fill('#email', 'owner@shopyangu.co.ke');
+  await tab.fill('#password', 'Owner@2026');
+  await tab.click('#loginBtn');
+  await tab.waitForTimeout(250);
+  await tab.locator('#loginDone a[href="prototype.html"]').click();
+  await tab.waitForURL(/prototype\.html/, { timeout: 15_000 });
+  await tab.waitForTimeout(400);
+  const booted = await tab.locator('#rail .navlink').count();
+  if (booted < 8) fail(`path home -> login -> till: the till did not boot (${booted} links)`);
+  note(`ok path home -> login -> till (${booted} rail links after sign-in)`);
+  await ctx.close();
+} catch (e) {
+  fail(`path home -> login -> till: ${e.message.split('\n')[0]}`);
 }
 
 /* The prototype must actually boot: its JS builds the whole app, the till must

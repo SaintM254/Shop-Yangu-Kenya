@@ -11,80 +11,80 @@
     "period": "month",
     "trial_days": 14,
     "includes": [
-      "Every screen on this page, on one account",
-      "Unlimited products, receipts and staff",
-      "Offline till that keeps selling when the signal drops"
+      "Unlimited sales, products and staff accounts",
+      "M-Pesa prompts sent from the till, at no extra charge",
+      "Receipts, daily reports and stock that keeps itself right",
+      "Use it on as many phones and laptops as your shop needs"
     ]
   },
   "hero": {
-    "eyebrow": "Built for Kenyan wholesalers & large retailers",
-    "title": "Sell, split the payment, keep the stock honest.",
-    "lede": "A phone-first shop system for the person at the till, not just the owner with a laptop. Take a sale across cash, M-Pesa and card, let a known customer go into credit, keep expiry and stock straight, and print a KRA eTIMS receipt that adds up to the shilling.",
+    "title": "Make the sale, send the M-Pesa prompt, print the receipt, and your stock updates.",
+    "lede": "A simple shop system for managing your stock, making sales at the till (POS) and issuing receipts. Customers pay by cash, or M-Pesa. With M-Pesa, you send an STK push to their phone and they just enter their PIN, just like at the supermarket. Keep track of your stock and daily reports, and use it on your phone or laptop.",
     "primary_cta": {
-      "label": "Open the working prototype",
-      "href": "prototype.html"
+      "label": "Sign up / Log in",
+      "href": "login.html"
     },
     "secondary_cta": {
-      "label": "Read the build spec",
-      "href": "spec.html"
+      "label": "See what it does",
+      "href": "#what"
     },
     "notes": [
-      "No build step inside the prototype — one self-contained file, works offline",
-      "Sample data, in memory: reload resets it"
+      "Works on the phone already in your pocket",
+      "Set up in an afternoon — nothing to install"
     ]
   },
   "stats": [
     {
-      "value": "11",
-      "label": "screens",
-      "note": "every one checked at 360 px"
+      "value": "Ksh 1,500",
+      "label": "a month",
+      "note": "about Ksh 50 a day — one sale covers it"
     },
     {
-      "value": "16%",
-      "label": "VAT, inclusive",
-      "note": "total × 16 / 116, never added on top"
+      "value": "Free",
+      "label": "for 14 days",
+      "note": "no card, no M-Pesa until you choose"
     },
     {
-      "value": "3",
-      "label": "payment parts",
-      "note": "cash, M-Pesa, card on one sale"
+      "value": "2 min",
+      "label": "to ring up a sale",
+      "note": "search, tap, print, done"
     },
     {
-      "value": "0",
-      "label": "floats",
-      "note": "money is numeric(12,2), always"
+      "value": "1 tap",
+      "label": "to see the day",
+      "note": "takings, profit and stock in one place"
     }
   ],
   "features": [
     {
-      "icon": "wallet",
-      "title": "Split payments, honestly",
-      "body": "Up to three payment parts per sale, each with its own amount and a Fill/Rest button that inserts what is still unpaid. Overpay and the till shows change; come up short and it asks who is taking the credit — a walk-in cannot hold one."
+      "icon": "smartphone",
+      "title": "M-Pesa that asks the customer for you",
+      "body": "Choose M-Pesa, send an STK push, and your customer gets the prompt on their phone. They enter their PIN, the till shows Paid, and the receipt prints. No phone numbers written in a book, no checking SMS screenshots at closing time."
     },
     {
-      "icon": "phone",
-      "title": "A till that fits a thumb",
-      "body": "Designed at 360 px first, then allowed to grow. 52 px steppers, inputmode=\"numeric\" quantity fields that select on focus, and a bottom tab bar instead of a cramped sidebar."
+      "icon": "receipt",
+      "title": "A receipt you can hand over",
+      "body": "Every sale prints a proper receipt with your shop name, your KRA PIN, VAT and the cashier's name. Print on the spot, or save as a PDF and send it on WhatsApp."
     },
     {
       "icon": "box",
-      "title": "Stock that actually counts",
-      "body": "Quantity is a count, not a delta — the sheet says so. Quick-add chips for +1/+6/+12/+24/+48, reorder levels, expiry dates, and low/out-of-stock surfaced on the dashboard before a customer asks."
+      "title": "Stock that updates itself",
+      "body": "Selling lowers the stock, receiving a delivery raises it. Set a reorder level and the app warns you before the last carton goes, with expiry dates for what has them."
+    },
+    {
+      "icon": "chart",
+      "title": "See the day, not a spreadsheet",
+      "body": "Takings, profit, expenses and a day-by-day chart, the moment you open the app. Reports for this week, this month and this quarter, ready to export or print."
     },
     {
       "icon": "users",
-      "title": "The customer is on the receipt",
-      "body": "Pick a customer at the till, add one on the spot, or type a name for a walk-in. Whatever is chosen is what prints under Customer on the receipt, and a walk-in keeps no balance so it can never take credit."
+      "title": "Know who owes you, and how much",
+      "body": "Let a customer pay in parts — cash now, M-Pesa later — or go into credit. The app keeps the balance, the payment history and a limit, against a name, so nothing is left to memory."
     },
     {
-      "icon": "upload",
-      "title": "Migration without tears",
-      "body": "Three real .xlsx templates with coloured header rows. Preview and a row-by-row validation report before a single write; three bad dates are reported as three rows, not a failed import. One press undoes the batch."
-    },
-    {
-      "icon": "shield",
-      "title": "eTIMS that never blocks the till",
-      "body": "Sign locally, transmit asynchronously, retry with backoff. Device and PIN block on its own screen, test transmission, and every signature on the receipt."
+      "icon": "wallet",
+      "title": "Split the payment at the till",
+      "body": "Cash, M-Pesa or card, up to three parts on one sale. Enter part of the amount, tap Rest for what is left, and the app shows change or what is going to credit before you commit."
     }
   ],
   "screens": [
@@ -252,5 +252,13 @@
   },
   "footer": {
     "note": "Sample data in the prototype is a Mombasa wholesale shop, not lorem ipsum. Every figure derives from it, so changing the seed changes every number on screen."
+  },
+  "demo_account": {
+    "email": "owner@shopyangu.co.ke",
+    "password": "Owner@2026",
+    "name": "Wanjiku Kamau",
+    "role": "Owner",
+    "shop": "Shop Yangu Kenya · Mombasa Branch",
+    "note": "Demo account. The app in this repository runs entirely in the browser, so this sign-in demonstrates the flow rather than protecting anything."
   }
 }
