@@ -173,7 +173,8 @@ for (const page of PAGES) {
   }
 }
 
-/* The prototype must actually boot: its JS builds the whole app. */
+/* The prototype must actually boot: its JS builds the whole app, the till must
+   let the cashier name the customer, and every date must read DD/MM/YY. */
 try {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 780 } });
   const tab = await ctx.newPage();
@@ -188,7 +189,31 @@ try {
   const bodyText = await tab.evaluate(() => document.body.innerText);
   if (!/Payment Goal|Total Balance/i.test(bodyText)) fail('prototype: dashboard did not paint');
   if (!/Ksh/.test(bodyText)) fail('prototype: no money rendered — the app did not boot');
-  note(`ok prototype booted (${railItems} rail links, ${tabItems} tabs)`);
+
+  /* Open the till and prove the customer control is there and usable. */
+  await tab.locator('#rail .navlink', { hasText: 'Point of sale' }).first().click();
+  await tab.waitForTimeout(250);
+  if (!(await tab.locator('#posCustomer').count())) fail('prototype: till has no customer control');
+  if (!(await tab.locator('#walkInBtn').count())) fail('prototype: till has no Walk-in button');
+
+  /* Dates: DD/MM/YY, never a four-digit year, on the Sales screen. */
+  await tab.locator('#rail .navlink', { hasText: 'Sales' }).first().click();
+  await tab.waitForTimeout(250);
+  const salesText = await tab.evaluate(() => document.querySelector('#s-sales').innerText);
+  const shortDates = salesText.match(/\b\d{2}\/\d{2}\/\d{2}\b/g) || [];
+  const longDates = salesText.match(/\b\d{2}\/\d{2}\/\d{4}\b/g) || [];
+  if (!shortDates.length) fail('prototype: no DD/MM/YY dates found on Sales');
+  if (longDates.length) fail(`prototype: ${longDates.length} date(s) still show a 4-digit year`);
+
+  /* Status must read at full strength: no tinted capsule behind a pill. */
+  const tintedPills = await tab.evaluate(() =>
+    [...document.querySelectorAll('.pill')].filter((el) => {
+      const bg = getComputedStyle(el).backgroundColor;
+      return bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+    }).length
+  );
+  if (tintedPills) fail(`prototype: ${tintedPills} pill(s) still painted a tinted background`);
+  note(`ok prototype booted (${railItems} rail links, ${tabItems} tabs, ${shortDates.length} DD/MM/YY dates)`);
   await ctx.close();
 } catch (e) {
   fail(`prototype: threw — ${e.message.split('\n')[0]}`);
@@ -201,6 +226,10 @@ try {
   await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
   const back = await tab.locator('#protoBar a[href="index.html"]').count();
   if (back !== 1) fail('prototype: back-to-site link missing');
+  await tab.locator('#rail .navlink', { hasText: 'Point of sale' }).first().click();
+  await tab.waitForTimeout(300);
+  fs.mkdirSync('shots', { recursive: true });
+  await tab.screenshot({ path: 'shots/prototype-till-390.png', fullPage: false, animations: 'disabled' });
   note('ok back-to-site link present');
   await ctx.close();
 } catch (e) {

@@ -32,6 +32,12 @@ const escapeHtml = (s) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
+/** DD/MM/YY — the format the product uses, so the site writes dates the same way. */
+const dmy = (d) =>
+  [d.getDate(), d.getMonth() + 1].map((n) => String(n).padStart(2, '0')).join('/') +
+  '/' +
+  String(d.getFullYear()).slice(-2);
+
 /** Ksh 12,345 — the product's own money format, used everywhere on this page. */
 const kes = (n) => 'Ksh ' + Number(n).toLocaleString('en-KE');
 
@@ -319,8 +325,6 @@ function siteHeader(current) {
   const nav = [
     ['#features', 'Features'],
     ['#screens', 'Screens'],
-    ['#money', 'Money rules'],
-    ['#deploy', 'Deploy'],
     ['spec.html', 'Spec'],
   ];
   const isNav = (href) => href === current;
@@ -364,12 +368,12 @@ function siteFooter(current) {
         <p class="ftr__h">The product</p>
         <a href="prototype.html">Working prototype</a>
         <a href="spec.html">Build spec</a>
-        <a href="${here('#screens')}">All eleven screens</a>
+        <a href="${here('#screens')}">Every screen</a>
       </div>
       <div>
         <p class="ftr__h">The price</p>
         <p class="ftr__price num">${kes(content.plan.price_kes)} <span>/ ${escapeHtml(content.plan.period)}</span></p>
-        <a href="${here('#deploy')}">How this site deploys</a>
+        <a href="${here('#features')}">What the till does</a>
       </div>
       <div>
         <p class="ftr__h">Shop details</p>
@@ -379,7 +383,7 @@ function siteFooter(current) {
     </div>
   </div>
   <div class="wrap ftr__base">
-    <p>Static site on GitHub Pages · built and deployed by GitHub Actions · ${new Date().toISOString().slice(0, 10)}</p>
+    <p>Static site on GitHub Pages · built by GitHub Actions · ${dmy(new Date())}</p>
     <p>Prototype data is sample data. Reloading resets it.</p>
   </div>
 </footer>`;
@@ -515,233 +519,27 @@ const features = `
 </section>`;
 
 const screens = `
-<section class="sec sec--tint" id="screens">
+<section class="sec" id="screens">
   <div class="wrap">
     <header class="sec__head sec__head--split">
       <div>
         <p class="kicker">The product</p>
-        <h2 class="sec__title">Eleven screens, each checked at 360 px.</h2>
-        <p class="sec__lede">One column under 900 px with a five-item bottom tab bar and a drawer for the rest; from 900 px a 248 px navy rail replaces both. Nothing scrolls sideways except the category chips.</p>
+        <h2 class="sec__title">Every screen, working.</h2>
+        <p class="sec__lede">Open the prototype and use it — the till, the stock sheet, the credit payments, the receipts. Sample data, in memory.</p>
       </div>
-      <a class="btn btn--ghost btn--sm" href="prototype.html">Open the prototype ${icon('arrow', 'ic ic--sm')}</a>
+      <a class="btn btn--primary btn--sm" href="prototype.html">Open the prototype ${icon('arrow', 'ic ic--sm')}</a>
     </header>
-    <ol class="screens">
+    <ol class="menulist">
       ${content.screens
         .map(
-          (s) => `<li class="screen">
-        <div class="screen__top">
-          <span class="screen__n num">${s.n}</span>
-          <h3 class="screen__name">${escapeHtml(s.name)}</h3>
-          <span class="tag ${s.audience === 'Owner' ? 'tag--owner' : 'tag--both'}">${escapeHtml(s.audience)}</span>
-        </div>
-        <p class="screen__body">${escapeHtml(s.body)}</p>
-        ${s.sales ? `<p class="screen__sales"><strong>Sales role</strong>${escapeHtml(s.sales)}</p>` : ''}
+          (s) => `<li class="menulist__row">
+        <span class="menulist__n num">${s.n}</span>
+        <span class="menulist__name">${escapeHtml(s.name)}</span>
+        <span class="menulist__aud">${escapeHtml(s.audience === 'Owner' ? 'Owner' : 'Owner + sales')}</span>
       </li>`
         )
         .join('\n      ')}
     </ol>
-  </div>
-</section>`;
-
-const money = `
-<section class="sec" id="money">
-  <div class="wrap">
-    <header class="sec__head">
-      <p class="kicker">Money rules</p>
-      <h2 class="sec__title">${escapeHtml(content.money.title)}</h2>
-      <p class="sec__lede">${escapeHtml(content.money.body)}</p>
-    </header>
-    <div class="money">
-      <div class="card formula">
-        <p class="card__h">Formulas</p>
-        <dl class="formula__list num">
-          ${content.money.formulas
-            .map(
-              ([name, expr]) =>
-                `<div class="formula__row"><dt>${escapeHtml(name)}</dt><dd>${escapeHtml(expr)}</dd></div>`
-            )
-            .join('\n          ')}
-        </dl>
-        <p class="formula__foot">VAT is inclusive at 16%. Kenyan prices are quoted inclusive, so tax is never added on top at the till.</p>
-      </div>
-      <div class="cases">
-        ${content.money.cases
-          .map(
-            (c) => `<article class="case case--${c.tone}">
-          <h3 class="case__title">${escapeHtml(c.title)}</h3>
-          <p class="case__body">${escapeHtml(c.detail)}</p>
-          <p class="case__result num">${escapeHtml(c.result)}</p>
-        </article>`
-          )
-          .join('\n        ')}
-      </div>
-    </div>
-  </div>
-</section>`;
-
-const importing = `
-<section class="sec sec--tint" id="import">
-  <div class="wrap">
-    <header class="sec__head sec__head--split">
-      <div>
-        <p class="kicker">Migration</p>
-        <h2 class="sec__title">Years of old records, in three sheets.</h2>
-        <p class="sec__lede">Each template is a real <code>.xlsx</code> with a coloured header row — not a CSV renamed. Preview and a full validation report come before any write, and the whole batch can be undone in one action.</p>
-      </div>
-      <a class="btn btn--ghost btn--sm" href="spec.html#7-excel-import-and-branded-export">Read the import spec ${icon('arrow', 'ic ic--sm')}</a>
-    </header>
-    <div class="templates">
-      ${content.import_section.templates
-        .map(
-          (t) => `<article class="template">
-        <div class="template__head">
-          <span class="template__icon" aria-hidden="true">${icon('upload')}</span>
-          <h3>${escapeHtml(t.sheet)}</h3>
-          <span class="mono-chip">.xlsx</span>
-        </div>
-        <p class="template__cols mono">${escapeHtml(t.columns)}</p>
-      </article>`
-        )
-        .join('\n      ')}
-    </div>
-    <div class="rules">
-      <p class="rules__h">Date handling is where migrations go wrong, so it has explicit rules</p>
-      <ul class="checks">
-        ${content.import_section.rules
-          .map((r) => `<li>${icon('check', 'ic ic--sm')}<span>${escapeHtml(r)}</span></li>`)
-          .join('\n        ')}
-      </ul>
-    </div>
-  </div>
-</section>`;
-
-const dataModel = `
-<section class="sec" id="data">
-  <div class="wrap">
-    <header class="sec__head">
-      <p class="kicker">Data model</p>
-      <h2 class="sec__title">Sixteen tables, and four rules that matter more than the rest.</h2>
-      <p class="sec__lede">${escapeHtml(content.data_model.note)}</p>
-    </header>
-    <div class="data">
-      <div class="codeblock codeblock--sql">
-        <span class="codeblock__lang">sql</span>
-        <pre><code>${escapeHtml(content.data_model.sql)}</code></pre>
-      </div>
-      <ul class="checks checks--stack">
-        ${content.data_model.rules
-          .map((r) => `<li>${icon('check', 'ic ic--sm')}<span>${escapeHtml(r)}</span></li>`)
-          .join('\n        ')}
-      </ul>
-    </div>
-  </div>
-</section>`;
-
-const deploy = `
-<section class="sec sec--dark" id="deploy">
-  <div class="wrap">
-    <header class="sec__head sec__head--light">
-      <p class="kicker kicker--light">Deployment</p>
-      <h2 class="sec__title">Built and published by GitHub Actions.</h2>
-      <p class="sec__lede">${escapeHtml(content.deploy.summary)}</p>
-    </header>
-
-    <div class="deploy">
-      <div class="manual">
-        <p class="manual__label">${icon('gear', 'ic ic--sm')} One manual step, once</p>
-        ${content.deploy.manual_steps
-          .map(
-            (s, n) => `<div class="manual__step">
-          <span class="manual__n num">${n + 1}</span>
-          <div>
-            <p class="manual__where">${escapeHtml(s.where)}</p>
-            <p class="manual__action">${escapeHtml(s.action)}</p>
-            <p class="manual__note">${escapeHtml(s.note)}</p>
-          </div>
-        </div>`
-          )
-          .join('')}
-        <div class="pagespanel" role="img" aria-label="The GitHub Pages settings panel with Source set to GitHub Actions, as in the reference screenshot.">
-          <p class="pagespanel__h">GitHub Pages</p>
-          <p class="pagespanel__sub">Build and deployment</p>
-          <p class="pagespanel__field">Source</p>
-          <span class="pagespanel__select">GitHub Actions</span>
-          <p class="pagespanel__note">Exactly what you are looking for in <span class="mono">Settings → Pages</span>. The workflow does the rest; no branch folder, no <span class="mono">/docs</span> setting.</p>
-        </div>
-      </div>
-
-      <div class="automatic">
-        <p class="automatic__label">${icon('rocket', 'ic ic--sm')} Everything after that is automatic</p>
-        <ol class="automatic__list">
-          ${content.deploy.automatic.map((a) => `<li>${escapeHtml(a)}</li>`).join('\n          ')}
-        </ol>
-        <div class="codeblock codeblock--dark">
-          <span class="codeblock__lang">.github/workflows/pages.yml</span>
-          <pre><code>${escapeHtml(
-            [
-              'on:',
-              '  push:',
-              '    branches: [main]',
-              '  workflow_dispatch:',
-              '',
-              'permissions:',
-              '  contents: read',
-              '  pages: write',
-              '  id-token: write',
-              '',
-              'concurrency:',
-              '  group: pages',
-              '  cancel-in-progress: false',
-              '',
-              'jobs:',
-              '  build:',
-              '    runs-on: ubuntu-latest',
-              '    steps:',
-              '      - uses: actions/checkout@v4',
-              '      - uses: actions/setup-node@v4',
-              '        with: { node-version: 24 }',
-              '      - run: node build.js',
-              '      - uses: actions/upload-pages-artifact@v3',
-              '        with: { path: dist }',
-              '',
-              '  deploy:',
-              '    needs: build',
-              '    runs-on: ubuntu-latest',
-              '    environment: github-pages',
-              '    steps:',
-              '      - uses: actions/deploy-pages@v4',
-            ].join('\n')
-          )}</code></pre>
-        </div>
-      </div>
-    </div>
-
-    <div class="urls">
-      <div class="url">
-        <p class="url__label">Where it lands</p>
-        <p class="url__value mono">https://saintm254.github.io/Shop-Yangu-Kenya/</p>
-      </div>
-      <div class="url">
-        <p class="url__label">Every run prints this</p>
-        <p class="url__value mono">"The deployment is available at …"</p>
-      </div>
-      <div class="url">
-        <p class="url__label">Rolling back</p>
-        <p class="url__value">Re-run any earlier successful workflow run, or revert the commit — every deploy is an artifact of a commit.</p>
-      </div>
-    </div>
-
-    <details class="trouble">
-      <summary>If the deploy step fails, read this first</summary>
-      <dl>
-        <div><dt>“Get Pages site failed” or “Not Found” at deploy</dt><dd>Source is still set to “Deploy from a branch”. Set it to <strong>GitHub Actions</strong>, then re-run the workflow.</dd></div>
-        <div><dt>Website shows 404</dt><dd>The artifact must contain <code>index.html</code> at its root. <code>build.js</code> writes exactly that into <code>dist/</code>.</dd></div>
-        <div><dt>Nothing runs on push</dt><dd>Actions may be disabled on a fork or a fresh repo. Repository → Settings → Actions → General → allow actions.</dd></div>
-        <div><dt>Fonts look wrong</dt><dd>Public Sans is self-hosted from <code>dist/fonts/</code>; no Google Fonts request is made, as the design language requires.</dd></div>
-      </dl>
-    </details>
-
-    <p class="deploy__foot">${escapeHtml(content.footer.note)}</p>
   </div>
 </section>`;
 
@@ -751,10 +549,6 @@ const indexBody = `
   ${statsStrip}
   ${features}
   ${screens}
-  ${money}
-  ${importing}
-  ${dataModel}
-  ${deploy}
 </main>`;
 
 /* ------------------------------------------------------------------ */
