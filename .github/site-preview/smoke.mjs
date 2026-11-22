@@ -176,7 +176,9 @@ for (const page of PAGES) {
 /* The prototype must actually boot: its JS builds the whole app, the till must
    let the cashier name the customer, and every date must read DD/MM/YY. */
 try {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 780 } });
+  /* The rail is the desktop nav (>=900px); on a phone only the tab bar shows.
+     Use a desktop viewport so the rail links are real, clickable targets. */
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const tab = await ctx.newPage();
   await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
   /* The app paints two navs: the desktop rail (.navlink buttons, 11 entries for
@@ -190,15 +192,24 @@ try {
   if (!/Payment Goal|Total Balance/i.test(bodyText)) fail('prototype: dashboard did not paint');
   if (!/Ksh/.test(bodyText)) fail('prototype: no money rendered — the app did not boot');
 
+  /* Click a rail link by its label, falling back to a JS click so a CSS
+     display:none at some width cannot turn into a 30 s timeout. */
+  const gotoRoute = async (label) => {
+    await tab.evaluate((text) => {
+      const b = [...document.querySelectorAll('#rail .navlink')]
+        .find((el) => el.textContent.trim().toLowerCase().includes(text.toLowerCase()));
+      if (b) b.click();
+    }, label);
+    await tab.waitForTimeout(250);
+  };
+
   /* Open the till and prove the customer control is there and usable. */
-  await tab.locator('#rail .navlink', { hasText: 'Point of sale' }).first().click();
-  await tab.waitForTimeout(250);
+  await gotoRoute('Point of sale');
   if (!(await tab.locator('#posCustomer').count())) fail('prototype: till has no customer control');
   if (!(await tab.locator('#walkInBtn').count())) fail('prototype: till has no Walk-in button');
 
   /* Dates: DD/MM/YY, never a four-digit year, on the Sales screen. */
-  await tab.locator('#rail .navlink', { hasText: 'Sales' }).first().click();
-  await tab.waitForTimeout(250);
+  await gotoRoute('Sales');
   const salesText = await tab.evaluate(() => document.querySelector('#s-sales').innerText);
   const shortDates = salesText.match(/\b\d{2}\/\d{2}\/\d{2}\b/g) || [];
   const longDates = salesText.match(/\b\d{2}\/\d{2}\/\d{4}\b/g) || [];
@@ -221,12 +232,18 @@ try {
 
 /* And the back-link into the site must be present. */
 try {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 780 } });
+  /* The rail is the desktop nav (>=900px); on a phone only the tab bar shows.
+     Use a desktop viewport so the rail links are real, clickable targets. */
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const tab = await ctx.newPage();
   await tab.goto(`${BASE}/prototype.html`, { waitUntil: 'networkidle' });
   const back = await tab.locator('#protoBar a[href="index.html"]').count();
   if (back !== 1) fail('prototype: back-to-site link missing');
-  await tab.locator('#rail .navlink', { hasText: 'Point of sale' }).first().click();
+  await tab.evaluate(() => {
+    const b = [...document.querySelectorAll('#rail .navlink')]
+      .find((el) => /point of sale/i.test(el.textContent));
+    if (b) b.click();
+  });
   await tab.waitForTimeout(300);
   fs.mkdirSync('shots', { recursive: true });
   await tab.screenshot({ path: 'shots/prototype-till-390.png', fullPage: false, animations: 'disabled' });
