@@ -155,6 +155,15 @@ for (const page of PAGES) {
     );
     if (realErrors.length) fail(`${page.name}@${width}: ${realErrors.slice(0, 3).join(' | ')}`);
 
+    /* Keep a screenshot of every page at every width as evidence in the run. */
+    fs.mkdirSync('shots', { recursive: true });
+    const full = ['home', 'spec'].includes(page.name);
+    await tab.screenshot({
+      path: `shots/${page.name}-${width}.png`,
+      fullPage: full,
+      animations: 'disabled',
+    });
+
     note(`ok ${page.name}@${width}px`);
     await ctx.close();
     } catch (e) {

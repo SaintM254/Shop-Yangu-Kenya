@@ -99,6 +99,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: site-check-report
-          path: .github/site-preview/report.txt
+          path: |
+            .github/site-preview/report.txt
+            .github/site-preview/shots
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 14
