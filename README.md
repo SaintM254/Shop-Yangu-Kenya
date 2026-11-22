@@ -9,7 +9,7 @@ This repository holds two things:
 
 | What | Where | Why it is here |
 |---|---|---|
-| **The product page** — what the system is, the eleven screens, the money rules, the deploy guide | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
+| **The product page** — the brief, six capability cards, and a one-line list of every screen | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
 | **The reference prototype** — every screen, working, in one self-contained file | `shop-yangu-kenya.html` | The truth when the spec is ambiguous |
 | **The build spec** — roles, data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
 
@@ -120,18 +120,26 @@ SITE_URL=https://saintm254.github.io/Shop-Yangu-Kenya CHROME_PATH=/usr/bin/googl
 
 ---
 
-## What the page says, and where it comes from
+## The page is deliberately short
 
-- **Eleven screens** — §5 of `shop-yangu-kenya.md`, with the sales-role variant of each.
-- **Money rules** — §8: inclusive 16% VAT (`total × 16 / 116`), `change = max(0, paid − total)`,
-  `credit = max(0, total − paid)`, round the line then sum.
-- **Import rules** — §7.1: `dd/mm/yyyy` is the Kenyan convention and is never read as
-  `mm/dd`; a sale dated in the future is rejected, an expiry date in the future is fine.
-- **Data model** — §6, including the four rules that matter: snapshotted sale lines,
-  never-reused receipt numbers, a derived-but-stored `customer.balance`, and an explicit
-  `sale.credit_amount`.
-- **Design language** — §4: Public Sans, flat surfaces with no shadows, 10/16/20/999 radii,
-  1 px sand borders, cerulean `#287094` on navy `#023246`.
+It ends after the screens list. The money rules, the import rules, the data model and the
+deploy guide used to sit below it; they are all still in `shop-yangu-kenya.md`, which
+`spec.html` renders in full. The landing page is the brief, what the till does, and a
+one-line index of the eleven screens — the prototype is where they are actually used.
+
+## Conventions the product follows everywhere
+
+- **Dates are DD/MM/YY** — `20/11/26`, never a four-digit year, on receipts, lists,
+  ledgers, exports and the site footer alike.
+- **The customer is on the receipt.** The till has a Customer card: search the list, add
+  someone new on the spot, or type a name for a walk-in. A walk-in keeps no balance, so it
+  can never take credit — the credit sheet asks for a named customer instead.
+- **Status is a small square and a word**, at full colour: no tinted capsules, no faded
+  text. **Icons are plain line glyphs** with no disc, tile or ring behind them, and they
+  point the way they read — import goes *into* the tray, export comes *out*.
+- **Surfaces are flat.** Depth is the cream/paper contrast, not an outline on every card.
+- **Design language** — §4 of the spec: Public Sans, 10/16/20/999 radii, cerulean
+  `#287094` on navy `#023246`.
 
 ## Licence
 

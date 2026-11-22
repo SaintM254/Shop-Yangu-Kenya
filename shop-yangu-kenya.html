@@ -186,14 +186,18 @@
   .formrow + .formrow{margin-top:11px}
   @media(min-width:640px){.form2{display:grid;grid-template-columns:1fr 1fr;gap:11px}.formrow + .formrow{margin-top:0}}
 
-  .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--r-pill);
-        font-size:11px;font-weight:600;white-space:nowrap}
-  .pill .dot{width:6px;height:6px;border-radius:999px;background:currentColor}
-  .pill.ok{background:var(--forest-tint);color:var(--forest)}
-  .pill.low{background:var(--warning-tint);color:var(--warning)}
-  .pill.out{background:var(--danger-tint);color:var(--danger)}
-  .pill.info{background:var(--syk-tint);color:var(--syk)}
-  .pill.neutral{background:var(--cream-deep);color:var(--ink-muted)}
+  /* Status is a small square marker and a word — no tinted capsule, nothing
+     faded. Colour stays at full strength so "out of stock" reads in sunlight. */
+  .pill{display:inline-flex;align-items:center;gap:6px;
+        font-size:11.5px;font-weight:600;white-space:nowrap;color:var(--ink-muted)}
+  .pill::before{content:"";width:6px;height:6px;border-radius:2px;background:currentColor;flex:none}
+  .pill .dot{width:6px;height:6px;border-radius:2px;background:currentColor}
+  .pill .ic{width:14px;height:14px}
+  .pill.ok{color:var(--forest)}
+  .pill.low{color:var(--warning)}
+  .pill.out{color:var(--danger)}
+  .pill.info{color:var(--syk)}
+  .pill.neutral{color:var(--ink-muted)}
 
   /* money: red for down, green for up — as asked */
   .up{color:var(--forest)} .down{color:var(--danger)}
@@ -233,7 +237,7 @@
   /* the grid decides for itself: as many cards as fit, never squeezed */
   .statgrid{grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
   .stat .v{font-size:clamp(17px,1.6vw,22px)}
-  .stat{background:var(--paper);border:1px solid var(--sand);border-radius:var(--r-panel);padding:13px 14px}
+  .stat{background:var(--paper);border:1px solid transparent;border-radius:var(--r-panel);padding:13px 14px}
   .stat .k{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);white-space:nowrap;
            display:flex;align-items:center;gap:6px}
   .stat .k svg.ic{width:14px;height:14px}
@@ -251,7 +255,7 @@
   .bars .col{flex:1;display:flex;flex-direction:column;height:100%;min-width:0}
   .bars .pair{flex:1;display:flex;align-items:flex-end;gap:2px;min-height:0}
   .bars .bar{flex:1;background:var(--syk);border-radius:3px 3px 0 0;min-height:2px}
-  .bars .bar.prev{background:var(--syk-tint);border:1px solid #C9DDE9;border-bottom:0;border-radius:3px 3px 0 0}
+  .bars .bar.prev{background:#A9C6D6;border-radius:3px 3px 0 0}
   .bars .x{font-size:9.5px;text-align:center;color:var(--ink-muted);margin-top:5px;white-space:nowrap}
   .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:11.5px;color:var(--ink-muted)}
   .legend span{display:inline-flex;align-items:center;gap:5px}
@@ -285,7 +289,7 @@
   .tablewrap.desk{display:none}
   @media(min-width:760px){.cards-mobile{display:none}.tablewrap.desk{display:block}}
 
-  .rowcard{border:1px solid var(--sand);border-radius:12px;padding:11px 12px;background:var(--paper)}
+  .rowcard{border:1px solid transparent;border-radius:12px;padding:11px 12px;background:var(--paper)}
   .rowcard + .rowcard{margin-top:8px}
   .rowcard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
   .rowcard .ttl{font-size:14px;font-weight:600;line-height:1.25}
@@ -364,8 +368,12 @@
     padding:22px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
   }
   .dropzone:hover,.dropzone.over{border-color:var(--syk);background:var(--syk-tint)}
-  .dropzone .big{width:44px;height:44px;border-radius:999px;background:var(--paper);border:1px solid var(--sand);
-                 display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--syk)}
+  .dropzone .big{display:flex;align-items:center;justify-content:center;margin:0 auto 8px;color:var(--syk)}
+  .dropzone .big svg.ic{width:26px;height:26px}
+  /* An alert is an icon at full colour next to its text — no disc, no tint. */
+  .alerticon{display:inline-flex;margin-top:1px;flex:none}
+  .alerticon.ok{color:var(--forest)} .alerticon.low{color:var(--warning)} .alerticon.out{color:var(--danger)}
+  .alerticon svg.ic{width:18px;height:18px}
 
   .progress{height:8px;border-radius:999px;background:var(--cream-deep);overflow:hidden;margin-top:10px}
   .progress span{display:block;height:100%;background:var(--syk);border-radius:999px;transition:width .2s}
@@ -495,7 +503,7 @@
 </head>
 <body>
 
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol><symbol id="i-shopping-cart" viewBox="0 0 24 24"><path d="m2.05 2.05 1.099-.028a1 1 0 0 1 1.008.815l2.69 14.347A1 1 0 0 0 7.83 18H18"/><path d="M4.563 5h16.435a1 1 0 0 1 .981 1.204l-1.026 6.226A2 2 0 0 1 18.962 14H6.25"/><circle cx="18" cy="20" r="2"/><circle cx="8" cy="20" r="2"/></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol><symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol><symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol><symbol id="i-arrow-down-left" viewBox="0 0 24 24"><path d="M17 7 7 17"/><path d="M17 17H7V7"/></symbol><symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol><symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></symbol><symbol id="i-boxes" viewBox="0 0 24 24"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></symbol><symbol id="i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></symbol><symbol id="i-credit-card" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line /><path d="M6 14h2"/></symbol><symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol><symbol id="i-calendar-days" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-file-spreadsheet" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></symbol><symbol id="i-store" viewBox="0 0 24 24"><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/></symbol><symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol><symbol id="i-landmark" viewBox="0 0 24 24"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></symbol><symbol id="i-banknote" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol><symbol id="i-arrow-right-left" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-log-out" viewBox="0 0 24 24"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></symbol><symbol id="i-user-round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line /><line /></symbol><symbol id="i-scan-line" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol><symbol id="i-funnel" viewBox="0 0 24 24"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></symbol><symbol id="i-percent" viewBox="0 0 24 24"><line /><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol><symbol id="i-badge-check" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-arrow-left-right" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-calculator" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line /><line /><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol></svg>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol><symbol id="i-shopping-cart" viewBox="0 0 24 24"><path d="m2.05 2.05 1.099-.028a1 1 0 0 1 1.008.815l2.69 14.347A1 1 0 0 0 7.83 18H18"/><path d="M4.563 5h16.435a1 1 0 0 1 .981 1.204l-1.026 6.226A2 2 0 0 1 18.962 14H6.25"/><circle cx="18" cy="20" r="2"/><circle cx="8" cy="20" r="2"/></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol><symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol><symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol><symbol id="i-arrow-down-left" viewBox="0 0 24 24"><path d="M17 7 7 17"/><path d="M17 17H7V7"/></symbol><symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol><symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/></symbol><symbol id="i-boxes" viewBox="0 0 24 24"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></symbol><symbol id="i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></symbol><symbol id="i-credit-card" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line /><path d="M6 14h2"/></symbol><symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol><symbol id="i-calendar-days" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-file-spreadsheet" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></symbol><symbol id="i-store" viewBox="0 0 24 24"><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/></symbol><symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol><symbol id="i-landmark" viewBox="0 0 24 24"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></symbol><symbol id="i-banknote" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol><symbol id="i-arrow-right-left" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-log-out" viewBox="0 0 24 24"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></symbol><symbol id="i-user-round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line /><line /></symbol><symbol id="i-scan-line" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 14V3"/><path d="m8 6 4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol><symbol id="i-funnel" viewBox="0 0 24 24"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/></symbol><symbol id="i-percent" viewBox="0 0 24 24"><line /><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol><symbol id="i-badge-check" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m16 9-5.5 5.5L8 12"/></symbol><symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-arrow-left-right" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-calculator" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line /><line /><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol></svg>
 
 <div class="app">
   <!-- ============ side navigation, 900px and up ============ -->
@@ -603,7 +611,7 @@
               <div class="bars" id="weekBars"></div>
               <div class="legend">
                 <span><i style="background:var(--syk)"></i>This week</span>
-                <span><i style="background:var(--syk-tint);border:1px solid #C9DDE9"></i>Last week</span>
+                <span><i style="background:#A9C6D6"></i>Last week</span>
               </div>
             </div>
 
@@ -670,6 +678,17 @@
           </div>
 
           <div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>Customer</h2>
+                  <div class="sub">Who is buying — printed on the receipt</div>
+                </div>
+                <button class="btn ghost sm" id="walkInBtn">Walk-in</button>
+              </div>
+              <div id="posCustomer"></div>
+            </div>
+
             <div class="card">
               <div class="card-head">
                 <div>
@@ -820,7 +839,7 @@
           </div>
           <div style="display:flex;gap:8px" class="no-print">
             <button class="btn secondary sm" data-export="sales">
-              <svg class="ic sm"><use href="#i-share"/></svg>Export
+              <svg class="ic sm"><use href="#i-download"/></svg>Export
             </button>
           </div>
         </div>
@@ -839,7 +858,7 @@
           </div>
           <div style="display:flex;gap:8px" class="no-print">
             <button class="btn secondary sm" data-export="customers">
-              <svg class="ic sm"><use href="#i-share"/></svg>Export
+              <svg class="ic sm"><use href="#i-download"/></svg>Export
             </button>
             <button class="btn sm" data-add-customer>
               <svg class="ic sm"><use href="#i-plus"/></svg>Add
@@ -966,7 +985,7 @@
             <p class="sub">Money in, money out, and what is left.</p>
           </div>
           <button class="btn secondary sm" data-export="report">
-            <svg class="ic sm"><use href="#i-share"/></svg>Export
+            <svg class="ic sm"><use href="#i-download"/></svg>Export
           </button>
         </div>
         <div class="card">
@@ -1129,7 +1148,7 @@
             <p class="sub">Who did what, and when. Nothing here can be edited.</p>
           </div>
           <button class="btn secondary sm" data-export="audit">
-            <svg class="ic sm"><use href="#i-share"/></svg>Export
+            <svg class="ic sm"><use href="#i-download"/></svg>Export
           </button>
         </div>
         <div class="card">
@@ -1214,7 +1233,8 @@ const pct = (a, b) => (b ? ((a - b) / b) * 100 : 0);
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const pad = n => String(n).padStart(2, '0');
-const dmy = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+/* DD/MM/YY everywhere a date is shown — the format a Kenyan shopkeeper writes. */
+const dmy = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + String(d.getFullYear()).slice(-2);
 const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 const now = () => new Date(2026, 10, 20, 14, 26, 0); /* a fixed "today" for the prototype */
 const today = () => { const n = now(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
@@ -1621,7 +1641,7 @@ function renderDashboard() {
     const c = cust(s.customer);
     return '<div class="setrow"><div><div class="t">' + esc(s.no) + ' · ' + fmt(s.total) + '</div>' +
       '<div class="d">' + esc(c ? c.name : 'Walk-in') + ' · ' + clock(new Date(s.at)) + ' · ' + esc(s.cashier.split(' ')[0]) + '</div></div>' +
-      (s.credit ? '<span class="pill low">' + fmt(s.credit) + ' credit</span>' : '<span class="pill ok">Paid</span>') + '</div>';
+      (s.credit ? '<span class="pill low">' + fmt(s.credit) + ' credit</span>' : '<span class="pill ok">' + icon('check', 'sm') + 'Paid</span>') + '</div>';
   }).join('');
 
   /* top movers */
@@ -1648,7 +1668,7 @@ function deltaChip(p) {
 }
 function rowAlert(ic, title, sub, dest, kind) {
   return '<div class="setrow"><div style="display:flex;gap:10px;align-items:flex-start">' +
-    '<span class="pill ' + kind + '" style="padding:5px">' + icon(ic, 'sm') + '</span>' +
+    '<span class="alerticon ' + kind + '">' + icon(ic, 'sm') + '</span>' +
     '<div><div class="t">' + esc(title) + '</div><div class="d">' + esc(sub) + '</div></div></div>' +
     '<button class="btn ghost sm" data-goto="' + dest + '">View</button></div>';
 }
@@ -1659,6 +1679,7 @@ let basket = [];
 let pay = [{ m: 'Cash', amt: '' }];
 
 function renderPOS() {
+  renderCustomer();
   $('#posChips').innerHTML = S.cats.map(c => {
     return '<button class="chip" data-poscat="' + esc(c) + '">' + esc(c) + '</button>';
   }).join('');
@@ -1711,6 +1732,185 @@ function renderBasket() {
   updateTotals();
 }
 const basketTotal = () => sum(basket, it => it.price * it.qty);
+
+/* ---------------------------------------------------------------- customer
+   One customer is chosen before the sale completes, and that name is what the
+   receipt prints. Three ways in: search the customer list, add someone new at
+   the till, or type a walk-in name. A walk-in keeps no balance, so it can buy
+   but it cannot hold credit — the credit sheet still asks who is taking it. */
+let posCustomer = { id: 'c6', name: 'Walk-in', walkin: '', open: false };
+
+function customerLabel() {
+  if (posCustomer.id === 'c6') return posCustomer.walkin.trim() || 'Walk-in';
+  const c = cust(posCustomer.id);
+  return c ? c.name : 'Walk-in';
+}
+
+function renderCustomer() {
+  const box = $('#posCustomer');
+  if (!box) return;
+  const isWalk = posCustomer.id === 'c6';
+  const c = isWalk ? null : cust(posCustomer.id);
+  const label = customerLabel();
+
+  box.innerHTML =
+    '<div class="rowcard" style="box-shadow:inset 0 0 0 1px ' + (isWalk ? 'transparent' : 'var(--syk)') + '">' +
+      '<div class="top"><div style="min-width:0">' +
+        '<div class="ttl">' + esc(label) + '</div>' +
+        '<div class="meta">' + (c
+          ? esc(c.phone || 'no phone') + ' · limit ' + fmt(c.limit) + ' · owes ' + fmt(c.bal)
+          : 'Walk-in · no balance kept, so no credit') + '</div>' +
+      '</div>' +
+      '<div class="amt" style="font-size:12px;font-weight:600;color:var(--ink-muted)">' +
+        (isWalk ? icon('user-round', 'sm') : icon('box', 'sm')) + '</div>' +
+      '</div>' +
+      '<div class="bottom" style="display:flex;gap:7px;margin-top:9px">' +
+        '<button class="btn secondary sm" id="pickCustomer">' + icon('search', 'sm') + 'Change</button>' +
+        (isWalk ? '<button class="btn ghost sm" id="nameWalkin">' + icon('pencil', 'sm') + (posCustomer.walkin.trim() ? 'Edit name' : 'Add a name') + '</button>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:8px">A name here is what prints on the receipt under Customer.</div>';
+
+  const pick = $('#pickCustomer');
+  if (pick) pick.onclick = openCustomerSheet;
+  const name = $('#nameWalkin');
+  if (name) name.onclick = askWalkinName;
+}
+
+function openCustomerSheet() {
+  const isOwn = () => isOwner();
+  sheet({
+    title: 'Who is buying?',
+    sub: isOwn() ? 'Search the list, or add someone new' : 'Search the customer list',
+    body:
+      '<div class="searchbox">' + icon('search') +
+        '<input class="field" id="custSearch" placeholder="Name or phone number" autocomplete="off" />' +
+      '</div>' +
+      '<div id="custResults" style="margin-top:10px"></div>' +
+      '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn ghost sm" id="useWalkin">' + icon('user-round', 'sm') + 'Walk-in</button>' +
+        (isOwn() ? '<button class="btn secondary sm" id="newCustomer">' + icon('plus', 'sm') + 'New customer</button>' : '') +
+      '</div>' +
+      (isOwn() ? '' : '<div class="hint" style="margin-top:9px">Only the owner can add a customer or keep a balance.</div>'),
+    actions: [],
+    onMount: () => {
+      const search = $('#custSearch');
+      const paint = (q) => {
+        const needle = q.trim().toLowerCase();
+        const list = S.customers.filter(c => c.id !== 'c6' && (!needle ||
+          c.name.toLowerCase().includes(needle) || (c.phone || '').replace(/\s/g, '').includes(needle.replace(/\s/g, ''))));
+        $('#custResults').innerHTML = list.length ? list.map(c =>
+          '<button class="rowcard" style="width:100%;text-align:left;cursor:pointer;background:var(--paper)" data-pick="' + c.id + '">' +
+            '<div class="top"><div style="min-width:0"><div class="ttl">' + esc(c.name) + '</div>' +
+            '<div class="meta">' + esc(c.phone || 'no phone') + ' · limit ' + fmt(c.limit) + '</div></div>' +
+            '<div class="amt">' + fmt(c.bal) + '</div></div></button>').join('')
+          : '<p class="hint">No customer matches “' + esc(q) + '”.' + (isOwn() ? ' Add them with New customer.' : '') + '</p>';
+      };
+      paint('');
+      search.oninput = () => paint(search.value);
+      $('#custResults').onclick = ev => {
+        const b = ev.target.closest('[data-pick]');
+        if (!b) return;
+        const picked = cust(b.dataset.pick);
+        posCustomer = { id: picked.id, name: picked.name, walkin: '', open: false };
+        renderCustomer();
+        closeSheet();
+        toast('Customer set to ' + picked.name, 'good');
+      };
+      $('#useWalkin').onclick = () => {
+        posCustomer = { id: 'c6', name: 'Walk-in', walkin: '', open: false };
+        renderCustomer();
+        closeSheet();
+      };
+      const add = $('#newCustomer');
+      if (add) add.onclick = () => { closeSheet(); openNewCustomerSheet(); };
+      setTimeout(() => search.focus(), 40);
+    }
+  });
+}
+
+/* Adding a customer from the till: only what a receipt needs. */
+function openNewCustomerSheet() {
+  sheet({
+    title: 'New customer',
+    sub: 'They can take credit straight away',
+    body:
+      '<div class="formrow"><label class="label" for="ncName">Name</label>' +
+        '<input class="field" id="ncName" placeholder="e.g. Star Mini Market" autocomplete="off" /></div>' +
+      '<div class="formrow"><label class="label" for="ncPhone">Phone</label>' +
+        '<input class="field" id="ncPhone" inputmode="tel" placeholder="07xx xxx xxx" autocomplete="off" /></div>' +
+      '<div class="form2">' +
+        '<div class="formrow"><label class="label" for="ncLimit">Credit limit (Ksh)</label>' +
+          '<input class="field num" id="ncLimit" inputmode="numeric" placeholder="0" /></div>' +
+        '<div class="formrow"><label class="label" for="ncBal">Opening balance (Ksh)</label>' +
+          '<input class="field num" id="ncBal" inputmode="numeric" placeholder="0" /></div>' +
+      '</div>' +
+      '<div id="ncErr" class="errmsg" hidden></div>',
+    actions: [
+      { label: 'Cancel', ghost: true },
+      { label: 'Add and use', kind: '', id: 'ncSave' }
+    ],
+    onMount: () => {
+      const save = () => {
+        const name = $('#ncName').value.trim();
+        const err = $('#ncErr');
+        if (name.length < 2) {
+          err.hidden = false;
+          err.innerHTML = icon('alert', 'sm') + 'A name is needed — it prints on the receipt.';
+          return;
+        }
+        const c = {
+          id: 'c' + (Date.now() % 100000),
+          name,
+          phone: $('#ncPhone').value.trim(),
+          limit: Math.max(0, Number($('#ncLimit').value) || 0),
+          bal: Math.max(0, Number($('#ncBal').value) || 0),
+          since: ymd(today()),
+          notes: 'Added at the till'
+        };
+        S.customers.push(c);
+        S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Added customer ' + c.name, detail: fmt(c.bal) + ' opening balance' });
+        posCustomer = { id: c.id, name: c.name, walkin: '', open: false };
+        renderCustomer();
+        if (route === 'customers') renderCustomers();
+        closeSheet();
+        toast(c.name + ' added', 'good');
+      };
+      $('#ncSave').onclick = save;
+      $('#ncSave').className = 'btn';
+      setTimeout(() => $('#ncName').focus(), 40);
+    }
+  });
+}
+
+/* A walk-in may still get a name on the receipt — it just keeps no balance. */
+function askWalkinName() {
+  sheet({
+    title: 'Name on the receipt',
+    sub: 'Optional. A walk-in never keeps a balance.',
+    body:
+      '<div class="formrow"><label class="label" for="wiName">Name</label>' +
+        '<input class="field" id="wiName" value="' + esc(posCustomer.walkin || '') + '" placeholder="e.g. Mama Zawadi" autocomplete="off" /></div>' +
+      '<div class="hint">Leave it blank and the receipt says Walk-in.</div>',
+    actions: [
+      { label: 'Clear', ghost: true, onClick: () => { posCustomer.walkin = ''; renderCustomer(); closeSheet(); } },
+      { label: 'Use this name', kind: '', id: 'wiSave' }
+    ],
+    onMount: () => {
+      const save = () => {
+        posCustomer.walkin = $('#wiName').value.trim().slice(0, 60);
+        renderCustomer();
+        closeSheet();
+      };
+      $('#wiSave').onclick = save;
+      $('#wiSave').className = 'btn';
+      const inp = $('#wiName');
+      inp.onkeydown = ev => { if (ev.key === 'Enter') save(); };
+      setTimeout(() => inp.focus(), 40);
+    }
+  });
+}
+
 
 function addToBasket(id) {
   const p = prod(id);
@@ -1856,14 +2056,19 @@ function completeSale() {
     toast('Credit sales are switched off in settings.', 'bad'); return;
   }
   if (credit > 0) {
-    const customer = cust('c6');
+    /* A walk-in cannot hold a balance, so this is the one place the till
+       insists on a named customer. The customer already picked at the top of
+       the till comes first in the list, so the usual case is one tap. */
     const pick = S.customers.filter(c => c.id !== 'c6');
+    const chosen = posCustomer.id !== 'c6' ? posCustomer.id : null;
     sheet({
       title: 'Who is taking the credit?',
-      sub: fmt(credit) + ' will be added to their balance.',
+      sub: fmt(credit) + ' will be added to their balance. A walk-in cannot hold credit.',
       body: '<div id="creditPick">' + pick.map(c =>
-        '<button class="rowcard" style="width:100%;text-align:left;cursor:pointer;background:var(--paper);border:1px solid var(--sand)" data-credit="' + c.id + '">' +
-        '<div class="top"><div><div class="ttl">' + esc(c.name) + '</div><div class="meta">' + esc(c.phone) + ' · limit ' + fmt(c.limit) + '</div></div>' +
+        '<button class="rowcard" style="width:100%;text-align:left;cursor:pointer;background:var(--paper);border:1px solid ' +
+          (c.id === chosen ? 'var(--syk)' : 'var(--sand)') + '" data-credit="' + c.id + '">' +
+        '<div class="top"><div><div class="ttl">' + esc(c.name) + (c.id === chosen ? ' · picked' : '') + '</div>' +
+        '<div class="meta">' + esc(c.phone || 'no phone') + ' · limit ' + fmt(c.limit) + (c.bal >= c.limit && c.limit ? ' · at limit' : '') + '</div></div>' +
         '<div class="amt">' + fmt(c.bal) + '</div></div></button>').join('') + '</div>',
       actions: [{ label: 'Cancel' }]
     });
@@ -1877,7 +2082,7 @@ function completeSale() {
     };
     return;
   }
-  finishSale(total, paidBits, change, 0, 'c6');
+  finishSale(total, paidBits, change, 0, posCustomer.id);
 }
 
 function finishSale(total, paidBits, change, credit, customerId) {
@@ -1893,8 +2098,11 @@ function finishSale(total, paidBits, change, credit, customerId) {
   S.sales.unshift(sale);
   S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Completed sale ' + no, detail: fmt(total) + (credit ? ', ' + fmt(credit) + ' on credit' : '') });
 
+  sale.customer_name = customerLabel();
   basket = []; pay = [{ m: 'Cash', amt: '' }];
-  renderBasket(); renderPay();
+  const keepCustomer = posCustomer.id !== 'c6' || posCustomer.walkin.trim();
+  if (!keepCustomer) posCustomer = { id: 'c6', name: 'Walk-in', walkin: '', open: false };
+  renderBasket(); renderPay(); renderCustomer();
   showReceipt(sale, change);
   toast('Sale ' + no + ' completed' + (credit ? ', ' + fmt(credit) + ' on credit' : ''), 'good');
   if (route === 'dashboard') renderDashboard();
@@ -1912,7 +2120,7 @@ function showReceipt(sale, change) {
     '</div><hr>' +
     '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Receipt</span><span class="num">' + esc(sale.no) + '</span></div>' +
     '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Cashier</span><span>' + esc(sale.cashier) + '</span></div>' +
-    '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Customer</span><span>' + esc(c ? c.name : 'Walk-in') + '</span></div>' +
+    '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Customer</span><span>' + esc(sale.customer_name || (c ? c.name : 'Walk-in')) + '</span></div>' +
     '<hr>' +
     sale.items.map(it => '<div class="rline" style="margin-bottom:4px"><span>' + esc(it.name) + '<br><span class="hint">' + it.qty + ' × ' + fmt(it.price) + '</span></span>' +
       '<span class="num">' + fmt(it.qty * it.price) + '</span></div>').join('') +
@@ -1929,6 +2137,10 @@ function showReceipt(sale, change) {
 }
 
 $('#completeSale').onclick = completeSale;
+$('#walkInBtn').onclick = () => {
+  posCustomer = { id: 'c6', name: 'Walk-in', walkin: '', open: false };
+  renderCustomer();
+};
 
 /* everything printable goes through the same branded sheet */
 function printDoc(inner, title) {
@@ -2356,7 +2568,7 @@ function renderEtims() {
   $('#etimsList').innerHTML = recent.map(s => {
     const c = cust(s.customer);
     return '<div class="setrow"><div><div class="t">' + esc(s.no) + ' · ' + fmt(s.total) + '</div>' +
-      '<div class="d">' + dmy(new Date(s.at)) + ' ' + clock(new Date(s.at)) + ' · ' + esc(c ? c.name : 'Walk-in') + '</div></div>' +
+      '<div class="d">' + dmy(new Date(s.at)) + ' ' + clock(new Date(s.at)) + ' · ' + esc(s.customer_name || (c ? c.name : 'Walk-in')) + '</div></div>' +
       '<div style="text-align:right"><span class="pill ok"><span class="dot"></span>Signed</span>' +
       '<div class="hint num">' + esc(s.etims.sig) + '</div></div></div>';
   }).join('');
@@ -2813,7 +3025,7 @@ function exportCSV(kind) {
   let rows;
   if (kind === 'sales') {
     rows = [['Receipt', 'Date', 'Customer', 'Items', 'Total', 'Paid', 'On credit', 'Cashier', 'eTIMS']];
-    S.sales.forEach(s => rows.push([s.no, dmy(new Date(s.at)), (cust(s.customer) || {}).name || 'Walk-in',
+    S.sales.forEach(s => rows.push([s.no, dmy(new Date(s.at)), s.customer_name || (cust(s.customer) || {}).name || 'Walk-in',
       s.items.map(i => i.qty + 'x ' + i.name).join('; '), s.total.toFixed(2),
       sum(s.paid, p => p.amt).toFixed(2), (s.credit || 0).toFixed(2), s.cashier, s.etims.sig]));
   } else if (kind === 'customers') {
@@ -2863,7 +3075,7 @@ function reportDoc() {
     '<div class="ptotal"><span>Net profit</span><span class="num">' + fmt2(gross - cogs - expTotal) + '</span></div>' +
     '<h3>Receipts</h3><table><thead><tr><th>Receipt</th><th>Date</th><th>Customer</th><th class="n">Total</th><th class="n">Credit</th></tr></thead><tbody>' +
     sel.slice(0, 40).map(s => '<tr><td>' + esc(s.no) + '</td><td>' + dmy(new Date(s.at)) + '</td>' +
-      '<td>' + esc((cust(s.customer) || {}).name || 'Walk-in') + '</td>' +
+      '<td>' + esc(s.customer_name || (cust(s.customer) || {}).name || 'Walk-in') + '</td>' +
       '<td class="n">' + fmt(s.total) + '</td><td class="n">' + (s.credit ? fmt(s.credit) : '—') + '</td></tr>').join('') +
     '</tbody></table>';
 }
@@ -2909,7 +3121,7 @@ function renderSales() {
     const c = cust(s.customer);
     return '<div class="rowcard"><div class="top"><div style="min-width:0">' +
       '<div class="ttl">' + esc(s.no) + ' <span class="hint">' + clock(new Date(s.at)) + '</span></div>' +
-      '<div class="meta">' + dmy(new Date(s.at)) + ' · ' + esc(c ? c.name : 'Walk-in') + ' · ' + esc(s.cashier) + '</div></div>' +
+      '<div class="meta">' + dmy(new Date(s.at)) + ' · ' + esc(s.customer_name || (c ? c.name : 'Walk-in')) + ' · ' + esc(s.cashier) + '</div></div>' +
       '<div class="amt">' + fmt(s.total) + '</div></div>' +
       '<div class="bottom"><div style="display:flex;gap:5px;flex-wrap:wrap;min-width:0">' +
       s.paid.map(p => '<span class="pill info">' + esc(p.m) + '</span>').join('') +

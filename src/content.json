@@ -13,8 +13,6 @@
     "includes": [
       "Every screen on this page, on one account",
       "Unlimited products, receipts and staff",
-      "KRA eTIMS signing and transmission",
-      "Excel migration, branded PDF and CSV export",
       "Offline till that keeps selling when the signal drops"
     ]
   },
@@ -22,24 +20,46 @@
     "eyebrow": "Built for Kenyan wholesalers & large retailers",
     "title": "Sell, split the payment, keep the stock honest.",
     "lede": "A phone-first shop system for the person at the till, not just the owner with a laptop. Take a sale across cash, M-Pesa and card, let a known customer go into credit, keep expiry and stock straight, and print a KRA eTIMS receipt that adds up to the shilling.",
-    "primary_cta": { "label": "Open the working prototype", "href": "prototype.html" },
-    "secondary_cta": { "label": "Read the build spec", "href": "spec.html" },
+    "primary_cta": {
+      "label": "Open the working prototype",
+      "href": "prototype.html"
+    },
+    "secondary_cta": {
+      "label": "Read the build spec",
+      "href": "spec.html"
+    },
     "notes": [
       "No build step inside the prototype — one self-contained file, works offline",
       "Sample data, in memory: reload resets it"
     ]
   },
   "stats": [
-    { "value": "11", "label": "screens", "note": "every one checked at 360 px" },
-    { "value": "16%", "label": "VAT, inclusive", "note": "total × 16 / 116, never added on top" },
-    { "value": "3", "label": "payment parts", "note": "cash, M-Pesa, card on one sale" },
-    { "value": "0", "label": "floats", "note": "money is numeric(12,2), always" }
+    {
+      "value": "11",
+      "label": "screens",
+      "note": "every one checked at 360 px"
+    },
+    {
+      "value": "16%",
+      "label": "VAT, inclusive",
+      "note": "total × 16 / 116, never added on top"
+    },
+    {
+      "value": "3",
+      "label": "payment parts",
+      "note": "cash, M-Pesa, card on one sale"
+    },
+    {
+      "value": "0",
+      "label": "floats",
+      "note": "money is numeric(12,2), always"
+    }
   ],
   "features": [
     {
       "icon": "wallet",
       "title": "Split payments, honestly",
-      "body": "Up to three payment parts per sale, each with its own amount and a Fill/Rest button that inserts what is still unpaid. Overpay and the till shows change; come up short and it names the customer taking the credit."
+      "body": "Up to three payment parts per sale, each with its own amount and a Fill/Rest button that inserts what is still unpaid. Overpay and the till shows change; come up short and it asks who is taking the credit — a walk-in cannot hold one."
     },
     {
       "icon": "phone",
@@ -53,8 +73,8 @@
     },
     {
       "icon": "users",
-      "title": "Credit with a name on it",
-      "body": "A walk-in cannot hold a balance. Shortfalls are written against a named customer, the balance is derived from sales minus payments, stored for speed, and repaired by a nightly job if the two ever disagree."
+      "title": "The customer is on the receipt",
+      "body": "Pick a customer at the till, add one on the spot, or type a name for a walk-in. Whatever is chosen is what prints under Customer on the receipt, and a walk-in keeps no balance so it can never take credit."
     },
     {
       "icon": "upload",
@@ -71,84 +91,87 @@
     {
       "n": "01",
       "name": "Dashboard",
-      "audience": "Owner",
-      "body": "Greeting, branch, the payment-goal card with today's takings, and four stat cards with deltas against yesterday. A week-on-week bar chart, then needs-attention: low stock, out of stock, customers near their limit.",
-      "sales": "Sales variant: my sales today, my receipts, no profit and no credit figures."
+      "audience": "Owner"
     },
     {
       "n": "02",
       "name": "Point of sale",
-      "audience": "Both",
-      "body": "Search by name or barcode, category chips, a basket with a large stepper, and per-part payment methods. Totals show subtotal, VAT included, total, and exactly one of change or goes-to-credit.",
-      "sales": "Cashiers complete sales and print; the receipt renders inline and saves as PDF from a phone."
+      "audience": "Both"
     },
     {
       "n": "03",
       "name": "Stock",
-      "audience": "Both",
-      "body": "Products, value at cost, low stock and out of stock. Cards on a phone, a table from 760 px, both built from one array. The product sheet is the piece to get right on mobile.",
-      "sales": "Sales users see the same rows without cost or margin columns."
+      "audience": "Both"
     },
     {
       "n": "04",
       "name": "Purchases",
-      "audience": "Both",
-      "body": "Purchase orders that move draft → ordered → received, with a Receive action that puts quantities on the shelf. Suppliers with their terms and what is owed."
+      "audience": "Both"
     },
     {
       "n": "05",
       "name": "Sales",
-      "audience": "Both",
-      "body": "Every receipt, newest first, filterable by method and by 'on credit'. Each row prints as branded A4/PDF or reopens in the till's receipt block.",
-      "sales": "Sales users see only their own receipts, and the filter counts match what they can see."
+      "audience": "Both"
     },
     {
       "n": "06",
       "name": "Customers",
-      "audience": "Owner",
-      "body": "Balance, credit limit and a usage bar per customer. Take payment against a balance; overpaying leaves them in credit and the UI says so. Ledger shows dated sales and payments."
+      "audience": "Owner"
     },
     {
       "n": "07",
       "name": "Import records",
-      "audience": "Owner",
-      "body": "Choose products, customers or sales history, drop a file, read the full validation report, then press Import. Opening balances and opening quantities become the real thing."
+      "audience": "Owner"
     },
     {
       "n": "08",
       "name": "Reports",
-      "audience": "Owner",
-      "body": "Today, this week, this month, this quarter. Receipts, gross sales, VAT included, cost of goods, gross profit, expenses, net profit, credit, margin — then a category breakdown and the expense list."
+      "audience": "Owner"
     },
     {
       "n": "09",
       "name": "KRA eTIMS",
-      "audience": "Owner",
-      "body": "Transmitted today, waiting to send, VAT collected this month, next filing date, device and PIN block, test transmission, and recent signatures."
+      "audience": "Owner"
     },
     {
       "n": "10",
       "name": "Settings",
-      "audience": "Owner",
-      "body": "Plan card with the price read from shop.plan_kes, shop profile that brands every receipt, users and roles, preferences for credit/SMS/offline selling, and full exports."
+      "audience": "Owner"
     },
     {
       "n": "11",
       "name": "Audit log",
-      "audience": "Owner",
-      "body": "Who did what, when, filterable. Append-only by design: no edit, no delete, no clear button anywhere in the UI."
+      "audience": "Owner"
     }
   ],
   "money": {
     "title": "The rules that keep the money honest",
     "body": "Every figure on screen is a real sum of stored rows. Round each line to two decimals, then sum — never the other way round.",
     "formulas": [
-      ["subtotal", "total × 100 / 116"],
-      ["vat", "total × 16 / 116"],
-      ["total", "sum(line.qty × line.unit_price)"],
-      ["paid", "sum(payments)"],
-      ["change", "max(0, paid − total)"],
-      ["credit", "max(0, total − paid)"]
+      [
+        "subtotal",
+        "total × 100 / 116"
+      ],
+      [
+        "vat",
+        "total × 16 / 116"
+      ],
+      [
+        "total",
+        "sum(line.qty × line.unit_price)"
+      ],
+      [
+        "paid",
+        "sum(payments)"
+      ],
+      [
+        "change",
+        "max(0, paid − total)"
+      ],
+      [
+        "credit",
+        "max(0, total − paid)"
+      ]
     ],
     "cases": [
       {
