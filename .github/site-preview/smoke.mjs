@@ -216,6 +216,12 @@ for (const page of PAGES) {
       /* A link to a file is a link to yesterday's site: every address the
          visitor can click must be a folder, never a .html. */
       if (/\.html(?:[?#]|$)/.test(href)) fail(`${page.name}@${width}: a link still ends in .html — ${href}`);
+      /* 404.html is the one page written from the site root: it is served at
+         whatever address was mistyped, so a relative link would resolve
+         against the wrong folder. Every other page must be relative. */
+      if (page.name !== '404' && /^\/(?!\/)/.test(href)) {
+        fail(`${page.name}@${width}: a link starts from the domain root — ${href}`);
+      }
     }
 
     /* Fonts and stylesheets must never be blocked or 404. A miss while
