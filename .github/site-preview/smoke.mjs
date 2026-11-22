@@ -207,8 +207,9 @@ for (const f of failures) {
   console.log(`::error title=Live site check::${one}`);
 }
 
-note(`\n--- summary: ${failures.length} failure(s) ---`);
-if (failures) {
+note(`--- summary: ${failures.length} failure(s) ---`);
+/* An empty array is truthy: compare the length, not the array. */
+if (failures.length) {
   process.exit(1);
 }
-note(`\nAll browser checks passed against ${BASE}`);
+note(`All browser checks passed against ${BASE}`);
