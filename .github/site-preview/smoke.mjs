@@ -178,12 +178,15 @@ for (const page of PAGES) {
       for (const banned of ['Built for Kenyan wholesalers', '360 px', 'Every screen, working', 'data model', 'numeric(12,2)']) {
         if (text.includes(banned)) fail(`home: build language still on the page — "${banned}"`);
       }
+      /* The page's own labels are "Signup/Login" (hero and plan) and the
+         header's CTA. Two of them must exist and both must reach the door. */
       const cta = await tab.evaluate(() =>
         [...document.querySelectorAll('a.btn')]
-          .filter((a) => /sign up|log in/i.test(a.textContent))
+          .filter((a) => /sign ?up\s*\/?\s*log ?in|log ?in/i.test(a.textContent))
           .map((a) => a.getAttribute('href'))
       );
       if (cta.length < 2) fail(`home: expected a sign-up CTA, found ${cta.length}`);
+      if (cta.some((h) => !/login\/$/.test(h || ''))) fail(`home: a sign-up CTA points at ${cta.join(', ')}`);
       if (cta.some((h) => !/^(?:\.\.\/|\.\/|\/Shop-Yangu-Kenya\/)?login\/$/.test(h))) {
         fail(`home: a sign-up CTA points at ${cta.join(', ')}`);
       }
@@ -229,6 +232,20 @@ for (const page of PAGES) {
           framed: getComputedStyle(img).borderTopWidth !== '0px',
         };
       });
+      /* The page is three sections: hero, what-it-does, plan. The stats strip
+         and the dark counter band were removed on purpose, so their return is
+         a regression too, not a bonus. */
+      const shape = await tab.evaluate(() => ({
+        sections: [...document.querySelectorAll('main > section')].map((s) => s.className),
+        dark: !!document.querySelector('main .sec--dark, main .strip'),
+        styled: getComputedStyle(document.querySelector('.sec--services')).backgroundColor,
+        cards: document.querySelectorAll('#what .feature').length,
+      }));
+      if (shape.sections.length !== 3) fail(`home: ${shape.sections.length} sections, expected 3 — ${shape.sections.join(' | ')}`);
+      if (shape.dark) fail('home: the stats strip or the dark counter band is back');
+      if (shape.styled !== 'rgb(40, 112, 148)') fail(`home: what-it-does is not on the cerulean (${shape.styled})`);
+      if (shape.cards !== 6) fail(`home: ${shape.cards} cards in what-it-does, expected 6`);
+
       if (!hero) fail('home: the hero has no mock');
       else {
         if (!hero.complete) fail('home: the hero mock did not load');

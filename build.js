@@ -368,6 +368,13 @@ function brandMark(cls) {
     `<svg viewBox="0 0 636 722" fill="currentColor"><path d="${d}"/></svg></span>`;
 }
 
+/* The same mark, inline and unlabelled, for the pale watermark that closes
+   the advert. Decorative only, so it carries no accessible name. */
+function brandMarkInline() {
+  const d = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
+  return `<svg viewBox="0 0 636 722" fill="currentColor" focusable="false"><path d="${d}"/></svg>`;
+}
+
 function siteHeader(current) {
   /* Section anchors live on the home page; from any other page they need it first. */
   const here = (href) => {
@@ -458,59 +465,6 @@ ${siteFooter(page)}
 /* ------------------------------------------------------------------ */
 /* index.html                                                          */
 /* ------------------------------------------------------------------ */
-
-/* The hero picture sells the headline: a real sale, with the M-Pesa prompt
-   already answered on the customer's phone. */
-const mock = `
-<div class="mock" role="img" aria-label="A till mid-sale: Sugar 2kg and Cooking oil at Ksh 1,480, paid Ksh 1,480 by M-Pesa, with the STK push confirmed on the customer's phone.">
-  <div class="mock__bar">
-    <span class="mock__mark" aria-hidden="true">${icon('box', 'ic ic--sm')}</span>
-    <span class="mock__title">New sale</span>
-    <span class="mock__pill">Till 1</span>
-  </div>
-
-  <ul class="ticket num">
-    <li><span>Sugar 2kg <em>× 2</em></span><span>480</span></li>
-    <li><span>Cooking oil 2L <em>× 1</em></span><span>1,000</span></li>
-  </ul>
-
-  <div class="ticket__total num"><span>Total</span><span>${kes(1480)}</span></div>
-
-  <div class="paynow">
-    <span class="paynow__label">${icon('smartphone', 'ic ic--sm')}M-Pesa</span>
-    <span class="paynow__amt num">${kes(1480)}</span>
-    <span class="paynow__ok">${icon('check', 'ic ic--sm')}Paid</span>
-  </div>
-
-  <div class="phone">
-    <p class="phone__top num">M-PESA</p>
-    <p class="phone__msg">Enter your M-PESA PIN to pay <b class="num">Ksh 1,480.00</b> to <b>SHOP YANGU KENYA</b>.</p>
-    <p class="phone__pin num" aria-hidden="true"><i></i><i></i><i></i><i></i></p>
-    <p class="phone__ok">${icon('check', 'ic ic--sm')}Confirmed · receipt printed</p>
-  </div>
-
-  <div class="mock__row">
-    <span class="tag tag--ok">Stock</span>
-    <span class="mock__rowtext">Sugar 2kg 18 → 16 on the shelf</span>
-  </div>
-</div>`;
-
-const receiptMock = `
-<div class="receipt" aria-label="Example of a rendered receipt">
-  <p class="receipt__shop">${escapeHtml(content.brand.name)}</p>
-  <p class="receipt__meta">${escapeHtml(content.brand.branch)} · ${escapeHtml(content.brand.phone)}<br />KRA PIN ${escapeHtml(content.brand.kra)}</p>
-  <p class="receipt__no num">Receipt 00124 · ${dmy(new Date())} 14:08</p>
-  <ul class="receipt__lines num">
-    <li><span>Sugar 2kg × 2</span><span>480</span></li>
-    <li><span>Rice Pishori 5kg × 1</span><span>760</span></li>
-    <li><span>Cooking oil 2L × 2</span><span>1,240</span></li>
-  </ul>
-  <p class="receipt__tot num"><span>Total</span><span>${kes(2480)}</span></p>
-  <p class="receipt__pay num"><span>Cash</span><span>1,000</span></p>
-  <p class="receipt__pay num"><span>M-Pesa</span><span>1,300</span></p>
-  <p class="receipt__pay receipt__pay--credit num"><span>Goes to credit</span><span>180</span></p>
-  <p class="receipt__sign num">eTIMS · 1.2.156.1145.…· 8f3c · signed locally</p>
-</div>`;
 
 /* The hero: the headline on the left, the phone at the till on the right.
    The mock is the argument — the sale on the phone and the receipt in the
@@ -604,51 +558,16 @@ const hero = `
 })();
 </script>`;
 
-/* The counter itself, further down the page: the same sale, as the till shows
-   it. The hero carries the photograph and the promise; this carries the proof,
-   so a shopkeeper can see the screen before signing up for it. */
-const counterBand = `
-<section class="sec sec--dark" aria-labelledby="counter-h">
-  <div class="wrap counter">
-    <div class="counter__copy">
-      <p class="kicker">At the counter</p>
-      <h2 class="sec__title" id="counter-h">The part that used to need a second person.</h2>
-      <p class="sec__lede">Two items, a part-cash part-M-Pesa payment, and the shelf count already corrected. This is the screen a cashier works from, on the phone in their hand.</p>
-      <ul class="counter__list">
-        <li>${icon('check', 'ic ic--sm')}The M-Pesa prompt is sent from the till, so the money is confirmed, not guessed.</li>
-        <li>${icon('check', 'ic ic--sm')}Cash, M-Pesa and card split across one sale, with the shortfall on credit if needed.</li>
-        <li>${icon('check', 'ic ic--sm')}The receipt is eTIMS-signed before the customer leaves the counter.</li>
-      </ul>
-    </div>
-    <div class="hero__art">
-      ${mock}
-      ${receiptMock}
-    </div>
-  </div>
-</section>`;
-
-const statsStrip = `
-<section class="strip" aria-label="At a glance">
-  <div class="wrap strip__in">
-    ${content.stats
-      .map(
-        (s) => `<div class="strip__cell">
-      <p class="strip__value num">${escapeHtml(s.value)}</p>
-      <p class="strip__label">${escapeHtml(s.label)}</p>
-      <p class="strip__note">${escapeHtml(s.note)}</p>
-    </div>`
-      )
-      .join('')}
-  </div>
-</section>`;
-
+/* What it does. The whole block sits on the deep cerulean, so it reads as the
+   middle of the page rather than another cream band; the six promises are
+   cream cards on it — a surface, not a frame, with no rule of their own. The
+   icons are the product's line glyphs, unchanged: the words do the selling. */
 const features = `
-<section class="sec" id="what">
+<section class="sec sec--services" id="what">
   <div class="wrap">
     <header class="sec__head">
-      <p class="kicker">What you get</p>
-      <h2 class="sec__title">Everything the shop does, on one screen at a time.</h2>
-      <p class="sec__lede">Everything you need to sell, get paid, keep stock straight and know how the day went — without a book, a spreadsheet, or a second person to check the M-Pesa messages.</p>
+      <h2 class="sec__title sec__title--lg">Everything your shop does,<br />in one place.</h2>
+      <p class="sec__lede">Sell, get paid, keep your stock right and see how the day went, without a book or a second person to check the M-Pesa messages.</p>
     </header>
     <div class="features">
       ${content.features
@@ -664,34 +583,34 @@ const features = `
   </div>
 </section>`;
 
-/* The close of the advert: what it costs, and one way in. */
+/* The close of the advert: one card, split by a rule — what it costs on the
+   left, one way in on the right — and the shop's own mark, large and pale,
+   exactly where the page stops. It is the last thing on the page, so the
+   watermark is set at the end of the section, not floating over the footer. */
 const signup = `
 <section class="sec sec--close" id="start">
   <div class="wrap">
     <div class="close">
       <div class="close__plan">
-        <p class="kicker">The plan</p>
-        <p class="close__price num">${kes(content.plan.price_kes)}<span> / ${escapeHtml(content.plan.period)}</span></p>
+        <p class="close__kicker">The plan</p>
+        <p class="close__price num">${kes(content.plan.price_kes)}<span>/${escapeHtml(content.plan.period)}</span></p>
         <p class="close__trial">Free for ${content.plan.trial_days} days. No card needed to start.</p>
         <ul class="close__list">
-          ${content.plan.includes.map((i) => `<li>${icon('check', 'ic ic--sm')}${escapeHtml(i)}</li>`).join('\n          ')}
+          ${content.plan.includes.map((i) => `<li>${escapeHtml(i)}</li>`).join('\n          ')}
         </ul>
       </div>
       <div class="close__cta">
-        <h2 class="close__title">Start with today's sales.</h2>
-        <p class="close__lede">Sign in and ring up your first sale in a couple of minutes. If you already have a shop with us, your stock and customers are waiting.</p>
-        <a class="btn btn--primary btn--lg" href="login/">Sign up / Log in ${icon('arrow')}</a>
-        <p class="close__fine">Owner and cashier accounts. Each cashier sees only their own till.</p>
+        <h2 class="close__title">${escapeHtml(content.plan.card_title)}</h2>
+        <a class="btn btn--primary btn--sm" href="${content.plan.card_cta.href}">${escapeHtml(content.plan.card_cta.label)}</a>
       </div>
     </div>
   </div>
+  <div class="close__mark" aria-hidden="true">${brandMarkInline()}</div>
 </section>`;
 
 const indexBody = `
 <main id="main">
   ${hero}
-  ${statsStrip}
-  ${counterBand}
   ${features}
   ${signup}
 </main>`;

@@ -120,10 +120,6 @@ a:hover {
   border-radius: 4px;
 }
 
-.sec--dark :focus-visible {
-  outline-color: var(--cream);
-}
-
 .num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
@@ -571,127 +567,6 @@ a:hover {
   margin-top: 28px;
 }
 
-/* hero art: dashboard mock + receipt */
-
-.hero__art {
-  position: relative;
-  display: grid;
-  gap: 16px;
-  min-width: 0;
-}
-
-@media (min-width: 700px) {
-  .hero__art {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.62fr);
-    align-items: center;
-    gap: 0;
-  }
-  .hero__art .mock {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .hero__art .receipt {
-    grid-column: 2;
-    grid-row: 1;
-    margin-left: -34px;
-    z-index: 2;
-    align-self: end;
-    transform: translateY(20px) rotate(-0.9deg);
-  }
-}
-
-.mock {
-  background: var(--paper);
-  border: 1px solid var(--sand);
-  border-radius: var(--r-panel);
-  padding: 14px;
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-}
-
-.mock__bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 2px;
-}
-
-.mock__mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: var(--syk);
-  color: var(--cream);
-  display: grid;
-  place-items: center;
-}
-
-.mock__mark .ic {
-  width: 14px;
-  height: 14px;
-}
-
-.mock__title {
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.mock__pill {
-  margin-left: auto;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--ink-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.mock__pill::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 2px;
-  background: currentColor;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .delta {
   display: inline-flex;
   align-items: center;
@@ -711,23 +586,6 @@ a:hover {
 .delta--down {
   color: var(--danger);
   background: var(--danger-tint);
-}
-
-.mock__row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 11.5px;
-  color: var(--ink-muted);
-  border-top: 1px solid var(--sand-soft);
-  padding-top: 9px;
-}
-
-.mock__rowtext {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tag {
@@ -766,149 +624,7 @@ a:hover {
   color: var(--ink-muted);
 }
 
-.receipt {
-  background: var(--paper);
-  border: 1px solid var(--sand);
-  border-radius: var(--r-panel);
-  padding: 16px 15px;
-  font-size: 11.5px;
-  color: var(--ink);
-  min-width: 0;
-}
-
-.receipt__shop {
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  text-align: center;
-}
-
-.receipt__meta {
-  margin-top: 3px;
-  text-align: center;
-  font-size: 10px;
-  line-height: 1.45;
-  color: var(--ink-muted);
-}
-
-.receipt__no {
-  margin: 10px 0 7px;
-  padding-bottom: 7px;
-  border-bottom: 1px dashed var(--sand);
-  font-size: 10px;
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-.receipt__lines {
-  list-style: none;
-  display: grid;
-  gap: 4px;
-}
-
-.receipt__lines li,
-.receipt__pay,
-.receipt__tot {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.receipt__tot {
-  margin-top: 8px;
-  padding-top: 7px;
-  border-top: 1px solid var(--sand);
-  font-weight: 700;
-  font-size: 12.5px;
-}
-
-.receipt__pay {
-  font-size: 10.5px;
-  color: var(--ink-muted);
-  margin-top: 2px;
-}
-
-.receipt__pay--credit {
-  color: var(--danger);
-  font-weight: 600;
-}
-
-.receipt__sign {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--sand);
-  font-size: 9px;
-  color: #8b958d;
-  text-align: center;
-}
-
-/* ----------------------------------------------------------------- strip */
-
-.strip {
-  background: var(--paper);
-  border-bottom: 1px solid var(--sand);
-}
-
-.strip__in {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.strip__cell {
-  padding: 22px 4px;
-  border-top: 1px solid transparent;
-}
-
 /* 2x2 on a phone: rule between the columns, rule between the rows */
-.strip__cell:nth-child(even) {
-  border-left: 1px solid var(--sand-soft);
-  padding-left: 20px;
-}
-
-.strip__cell:nth-child(n + 3) {
-  border-top: 1px solid var(--sand-soft);
-}
-
-.strip__value {
-  font-size: clamp(1.35rem, 3vw, 1.6rem);
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  color: var(--syk-dark);
-  line-height: 1.1;
-}
-
-.strip__label {
-  font-size: 12px;
-  font-weight: 600;
-  margin-top: 3px;
-}
-
-.strip__note {
-  font-size: 11.5px;
-  color: var(--ink-muted);
-  margin-top: 2px;
-  line-height: 1.45;
-}
-
-@media (min-width: 760px) {
-  .strip__in {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .strip__cell {
-    padding: 26px 22px;
-  }
-  .strip__cell:first-child {
-    padding-left: 0;
-  }
-  .strip__cell:nth-child(n + 1) {
-    border-top: none;
-  }
-  .strip__cell:nth-child(n + 2) {
-    border-left: 1px solid var(--sand-soft);
-  }
-}
-
 /* -------------------------------------------------------------- sections */
 
 .sec {
@@ -924,12 +640,6 @@ a:hover {
 
 .sec--tint {
   background: linear-gradient(180deg, #fffdf3, #fdf7e2);
-}
-
-.sec--dark {
-  background: var(--syk-dark);
-  color: #eef3f5;
-  border-bottom: none;
 }
 
 .sec__head {
@@ -983,10 +693,6 @@ a:hover {
   text-wrap: balance;
 }
 
-.sec--dark .sec__title {
-  color: #fff;
-}
-
 .sec__lede {
   margin-top: 12px;
   color: var(--ink-muted);
@@ -995,23 +701,51 @@ a:hover {
   max-width: 64ch;
 }
 
-.sec--dark .sec__lede {
-  color: #b8cbd4;
+/* -------------------------------------------------------------- features
+
+   The six promises are cream cards on the deep cerulean. This is the middle
+   of the advert and the one place the page changes ground — cream above, cream
+   below, and the colour the product is named after in between. Nothing else in
+   the band is a card: the heading and the lede sit straight on the blue. */
+
+.sec--services {
+  background: var(--syk);
+  border-bottom: none;
+  color: var(--cream);
+  padding: clamp(40px, 5.4vw, 66px) 0;
 }
 
-.sec--dark a {
-  color: #9dc6d8;
+.sec--services .sec__head {
+  max-width: 46rem;
+  margin-bottom: clamp(26px, 3.4vw, 40px);
 }
 
-/* -------------------------------------------------------------- features */
+.sec--services .sec__title {
+  margin-top: 0;
+  color: var(--cream);
+}
+
+/* the one place a heading is set nearly as large as the hero's own */
+.sec__title--lg {
+  font-size: clamp(1.85rem, 3.9vw, 2.9rem);
+  line-height: 1.1;
+  letter-spacing: -0.036em;
+}
+
+.sec--services .sec__lede {
+  margin-top: 14px;
+  max-width: 56ch;
+  font-size: clamp(14.5px, 1.4vw, 16px);
+  color: rgba(255, 248, 225, 0.88);
+}
 
 .features {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   grid-template-columns: minmax(0, 1fr);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 620px) {
   .features {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1020,21 +754,26 @@ a:hover {
 @media (min-width: 1000px) {
   .features {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
   }
 }
 
+/* A card is a surface, not a frame: cream fill, no rule around it, and the
+   only lift is a hair of shadow that comes with the pointer. */
 .feature {
   min-width: 0;
-  background: var(--paper);
-  border: 1px solid var(--sand);
-  border-radius: var(--r-panel);
-  padding: 22px 20px 24px;
-  transition: border-color 0.18s ease, background-color 0.18s ease;
+  background: var(--cream);
+  border: none;
+  border-radius: 14px;
+  padding: 20px 22px 22px;
+  color: var(--ink);
+  box-shadow: 0 1px 0 rgba(2, 50, 70, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .feature:hover {
-  border-color: #c9be91;
-  background: #fffdf6;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(2, 50, 70, 0.18);
 }
 
 .feature__icon {
@@ -1048,55 +787,30 @@ a:hover {
 }
 
 .feature__title {
-  margin-top: 16px;
-  font-size: 16.5px;
+  margin-top: 14px;
+  font-size: clamp(15.5px, 1.5vw, 17px);
   font-weight: 700;
+  line-height: 1.25;
   letter-spacing: -0.022em;
   color: var(--syk-dark);
 }
 
 .feature__body {
-  margin-top: 7px;
+  margin-top: 9px;
   font-size: 14px;
-  line-height: 1.62;
-  color: var(--ink-muted);
+  line-height: 1.6;
+  color: var(--ink);
 }
 
 /* --------------------------------------------------------------- screens */
 
-
 @media (min-width: 820px) {
 }
 
-
-
-
-
-
-
-
-
 /* ----------------------------------------------------------------- money */
-
 
 @media (min-width: 900px) {
 }
-
-
-
-
-
-
-
-
-
-
-@media (min-width: 560px) {
-}
-
-
-
-
 
 .case__title {
   font-size: 14.5px;
@@ -1123,14 +837,8 @@ a:hover {
 
 /* ------------------------------------------------------------- templates */
 
-
 @media (min-width: 860px) {
 }
-
-
-
-
-
 
 .mono-chip {
   margin-left: auto;
@@ -1143,9 +851,6 @@ a:hover {
 .mono-chip--light {
   color: #a9c4d0;
 }
-
-
-
 
 .checks {
   list-style: none;
@@ -1174,58 +879,18 @@ a:hover {
 
 /* -------------------------------------------------------------- datamodel */
 
-
 @media (min-width: 900px) {
 }
 
-
-
-
-
-
 /* ---------------------------------------------------------------- deploy */
-
 
 @media (min-width: 940px) {
 }
 
-
-
-
-
-
-
-
-
 /* the Pages settings panel, drawn from the screenshot in the brief */
-
-
-
-
-
-
-
-
-
-
-
 
 @media (min-width: 760px) {
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* ---------------------------------------------------------------- footer */
 
@@ -1658,7 +1323,6 @@ a:hover {
   opacity: 0.5;
 }
 
-
 /* Code blocks: the spec page's SQL schema and the commands in it. */
 .codeblock {
   position: relative;
@@ -1747,131 +1411,6 @@ a:hover {
     animation: none !important;
   }
 
-}
-
-/* ------------------------------------------------------------- menu list
-   The last thing on the page: what screens exist, one line each. The
-   prototype is where they are actually used, so nothing is described here. */
-
-
-/* ---------------------------------------------------- hero: the M-Pesa sale
-   A ticket, the M-Pesa line marked paid, and the phone in the customer's hand. */
-
-.ticket {
-  list-style: none;
-  display: grid;
-  gap: 6px;
-  font-size: 12.5px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--sand);
-}
-
-.ticket li {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  color: var(--ink);
-}
-
-.ticket em {
-  font-style: normal;
-  color: var(--ink-muted);
-  font-size: 11.5px;
-}
-
-.ticket__total {
-  display: flex;
-  justify-content: space-between;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--syk-dark);
-  margin-top: -2px;
-}
-
-.paynow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 11px;
-  border-radius: var(--r-input);
-  background: var(--cream);
-  font-size: 12px;
-}
-
-.paynow__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: var(--syk-dark);
-}
-
-.paynow__amt {
-  margin-left: auto;
-  font-weight: 700;
-  color: var(--syk-dark);
-}
-
-.paynow__ok {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--forest);
-}
-
-.phone {
-  border-radius: 16px;
-  background: var(--syk-dark);
-  color: #eaf2f5;
-  padding: 11px 12px 12px;
-  font-size: 11.5px;
-  line-height: 1.5;
-}
-
-.phone__top {
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: #8fb4c6;
-}
-
-.phone__msg {
-  margin-top: 6px;
-  color: #dbe8ee;
-}
-
-.phone__msg b {
-  color: #fff;
-  font-weight: 700;
-}
-
-.phone__pin {
-  display: flex;
-  gap: 7px;
-  margin: 9px 0 8px;
-}
-
-.phone__pin i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #9dc6d8;
-  display: block;
-}
-
-.phone__ok {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #9fe0b8;
-  border-top: 1px solid rgba(255, 255, 255, 0.13);
-  padding-top: 7px;
-  width: 100%;
 }
 /* ------------------------------------------------------------ sign in
 
@@ -2289,32 +1828,61 @@ a:hover {
 }
 
 /* ------------------------------------------------------- the closing band
-   The price, what it includes, and the one way in. Two columns on a laptop,
-   one stack on a phone, and the same flat surfaces as the rest of the site. */
+   One card, split by a rule: what it costs on the left, one way in on the
+   right. Below it, the shop's mark large and pale, sitting on the page's last
+   edge — it is the end of the advert, so it belongs to the section, not
+   floating over the footer. */
 
 .sec--close {
-  padding: clamp(44px, 7vw, 88px) 0;
+  position: relative;
+  padding: clamp(44px, 6vw, 84px) 0 clamp(120px, 17vw, 200px);
+  overflow: hidden;
+  border-bottom: none;
 }
 
 .close {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 24px;
-  border: 1px solid var(--sand);
+  gap: 22px;
+  /* the card keeps the same share of the page at every width — a little over
+     half of it, with cream either side — with a floor so a small laptop still
+     fits the four inclusions without wrapping awkwardly */
+  max-width: max(680px, min(1060px, 56vw));
+  margin: 0 auto;
+  border: none;
   border-radius: var(--r-dialog);
   background: var(--paper);
-  padding: clamp(20px, 3vw, 36px);
+  padding: clamp(22px, 2.9vw, 40px);
+  box-shadow: 0 18px 44px rgba(2, 50, 70, 0.07);
 }
 
-@media (min-width: 900px) {
+@media (min-width: 780px) {
   .close {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 44px;
-    align-items: start;
+    /* the division is not half: the plan has four bullets, the invitation has
+       two lines, so the left column takes the room it needs */
+    grid-template-columns: minmax(0, 1.5fr) auto;
+    gap: 0;
+    align-items: center;
   }
 
   .close__cta {
-    border-left: 1px solid var(--sand);
-    padding-left: 44px;
+    position: relative;
+    padding-left: clamp(30px, 4vw, 56px);
+    margin-left: clamp(30px, 4vw, 56px);
+  }
+
+  /* the rule is drawn, so it can stop short of the card's edges the way the
+     layout has it — a border would run the full height */
+  .close__cta::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12%;
+    bottom: 12%;
+    width: 1px;
+    background: var(--syk);
+    opacity: 0.75;
   }
 }
 
@@ -2322,75 +1890,99 @@ a:hover {
   min-width: 0;
 }
 
-.close__price {
-  margin-top: 10px;
-  font-size: clamp(34px, 5vw, 46px);
+.close__kicker {
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: -0.04em;
-  color: var(--syk-dark);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--syk);
+}
+
+/* the price is the one number on the site set in the heading's own colour */
+.close__price {
+  margin-top: 6px;
+  font-size: clamp(32px, 4.4vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.042em;
   line-height: 1;
+  color: var(--syk-dark);
 }
 
 .close__price span {
+  margin-left: 2px;
   font-size: 15px;
   font-weight: 500;
   letter-spacing: 0;
-  color: var(--ink-muted);
+  color: var(--ink);
 }
 
 .close__trial {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 14px;
-  line-height: 1.55;
-  color: var(--ink-muted);
+  line-height: 1.5;
+  color: var(--ink);
 }
 
+/* The four inclusions are a plain list with a filled dot each — a dot, not a
+   tick, because none of these is a checkbox: they are what the price buys. */
 .close__list {
   list-style: none;
+  display: grid;
+  gap: 12px;
   margin: 20px 0 0;
   padding: 0;
-  border-top: 1px solid var(--sand);
 }
 
 .close__list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--sand);
-  font-size: 14px;
+  position: relative;
+  padding-left: 18px;
+  font-size: 13.5px;
   line-height: 1.5;
+  color: var(--ink);
 }
 
-.close__list .ic {
-  flex: none;
-  margin-top: 3px;
-  color: var(--forest);
+.close__list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.52em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--syk);
 }
 
 .close__title {
-  font-size: clamp(24px, 3.4vw, 32px);
+  font-size: clamp(24px, 3.2vw, 34px);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.032em;
   line-height: 1.1;
-  color: var(--syk-dark);
-}
-
-.close__lede {
-  margin-top: 12px;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--ink-muted);
+  color: var(--ink);
+  /* the invitation is two words on one line, as in the layout */
+  white-space: nowrap;
 }
 
 .close__cta .btn {
-  margin-top: 22px;
+  margin-top: 20px;
 }
 
-.close__fine {
-  margin-top: 12px;
-  font-size: 12.5px;
-  color: var(--ink-muted);
+/* The mark, pale, anchored to the bottom-right of the section. Width in vw so
+   it scales with the page rather than sitting at one size, with a floor and a
+   ceiling so a phone still shows it and a 4K screen does not fill with it. */
+.close__mark {
+  position: absolute;
+  right: max(10px, calc((100% - var(--wrap)) / 2 - 46px));
+  bottom: clamp(-52px, -4vw, -22px);
+  width: clamp(240px, 21vw, 400px);
+  color: var(--syk);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.close__mark svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* The hero's left column: an explicit block, so the art cannot wrap under it
@@ -2409,54 +2001,3 @@ a:hover {
   background: var(--cream);
 }
 
-/* ------------------------------------------------------- the counter band
-   The photograph in the hero shows the shop; this shows the screen. It sits
-   on the dark band so the two mocks read as objects on a counter, and so the
-   page alternates cream / dark instead of running three cream sections
-   together. */
-
-.counter {
-  display: grid;
-  gap: 36px;
-  align-items: center;
-}
-
-.counter__copy {
-  min-width: 0;
-  max-width: 34rem;
-}
-
-.counter__list {
-  list-style: none;
-  display: grid;
-  gap: 10px;
-  margin-top: 22px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: rgba(255, 248, 225, 0.78);
-}
-
-.counter__list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-}
-
-.counter__list .ic {
-  color: var(--cream);
-  margin-top: 2px;
-  flex: none;
-}
-
-@media (min-width: 900px) {
-  .counter {
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-    gap: 56px;
-  }
-}
-
-.sec--dark .counter .mock,
-.sec--dark .counter .receipt {
-  background: var(--paper);
-  border-color: transparent;
-}

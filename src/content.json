@@ -15,17 +15,22 @@
       "M-Pesa prompts sent from the till, at no extra charge",
       "Receipts, daily reports and stock that keeps itself right",
       "Use it on as many phones and laptops as your shop needs"
-    ]
+    ],
+    "card_title": "Start Today",
+    "card_cta": {
+      "label": "Signup/Login",
+      "href": "login/"
+    }
   },
   "hero": {
     "title": "Make the sale, send the M-Pesa prompt, print the receipt, and your stock updates.",
     "lede": "A simple shop system for managing your stock, making sales at the till (POS) and issuing receipts. Customers pay by cash, or M-Pesa. With M-Pesa, you send an STK push to their phone and they just enter their PIN, just like at the supermarket. Keep track of your stock and daily reports, and use it on your phone or laptop.",
     "primary_cta": {
-      "label": "Sign up / Log in",
+      "label": "Signup/Login",
       "href": "login/"
     },
     "secondary_cta": {
-      "label": "See what it does",
+      "label": "Services",
       "href": "#what"
     }
   },
@@ -54,33 +59,33 @@
   "features": [
     {
       "icon": "smartphone",
-      "title": "M-Pesa that asks the customer for you",
-      "body": "Choose M-Pesa, send an STK push, and your customer gets the prompt on their phone. They enter their PIN, the till shows Paid, and the receipt prints. No phone numbers written in a book, no checking SMS screenshots at closing time."
+      "title": "Direct M-Pesa STK prompt",
+      "body": "Choose M-Pesa and your customer gets a payment request on their phone. They enter their PIN, the till shows \"Paid\" and the receipt prints. You don't write down phone numbers, and you don't check M-Pesa messages at closing time."
     },
     {
       "icon": "receipt",
       "title": "A receipt you can hand over",
-      "body": "Every sale prints a proper receipt with your shop name, your KRA PIN, VAT and the cashier's name. Print on the spot, or save as a PDF and send it on WhatsApp."
+      "body": "Every sale prints a proper receipt with your shop name, KRA PIN, VAT and the cashier's name. Print it at the counter, or save it as a PDF and send it on WhatsApp."
     },
     {
       "icon": "box",
-      "title": "Stock that updates itself",
-      "body": "Selling lowers the stock, receiving a delivery raises it. Set a reorder level and the app warns you before the last carton goes, with expiry dates for what has them."
+      "title": "Automatic stock updates",
+      "body": "When you sell, the stock goes down. When a delivery arrives, it goes up. Set a reorder level and the app warns you before you run out. It also tracks expiry dates for products that have them."
     },
     {
       "icon": "chart",
-      "title": "See the day, not a spreadsheet",
-      "body": "Takings, profit, expenses and a day-by-day chart, the moment you open the app. Reports for this week, this month and this quarter, ready to export or print."
+      "title": "See your day at a glance",
+      "body": "Open the app and see the day's sales, profit and expenses, with a chart of each day. You can also view reports for this week, this month or this quarter, and print them or save them to share."
     },
     {
       "icon": "users",
-      "title": "Know who owes you, and how much",
-      "body": "Let a customer pay in parts — cash now, M-Pesa later — or go into credit. The app keeps the balance, the payment history and a limit, against a name, so nothing is left to memory."
+      "title": "Know who owes you",
+      "body": "A customer can pay part now and the rest later, or take goods on credit. The app records what each customer owes, what they have paid and the credit limit you set for them, so you never have to rely on memory."
     },
     {
       "icon": "wallet",
       "title": "Split the payment at the till",
-      "body": "Cash, M-Pesa or card, up to three parts on one sale. Enter part of the amount, tap Rest for what is left, and the app shows change or what is going to credit before you commit."
+      "body": "One customer can pay with cash, M-Pesa and card on the same sale, up to three ways. Enter the first amount, tap \"Remaining\" to fill in what is left, and the app shows the change, or the amount going on credit, before you confirm the sale."
     }
   ],
   "screens": [

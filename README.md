@@ -98,7 +98,7 @@ its `index.html`, and that is what it does.
 
 | To change | Edit |
 |---|---|
-| Any sentence on the advert — headline, body, the six promises, the price bullets | `src/content.json` |
+| Any sentence on the advert — headline, body, the six cards under *What it does*, the price bullets, the two CTA labels | `src/content.json` |
 | The demo email or password | `demo_account` in `src/content.json` |
 | The login page's layout or behaviour | `loginPage()` in `build.js` |
 | Colours, type, spacing, layout | `src/styles.css` |
@@ -147,9 +147,11 @@ SITE_URL=https://saintm254.github.io/Shop-Yangu-Kenya CHROME_PATH=/usr/bin/googl
 ## The home page is an advert
 
 Its reader is a shop owner behind a counter, not the engineer who built the system. So it
-carries: the headline, the M-Pesa / stock / receipts / reports / credit story, the price,
-and one button — **Sign up / Log in**, which goes to `/login/`. Nothing else. No screen
-counts, no pixel widths, no database notes, no prototype link.
+carries three sections and nothing else: the **hero** (headline, lede, `Signup/Login` and
+`Services`), the **what it does** band on the cerulean with six cream cards, and the
+**plan** card that ends the page above the footer. No screen counts, no pixel widths, no
+database notes, no prototype link — and no stats strip or dark counter demo, which were
+removed so the page reads top to bottom in one pass.
 
 All of that engineering detail still exists, one click away in `/spec/` and in the shop
 itself; it is just not what sells a till.
