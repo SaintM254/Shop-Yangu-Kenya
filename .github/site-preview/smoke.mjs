@@ -207,33 +207,34 @@ for (const page of PAGES) {
       });
       if (plate && plate !== 'missing') fail(`home: the logo still has a ${plate}`);
 
-      /* The hero is a real photograph of a shop counter, with the headline
-         beside it, per the landing reference. */
+      /* The hero is the phone at the till — the sale on the screen and the
+         receipt in the customer's hand — standing beside the headline, per
+         the landing reference. */
       const hero = await tab.evaluate(() => {
-        const box = document.querySelector('.hero__photo');
+        const box = document.querySelector('.hero__mock');
         const img = box && box.querySelector('img');
         if (!img) return null;
         const r = box.getBoundingClientRect();
-        const copy = document.querySelector('.hero__copy').getBoundingClientRect();
         return {
           w: Math.round(r.width),
           h: Math.round(r.height),
           complete: img.complete && img.naturalWidth > 0,
-          /* the photograph is the right-hand column, so it starts at least
-             half the viewport across and overlaps the copy's own column */
+          /* the mock is the right-hand column, so it starts at least half the
+             viewport across and sits level with the words, not under them */
           startsRight: r.left > window.innerWidth * 0.4,
-          overlaps: r.left < copy.right,
-          tall: r.height >= copy.height * 0.9,
+          /* transparent artwork on the cream: no plate, no frame */
+          framed: getComputedStyle(img).borderTopWidth !== '0px',
         };
       });
-      if (!hero) fail('home: the hero has no photograph');
+      if (!hero) fail('home: the hero has no mock');
       else {
-        if (!hero.complete) fail('home: the hero photograph did not load');
-        if (hero.w < 200 || hero.h < 120) fail(`home: the hero photograph is ${hero.w}x${hero.h}`);
-        if (width >= 1000 && !(hero.startsRight && hero.overlaps && hero.tall)) {
+        if (!hero.complete) fail('home: the hero mock did not load');
+        if (hero.w < 180 || hero.h < 200) fail(`home: the hero mock is ${hero.w}x${hero.h}`);
+        if (hero.framed) fail('home: the hero mock has a frame');
+        if (width >= 1000 && !hero.startsRight) {
           fail(
-            `home: the hero photograph is not the right-hand column of the hero ` +
-            `(w ${hero.w}, h ${hero.h}, startsRight ${hero.startsRight}, overlaps ${hero.overlaps}, tall ${hero.tall})`
+            `home: the hero mock is not the right-hand column of the hero ` +
+            `(w ${hero.w}, h ${hero.h}, startsRight ${hero.startsRight})`
           );
         }
       }

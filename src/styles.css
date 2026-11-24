@@ -358,53 +358,40 @@ a:hover {
 
 /* ------------------------------------------------------------------ hero */
 
-/* The hero. On a phone the photograph sits under the words, cropped to a
-   band so the page still gets to the point quickly. From 900px it is the
-   right half of the screen, running from under the header to the strip, and
-   the words sit on the cream at its left edge — one vertical rhythm with the
-   header rather than a band the reader has to step over.
+/* The hero. On a phone the mock sits under the words, small enough that the
+   page still gets to the point quickly. From 900px it is the right-hand
+   column, level with the headline, and the words sit on the cream at its left
+   edge — one vertical rhythm with the header rather than a band the reader
+   has to step over.
 
-   The sticky header sits above the photograph, so at 900px and up the hero
-   is pulled up behind it by exactly the header's height.
+   The sticky header sits above the hero, so at 900px and up the hero is
+   pulled up behind it by exactly the header's height.
 
-   The photograph's own left edge is feathered with a cream gradient rather
-   than cut with a rule: the two halves are one surface, so the headline is
-   never straddling a border. */
+   The mock is transparent artwork, so nothing frames it and nothing fades it
+   into the page: it stands on the cream the way the phone stands on the
+   counter. Two motions are attached, both subtle, both one transform:
+
+     --settle  0 → 1 as the hero scrolls out from under the header. The phone
+               straightens and rises a little, as if being picked up.
+     --tilt    set by the pointer over the mock, capped at 4° each way.
+     hover     the whole thing lifts 8px and grows 2% — a nod, not a bounce.
+
+   The transform is written as a single chain that reads every variable with a
+   fallback, so the page is correct with no JavaScript at all, and the reduced
+   motion block at the end of this file turns all of it off. */
+
 .hero {
   position: relative;
-  padding: 40px 0 44px;
+  padding: 36px 0 40px;
   background: var(--cream);
   overflow: hidden;
-}
-
-.hero__photo {
-  position: relative;
-  height: 210px;
-  margin-bottom: 26px;
-  overflow: hidden;
-}
-
-.hero__photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 62% 50%;
-}
-
-/* Fade the bottom of the band into the page on a phone. */
-.hero__photo::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0;
-  height: 64px;
-  background: linear-gradient(to bottom, transparent, var(--cream));
 }
 
 .hero__in {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 40px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -418,47 +405,125 @@ a:hover {
   --hdr-h: 67px;
 }
 
-@media (min-width: 900px) {
+/* Reduced motion is asked for once, here, before anything is painted, so the
+   hero mock is drawn at its resting lean with none of the CSS lift or settle
+   and the script that follows finds nothing to drive. The full block at the
+   end of this file covers every other transition on the page. */
+@media (prefers-reduced-motion: reduce) {
+  .hero__mock {
+    --settle: 0;
+    --tilt: 0deg;
+    --lift: 0px;
+    --grow: 1;
+    transition: none;
+  }
+
+  .hero__mockglow {
+    transition: none;
+  }
+}
+
+/* the mock's column: the glow is what gives a transparent PNG its depth */
+.hero__mock {
+  position: relative;
+  justify-self: center;
+  /* On a phone the phone is a picture, not a screen: 250px is enough to read
+     the sale and the receipt, and it keeps the strip a scroll away, not two. */
+  width: min(250px, 62%);
+  margin-top: 2px;
+  --settle: 0;
+  --tilt: 0deg;
+  --lift: 0px;
+  --grow: 1;
+  transform:
+    perspective(900px)
+    translate3d(0, calc(var(--settle) * -14px - var(--lift)), 0)
+    rotate(calc(-2.5deg + var(--settle) * 2.5deg + var(--tilt)))
+    scale(var(--grow));
+  transform-origin: 50% 78%;
+  transition: transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+
+/* While the scroll is being smoothed, the frame loop owns the value, so the
+   CSS transition must not fight it. */
+.hero__mock.is-moving {
+  transition: none;
+}
+
+.hero__mock:hover,
+.hero__mock:focus-within {
+  --lift: 8px;
+  --grow: 1.02;
+}
+
+.hero__mockimg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  /* the artwork's own drop shadow is in the file; this keeps the phone from
+     looking pasted on where the shadow is faint */
+  filter: drop-shadow(0 18px 26px rgba(2, 50, 70, 0.16));
+}
+
+/* A broad, soft cerulean disc behind the phone. It is a surface, not a frame:
+   no edge, no ring, and it can never be mistaken for a card. */
+.hero__mockglow {
+  position: absolute;
+  inset: 6% -10% 2%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(40, 112, 148, 0.2),
+    rgba(40, 112, 148, 0.08) 58%,
+    rgba(40, 112, 148, 0) 100%
+  );
+  transform: scale(calc(0.96 + var(--settle) * 0.04));
+  transition: transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  pointer-events: none;
+}
+
+@media (min-width: 720px) {
   .hero {
     padding: 0;
     margin-top: calc(var(--hdr-h) * -1);
-    padding-top: var(--hdr-h);
+    /* the header's height back, plus a little air, so the headline never
+       touches the header and the buttons never touch the strip */
+    padding-top: calc(var(--hdr-h) + 6px);
+    padding-bottom: 36px;
     min-height: 520px;
     display: flex;
     align-items: center;
   }
 
-  .hero__photo {
-    position: absolute;
-    inset: 0 0 0 auto;
-    width: 56%;
-    height: 100%;
-    margin: 0;
-  }
-
-  .hero__photo img {
-    object-position: 58% 42%;
-  }
-
-  /* Two gradients: a long one that dissolves the photograph into the cream
-     under the words, and a short one that keeps the very top clean. */
-  .hero__photo::after {
-    inset: 0;
-    height: auto;
-    background:
-      linear-gradient(to right, var(--cream) 0%, rgba(255, 248, 225, 0.92) 12%, rgba(255, 248, 225, 0) 46%),
-      linear-gradient(to bottom, rgba(255, 248, 225, 0.35), transparent 22%);
-  }
-
   .hero__in {
     width: 100%;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: clamp(24px, 4vw, 56px);
+  }
+
+  .hero__copy {
+    max-width: 36rem;
+  }
+
+  .hero__mock {
+    justify-self: end;
+    width: clamp(240px, 30vw, 440px);
+    margin-top: 0;
+    /* the phone leans out of its column a little, toward the words, the way
+       an object on a counter sits at an angle rather than squared up */
+    margin-right: -6px;
+  }
+
+  .hero__mockimg {
+    filter: drop-shadow(0 26px 38px rgba(2, 50, 70, 0.18));
   }
 }
 
 @media (min-width: 1080px) {
   .hero {
-    min-height: 620px;
+    min-height: 640px;
   }
 
   .hero__copy {
@@ -473,7 +538,6 @@ a:hover {
   height: 1px;
   background: var(--sand);
 }
-
 
 .hero__title {
   margin-top: 22px;
@@ -1675,6 +1739,7 @@ a:hover {
     transition: none !important;
     animation: none !important;
   }
+
 }
 
 /* ------------------------------------------------------------- menu list
