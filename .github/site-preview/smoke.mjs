@@ -218,6 +218,9 @@ for (const page of PAGES) {
         return {
           w: Math.round(r.width),
           h: Math.round(r.height),
+          right: Math.round(r.right),
+          mockRatio: r.width / r.height,
+          copyH: Math.round(document.querySelector('.hero__copy').getBoundingClientRect().height),
           complete: img.complete && img.naturalWidth > 0,
           /* the mock is the right-hand column, so it starts at least half the
              viewport across and sits level with the words, not under them */
@@ -236,6 +239,23 @@ for (const page of PAGES) {
             `home: the hero mock is not the right-hand column of the hero ` +
             `(w ${hero.w}, h ${hero.h}, startsRight ${hero.startsRight})`
           );
+        }
+        /* Proportion, not a pixel width: the mock must scale with the copy at
+           every width, and it must stay inside the gutter so the receipt is
+           never clipped. A fixed width passes on one screen and looks like a
+           small phone on a big page on the next, so this is the check that
+           catches that. */
+        if (width >= 1000) {
+          const ratio = hero.h / hero.copyH;
+          if (!(ratio >= 0.8 && ratio <= 1.25)) {
+            fail(`home: the hero mock is out of proportion with the copy — ${ratio.toFixed(2)} (want 0.8–1.25), w ${hero.w}, copy h ${hero.copyH}`);
+          }
+          if (hero.right > width + 1) {
+            fail(`home: the hero mock runs ${hero.right - width}px past the right gutter at ${width}px`);
+          }
+          if (Math.abs(hero.mockRatio - 1065 / 1234) > 0.06) {
+            fail(`home: the hero mock is squashed — ${hero.w}x${hero.h}`);
+          }
         }
       }
     }

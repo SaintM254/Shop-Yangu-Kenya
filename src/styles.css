@@ -358,13 +358,13 @@ a:hover {
 
 /* ------------------------------------------------------------------ hero */
 
-/* The hero. On a phone the mock sits under the words, small enough that the
-   page still gets to the point quickly. From 900px it is the right-hand
-   column, level with the headline, and the words sit on the cream at its left
-   edge — one vertical rhythm with the header rather than a band the reader
-   has to step over.
+/* The hero. On a phone the mock sits under the words, sized from the
+   viewport so it scales with the screen instead of sitting at a fixed size.
+   From 720px it is the right-hand column, beside the headline, on a two-column
+   row with a fixed proportion — the words left, the phone right — so the two
+   scale together at every width rather than drifting apart.
 
-   The sticky header sits above the hero, so at 900px and up the hero is
+   The sticky header sits above the hero, so at 720px and up the hero is
    pulled up behind it by exactly the header's height.
 
    The mock is transparent artwork, so nothing frames it and nothing fades it
@@ -427,9 +427,9 @@ a:hover {
 .hero__mock {
   position: relative;
   justify-self: center;
-  /* On a phone the phone is a picture, not a screen: 250px is enough to read
+  /* On a phone the phone is a picture, not a screen: ~58vw is enough to read
      the sale and the receipt, and it keeps the strip a scroll away, not two. */
-  width: min(250px, 62%);
+  width: min(300px, 58vw);
   margin-top: 2px;
   --settle: 0;
   --tilt: 0deg;
@@ -497,23 +497,34 @@ a:hover {
     align-items: center;
   }
 
+  /* Two columns, proportionally: the words take what is left, the mock takes
+     a share of the row that is capped, so on a narrow laptop it is bigger
+     than a free `auto` column would let it be and on a wide screen it stops
+     growing instead of ballooning.
+
+     Sizing the mock from its own column (100%) rather than from a fixed pixel
+     width is what keeps the drawing in scale with the words: the artwork is
+     1065 × 1234, so its height is ~1.16 × its width, and at 42% of the row it
+     lands within a few percent of the copy block's own height at every width
+     from 720 to 1920 — one composition, not a small phone on a big page. The
+     column is capped at 404px so the phone stops growing on a wide screen
+     instead of ballooning past the words. Nothing bleeds past the gutter, so
+     the receipt is never clipped; the hero's own overflow only guards the
+     tilt. */
   .hero__in {
     width: 100%;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) min(42%, 404px);
     gap: clamp(24px, 4vw, 56px);
   }
 
   .hero__copy {
-    max-width: 36rem;
+    max-width: 40rem;
   }
 
   .hero__mock {
     justify-self: end;
-    width: clamp(240px, 30vw, 440px);
+    width: 100%;
     margin-top: 0;
-    /* the phone leans out of its column a little, toward the words, the way
-       an object on a counter sits at an angle rather than squared up */
-    margin-right: -6px;
   }
 
   .hero__mockimg {
@@ -524,10 +535,6 @@ a:hover {
 @media (min-width: 1080px) {
   .hero {
     min-height: 640px;
-  }
-
-  .hero__copy {
-    max-width: 40rem;
   }
 }
 

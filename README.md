@@ -109,7 +109,7 @@ its `index.html`, and that is what it does.
 | PDF exports | `src/app/pdf.js` + the payloads in `src/app/exports.js` |
 | Excel exports | `src/app/excel.js` (a real `.xlsx`, zipped in the browser) |
 | The logo | `Images/Icon.svg` is the source; `src/logo/mark.svg` is the recoloured mark the site and the PDFs use. `favicon.svg` is white on nothing, for the browser tab; `apple-touch-icon.png` is the one place with a plate, because a home screen has no background of its own |
-| The hero | `Images/Mobile POS Receipt Mockup.png`, trimmed and re-encoded by `tools/make-pos-mock.mjs` into `src/pos-mock.webp` (1065 wide, ~128 kB, transparency kept) so a phone never downloads the 1 MB original. It tilts and lifts on scroll and settles under the pointer — the motion lives in `src/styles.css` (`.hero__mock`) and the small script in the hero |
+| The hero | `Images/Mobile POS Receipt Mockup.png`, trimmed and re-encoded by `tools/make-pos-mock.mjs` into `src/pos-mock.webp` (1065 wide, ~128 kB, transparency kept) so a phone never downloads the 1 MB original. It tilts and lifts on scroll and settles under the pointer — the motion lives in `src/styles.css` (`.hero__mock`) and the small script in the hero. Its size is proportional, never a fixed pixel width: a `min(42%, 404px)` column inside the hero grid, so its height tracks the copy block's at every width (the smoke check fails if that ratio drifts outside 0.8–1.25) |
 | The prototype (kept for reference) | `shop-yangu-kenya.html` — no longer published |
 
 The price is read from `plan.price_kes` in `src/content.json` — change it to `1200` and
