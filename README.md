@@ -98,7 +98,7 @@ its `index.html`, and that is what it does.
 
 | To change | Edit |
 |---|---|
-| Any sentence on the advert — headline, body, the six promises, the price bullets | `src/content.json` |
+| Any sentence on the advert — headline, body, the six cards under *What it does*, the price bullets, the two CTA labels | `src/content.json` |
 | The demo email or password | `demo_account` in `src/content.json` |
 | The login page's layout or behaviour | `loginPage()` in `build.js` |
 | Colours, type, spacing, layout | `src/styles.css` |
@@ -109,7 +109,7 @@ its `index.html`, and that is what it does.
 | PDF exports | `src/app/pdf.js` + the payloads in `src/app/exports.js` |
 | Excel exports | `src/app/excel.js` (a real `.xlsx`, zipped in the browser) |
 | The logo | `Images/Icon.svg` is the source; `src/logo/mark.svg` is the recoloured mark the site and the PDFs use. `favicon.svg` is white on nothing, for the browser tab; `apple-touch-icon.png` is the one place with a plate, because a home screen has no background of its own |
-| The hero | `Images/Mobile POS Receipt Mockup.png`, trimmed and re-encoded by `tools/make-pos-mock.mjs` into `src/pos-mock.webp` (1065 wide, ~128 kB, transparency kept) so a phone never downloads the 1 MB original. It tilts and lifts on scroll and settles under the pointer — the motion lives in `src/styles.css` (`.hero__mock`) and the small script in the hero |
+| The hero | `Images/Mobile POS Receipt Mockup.png`, trimmed and re-encoded by `tools/make-pos-mock.mjs` into `src/pos-mock.webp` (1065 wide, ~128 kB, transparency kept) so a phone never downloads the 1 MB original. It tilts and lifts on scroll and settles under the pointer — the motion lives in `src/styles.css` (`.hero__mock`) and the small script in the hero. Its size is proportional, never a fixed pixel width: a `min(42%, 404px)` column inside the hero grid, so its height tracks the copy block's at every width (the smoke check fails if that ratio drifts outside 0.8–1.25) |
 | The prototype (kept for reference) | `shop-yangu-kenya.html` — no longer published |
 
 The price is read from `plan.price_kes` in `src/content.json` — change it to `1200` and
@@ -147,9 +147,11 @@ SITE_URL=https://saintm254.github.io/Shop-Yangu-Kenya CHROME_PATH=/usr/bin/googl
 ## The home page is an advert
 
 Its reader is a shop owner behind a counter, not the engineer who built the system. So it
-carries: the headline, the M-Pesa / stock / receipts / reports / credit story, the price,
-and one button — **Sign up / Log in**, which goes to `/login/`. Nothing else. No screen
-counts, no pixel widths, no database notes, no prototype link.
+carries three sections and nothing else: the **hero** (headline, lede, `Signup/Login` and
+`Services`), the **what it does** band on the cerulean with six cream cards, and the
+**plan** card that ends the page above the footer. No screen counts, no pixel widths, no
+database notes, no prototype link — and no stats strip or dark counter demo, which were
+removed so the page reads top to bottom in one pass.
 
 All of that engineering detail still exists, one click away in `/spec/` and in the shop
 itself; it is just not what sells a till.
