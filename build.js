@@ -512,17 +512,16 @@ const receiptMock = `
   <p class="receipt__sign num">eTIMS · 1.2.156.1145.…· 8f3c · signed locally</p>
 </div>`;
 
-/* The hero: the headline on the left, a real Mombasa counter on the right.
-   The photograph is the argument — a till, an M-Pesa prompt and stock on the
-   shelf — so nothing is drawn on top of it. It dissolves into the page colour
-   at its left edge, under the words, and is cropped at the bottom, never
-   framed: a border would make it a picture on a poster instead of the shop. */
+/* The hero: the headline on the left, the phone at the till on the right.
+   The mock is the argument — the sale on the phone and the receipt in the
+   customer's hand — so nothing is drawn on top of it. It carries its own
+   transparency, so it stands on the cream with no plate or frame behind it:
+   a border would make it a picture on a poster instead of the machine the
+   shopkeeper holds. It tilts and lifts as the page scrolls and settles under
+   the pointer; both are in styles.css and both are off for anyone who asked
+   the system for less motion. */
 const hero = `
 <section class="hero">
-  <div class="hero__photo">
-    <img src="hero.jpg" width="1400" height="739" fetchpriority="high" decoding="async"
-      alt="A shopkeeper at the counter, taking payment on a phone beside an M-Pesa till number, with sugar, flour and cooking oil behind him." />
-  </div>
   <div class="wrap hero__in">
     <div class="hero__copy">
       <h1 class="hero__title">${escapeHtml(content.hero.title)}</h1>
@@ -532,8 +531,78 @@ const hero = `
         <a class="btn btn--ghost" href="${content.hero.secondary_cta.href}">${escapeHtml(content.hero.secondary_cta.label)}</a>
       </div>
     </div>
+    <div class="hero__mock">
+      <div class="hero__mockglow" aria-hidden="true"></div>
+      <img class="hero__mockimg" src="pos-mock.webp" width="1065" height="1234" fetchpriority="high" decoding="async"
+        alt="A phone at the till showing the sale, with the customer's printed receipt coming out of it: cashier, items, subtotal, tax and the total, with a barcode and receipt number." />
+    </div>
   </div>
-</section>`;
+</section>
+<script>
+/* The mock settles as the page moves: it straightens and lifts a little as
+   the hero scrolls out from under the header, and leans toward the pointer
+   when the mouse is over it. Both are one transform, driven by two custom
+   properties, so they cannot fight each other. The loop stops the moment the
+   value has arrived — nothing runs while the page sits still — and the whole
+   script bows out if the reader asked for less motion, or has no JavaScript
+   at all: the CSS lays it out correctly either way. */
+(function () {
+  var mock = document.querySelector('.hero__mock');
+  if (!mock || !window.matchMedia) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  var target = 0, shown = 0, tilt = 0, running = false;
+
+  function paint() {
+    mock.style.setProperty('--settle', shown.toFixed(4));
+    mock.style.setProperty('--tilt', tilt.toFixed(2) + 'deg');
+  }
+
+  function frame() {
+    var moving = Math.abs(target - shown) > 0.002;
+    shown = moving ? shown + (target - shown) * 0.16 : target;
+    paint();
+    if (moving) {
+      requestAnimationFrame(frame);
+    } else {
+      running = false;
+      mock.classList.remove('is-moving');
+    }
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    /* mid-flight the frame loop owns the value, so the CSS transition must
+       stand aside; when it stops, the class goes and CSS takes over again */
+    mock.classList.add('is-moving');
+    requestAnimationFrame(frame);
+  }
+
+  function onScroll() {
+    var r = mock.getBoundingClientRect();
+    var vh = window.innerHeight || 1;
+    /* 0 while the hero is in view, 1 once it has scrolled past the header */
+    target = Math.min(1, Math.max(0, -r.top / (r.height * 0.85 + vh * 0.1)));
+    start();
+  }
+
+  mock.addEventListener('pointermove', function (ev) {
+    if (ev.pointerType !== 'mouse') return;
+    var r = mock.getBoundingClientRect();
+    tilt = Math.max(-4, Math.min(4, ((ev.clientX - r.left) / r.width - 0.5) * 8));
+    start();
+  });
+  mock.addEventListener('pointerleave', function () {
+    tilt = 0;
+    start();
+  });
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+})();
+</script>`;
 
 /* The counter itself, further down the page: the same sale, as the till shows
    it. The hero carries the photograph and the promise; this carries the proof,
@@ -981,9 +1050,9 @@ for (const [from, to] of [
 
 fs.copyFileSync(path.join(root, 'src/logo/apple-touch-icon.png'), path.join(dist, 'apple-touch-icon.png'));
 fs.copyFileSync(path.join(root, 'src/logo/og.png'), path.join(dist, 'og.png'));
-/* The hero photograph. Cropped and re-encoded from Images/Hero Image.jpg by
-   tools/make-hero.mjs, so the 746 kB original never reaches a phone. */
-fs.copyFileSync(path.join(root, 'src/hero.jpg'), path.join(dist, 'hero.jpg'));
+/* The hero mock. Trimmed and re-encoded from Images/Mobile POS Receipt Mockup.png
+   by tools/make-pos-mock.mjs, so the 1 MB original never reaches a phone. */
+fs.copyFileSync(path.join(root, 'src/pos-mock.webp'), path.join(dist, 'pos-mock.webp'));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
 
 fs.mkdirSync(path.join(dist, 'fonts'), { recursive: true });
@@ -1035,7 +1104,7 @@ const assets = new Set([
   'og.png',
   'favicon.svg',
   'logo.svg',
-  'hero.jpg',
+  'pos-mock.webp',
   'fonts/PublicSans-Regular.woff2',
   'fonts/PublicSans-Medium.woff2',
   'fonts/PublicSans-SemiBold.woff2',
