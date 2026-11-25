@@ -113,6 +113,40 @@ for (const page of PAGES) {
       if (res.status() === 405 && isApiRefusal(res.url())) expectedApiRefusal.push(res.url());
     });
 
+/* ------------------------------------------------------------------ doors
+
+   Signing in needs an emailed code, and the published site has no API to ask
+   for one. So the page paths below are checked for what they can be checked
+   for without a session:
+
+     · the door still works — the advert leads to it, the form takes an
+       address, and submitting either asks for a code or explains that this
+       copy of the site has no server behind it;
+     · everything past the door is exercised by the API suite and by the jsdom
+       harness in docs/ (real pages, real API), not here.
+
+   What must never happen is a page that throws, or a form that does nothing. */
+async function submitDoor(tab) {
+  await tab.fill('#email', 'owner@shopyangu.co.ke');
+  await tab.click('#loginBtn');
+  await tab.waitForTimeout(1500);
+
+  /* Either the code step, or a readable reason there is no server. A blank
+     response is the failure this is here to catch. */
+  const asked = await tab.locator('#verifyForm').isVisible().catch(() => false);
+  const refused = await tab.locator('#loginError').isVisible().catch(() => false);
+  if (!asked && !refused) throw new Error('submitting the form did nothing');
+
+  const reachable = asked;
+  if (!reachable) {
+    const why = await tab.locator('#loginError').innerText().catch(() => '');
+    if (!/server|connect|API_URL|connection/i.test(why)) {
+      throw new Error(`the error does not say what to do — "${why}"`);
+    }
+  }
+  return reachable;
+}
+
     /* The app needs a real session, and a session comes from an emailed code.
        A published site has no API behind it, so this cannot sign in — and it
        must not pretend the failure is the page's fault. What it checks instead
@@ -475,33 +509,38 @@ try {
   await tab.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await tab.locator('a.btn', { hasText: 'Sign up / Log in' }).first().click();
   await tab.waitForURL(/\/login\/$/, { timeout: 15_000 });
-  await tab.fill('#email', 'owner@shopyangu.co.ke');
-  await tab.fill('#password', 'Owner@2026');
-  await tab.click('#loginBtn');
-  await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
-  await tab.waitForTimeout(500);
-  const booted = await tab.locator('#rail .navlink').count();
-  if (booted < 8) fail(`path home -> login -> shop: the shop did not boot (${booted} links)`);
-  note(`ok path home -> login -> shop (${booted} rail links after sign-in)`);
+  const open = await submitDoor(tab);
+  /* `open` is false only when this copy of the site has no API behind it,
+     which is the case on Pages. Nothing is wrong with the clicks. */
+  if (!open) note('ok path home -> login (no API on this copy, and it says so)');
+  else {
+    await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
+    const booted = await tab.locator('#rail .navlink').count();
+    if (booted < 8) fail(`path home -> login -> shop: the shop did not boot (${booted} links)`);
+    note(`ok path home -> login -> shop (${booted} rail links after sign-in)`);
+  }
   await ctx.close();
 } catch (e) {
   fail(`path home -> login -> shop: ${e.message.split('\n')[0]}`);
 }
-
-/* The shop itself: it boots, its addresses are real addresses, the rail
-   collapses, the till lets the shop name the customer, and every date reads
-   DD/MM/YY. One context, signed in through the real form. */
+/* The shop itself. Behind the door, so this runs only when the copy under
+   test has an API behind it; otherwise it says so and stops, rather than
+   blaming the page for having no server. Everything asserted below — the rail,
+   the tab bar, the till, the exports, the sign-out position — is covered in
+   full by the jsdom harness against a live API. */
 try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
   const tab = await ctx.newPage();
   await tab.goto(`${BASE}/login/`, { waitUntil: 'networkidle' });
-  await tab.fill('#email', 'owner@shopyangu.co.ke');
-  await tab.fill('#password', 'Owner@2026');
-  await tab.click('#loginBtn');
-  await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
-  await tab.waitForTimeout(400);
 
-  const railItems = await tab.locator('#rail .navlink').count();
+  if (!(await submitDoor(tab))) {
+    await ctx.close();
+    note('skip the shop itself (no API on this copy)');
+  } else {
+    await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
+    await tab.waitForTimeout(400);
+
+    const railItems = await tab.locator('#rail .navlink').count();
   const tabItems = await tab.locator('#tabbar button').count();
   if (railItems < 8) fail(`app: rail did not render (${railItems} links, expected 11 for an owner)`);
   if (tabItems < 4) fail(`app: tab bar did not render (${tabItems} items, expected 5)`);
@@ -697,6 +736,7 @@ try {
   note(`ok app booted (${railItems} rail links, ${tabItems} tabs, ${shortDates.length} DD/MM/YY dates)`);
   note(`ok exports (${pdf.name} ${Math.round(pdf.size / 1024)} kB, ${xls.name} ${Math.round(xls.size / 1024)} kB)`);
   await ctx.close();
+  }
 } catch (e) {
   fail(`app: threw — ${e.message.split('\n')[0]}`);
 }
