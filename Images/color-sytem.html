@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop Yangu – colour system</title>
+<style>
+:root{--bg:#F5EFE6;--surface:#FFFFFF;--ink:#1F1B16;--muted:#6A6054;--line:#E2D8C8;--primary:#287094;--primaryDark:#1B5270;--link:#1B5270;--sidebar:#1B4A63;--sidebarInk:#FFFFFF;--accent:#D9622B;--accentInk:#1F1B16;--success:#167A45;--warning:#B45309;--danger:#C62F3A;--disabledBg:#D9CFBF;--disabledInk:#5A5046;
+--sh1:0 1px 2px rgba(31,27,22,.10),0 1px 3px rgba(31,27,22,.06);--sh2:0 2px 4px rgba(31,27,22,.08),0 6px 16px rgba(31,27,22,.08);
+--f:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+*{box-sizing:border-box;margin:0}
+body{font:16px/1.55 var(--f);color:var(--ink);background:var(--bg)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 64px}
+header{padding:38px 0 8px}
+h1{font-size:clamp(1.7rem,3.6vw,2.4rem);line-height:1.12}
+header p,.lead{color:var(--muted);margin-top:8px;max-width:48em}
+h2{font-size:1.25rem;margin:44px 0 4px}
+.lead{margin:0 0 16px}
+:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.s{font:inherit;text-align:left;border:0;padding:0;color:var(--ink);background:var(--surface);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:var(--sh1)}
+.s:hover{box-shadow:var(--sh2)}
+.s .c{height:68px;padding:8px 10px;font-weight:600;font-size:.85rem;display:flex;justify-content:space-between;align-items:flex-end}
+.s .m{padding:8px 10px;font-size:.85rem}.s .m b{display:block}.s .m code{color:var(--muted)}
+.bar{display:flex;height:56px;border-radius:12px;overflow:hidden;box-shadow:var(--sh1)}
+.grp{display:grid;grid-template-columns:60fr 30fr 10fr;gap:8px;margin-top:10px;font-size:.88rem;color:var(--muted)}
+.grp div{border-top:3px solid var(--ink);padding-top:4px}.grp b{color:var(--ink)}
+.sc{display:grid;grid-template-columns:repeat(10,1fr);border-radius:12px;overflow:hidden;box-shadow:var(--sh1)}
+.sc div{padding:30px 6px 8px;font-size:.74rem;line-height:1.3;text-align:center}.sc b{display:block;font-size:.82rem}
+.sem{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.sm{background:var(--surface);border-radius:12px;padding:14px;box-shadow:var(--sh1)}
+.sm h3{font-size:.95rem;margin-bottom:8px}
+.sm .p{padding:10px;border-radius:8px;font-weight:700;font-size:.9rem;margin-bottom:8px}
+.btn{font:700 1rem var(--f);border:0;border-radius:10px;padding:13px 20px;color:#fff;background:var(--primary);cursor:pointer}
+.btn.ok{background:var(--success)}.btn.del{background:var(--danger)}
+.btn.alt{background:var(--surface);color:var(--ink);box-shadow:var(--sh1)}
+.btn.off{background:var(--disabledBg);color:var(--disabledInk);cursor:not-allowed}
+.btn:active:not(.off){background:var(--primaryDark)}
+.btn.ok:active,.btn.del:active{filter:brightness(.88)}
+.btns{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--surface);padding:20px;border-radius:14px;box-shadow:var(--sh1)}
+.btns small{flex-basis:100%;color:var(--muted)}
+.lv{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px}
+.lv div{background:var(--surface);border-radius:12px;padding:18px 14px;font-size:.88rem;color:var(--muted)}.lv b{display:block;color:var(--ink)}
+table{width:100%;border-collapse:collapse;background:var(--surface);border-radius:12px;overflow:hidden;font-size:.9rem;box-shadow:var(--sh1)}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}th{background:var(--bg);font-size:.8rem}
+.tw{overflow-x:auto}
+.ab{display:inline-block;min-width:36px;text-align:center;border-radius:6px;padding:1px 8px;font-weight:700}
+.r{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:700;color:#fff}
+.r.AAA,.r.AA{background:var(--success)}.r.UI{background:var(--warning)}.r.Fail{background:var(--danger)}
+.sum{margin:0 0 12px;font-weight:600}
+.pv{display:grid;grid-template-columns:150px 1fr;border-radius:16px;overflow:hidden;box-shadow:var(--sh2);background:var(--bg);font-size:.88rem}
+.pv-side{background:var(--sidebar);color:var(--sidebarInk);padding:14px 12px;display:flex;flex-direction:column;gap:6px}
+.pv-side b{margin-bottom:8px}.pv-side span{padding:8px 10px;border-radius:8px}.pv-side .on{background:#fff;color:var(--sidebar);font-weight:700}
+.pv-main{padding:16px;display:grid;gap:12px}
+.pv-top{display:flex;justify-content:space-between;align-items:center}.pv-top h4{font-size:1.05rem}
+.pv-search{background:var(--surface);border-radius:10px;padding:10px 12px;color:var(--muted);box-shadow:var(--sh1)}
+.pv-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.t{background:var(--surface);border-radius:10px;padding:10px;line-height:1.3;box-shadow:var(--sh1)}.t small{color:var(--muted);display:block}
+.bd{display:inline-block;border-radius:6px;padding:1px 8px;font-size:.76rem;font-weight:700;margin-top:4px;color:#fff}
+.bd.a{background:var(--accent);color:var(--accentInk)}.bd.w{background:var(--warning)}.bd.d{background:var(--danger)}.bd.s{background:var(--success)}
+.pv-bask{background:var(--surface);border-radius:10px;padding:12px;display:grid;gap:4px;box-shadow:var(--sh1)}
+.pv-bask div{display:flex;justify-content:space-between}.pv-bask .tot{border-top:1px dashed var(--line);padding-top:6px;font-weight:700}
+.pv-pay{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pv-pay span{text-align:center;padding:12px;border-radius:10px;background:var(--surface);font-weight:700;box-shadow:var(--sh1)}
+.pv-pay .sel{background:var(--primary);color:#fff;box-shadow:none}
+.pv .btn{width:100%;font-size:1.05rem;padding:15px}.pv .btn.del{width:auto;font-size:.9rem;padding:10px 14px}
+.pv-ok{background:var(--success);color:#fff;border-radius:10px;padding:12px;font-weight:700}
+.pv-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+pre{background:#1F1B16;color:#F5EFE6;padding:16px;border-radius:12px;overflow:auto;font-size:.82rem;line-height:1.5;max-height:340px}
+.cp{margin-bottom:10px;padding:9px 18px;font-size:.95rem}
+ul.rules{padding-left:1.1em;display:grid;gap:8px;max-width:52em}
+@media(max-width:860px){.sem{grid-template-columns:1fr 1fr}.sc{grid-template-columns:repeat(5,1fr)}.pv{grid-template-columns:1fr}.pv-side{flex-direction:row;flex-wrap:wrap}.pv-tiles{grid-template-columns:1fr 1fr}.grp,.lv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Shop Yangu colour system: Savanna sand</h1>
+  <p>Built on your primary <b>#287094</b>. Buttons are either fully solid with no outline, or white with a soft shadow. Green appears only to confirm that money was received.</p>
+</header>
+<main id="out"></main>
+</div>
+
+<script>
+var c={bg:"#F5EFE6",surface:"#FFFFFF",ink:"#1F1B16",muted:"#6A6054",line:"#E2D8C8",primary:"#287094",primaryDark:"#1B5270",link:"#1B5270",sidebar:"#1B4A63",sidebarInk:"#FFFFFF",accent:"#D9622B",accentInk:"#1F1B16",success:"#167A45",warning:"#B45309",danger:"#C62F3A",disabledBg:"#D9CFBF",disabledInk:"#5A5046"};
+function h2r(h){h=h.replace('#','');return[0,2,4].map(function(i){return parseInt(h.substr(i,2),16)})}
+function r2h(a){return'#'+a.map(function(x){return Math.round(x).toString(16).padStart(2,'0')}).join('').toUpperCase()}
+function mix(a,b,t){var x=h2r(a),y=h2r(b);return r2h(x.map(function(v,i){return v*(1-t)+y[i]*t}))}
+function lum(h){var k=h2r(h).map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*k[0]+.7152*k[1]+.0722*k[2]}
+function cr(a,b){var x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+function best(bg){return cr('#FFFFFF',bg)>=cr('#000000',bg)?'#FFFFFF':'#000000'}
+function rate(r){return r>=7?['AAA','✓✓ AAA']:r>=4.5?['AA','✓ AA']:r>=3?['UI','◐ Large text / icons only']:['Fail','✗ Fail']}
+var W='#FFFFFF';
+var ck=[
+['Body text on page',c.ink,c.bg,'t'],['Body text on cards',c.ink,c.surface,'t'],
+['Muted text on page',c.muted,c.bg,'t'],['Muted text on cards',c.muted,c.surface,'t'],
+['Links on page',c.link,c.bg,'t'],['Primary button text',W,c.primary,'t'],['Primary button pressed',W,c.primaryDark,'t'],
+['Paid message and button',W,c.success,'t'],['Warning tag (low stock)',W,c.warning,'t'],['Error tag and delete button',W,c.danger,'t'],
+['Accent tag text',c.accentInk,c.accent,'t'],['Disabled button text',c.disabledInk,c.disabledBg,'t'],
+['Sidebar menu text',c.sidebarInk,c.sidebar,'t'],['Selected sidebar item',c.sidebar,W,'t'],
+['Primary button against the page',c.primary,c.bg,'u'],['Selected payment button on a card',c.primary,c.surface,'u'],
+['Green paid tag against the page',c.success,c.bg,'u'],['Accent tag against the page',c.accent,c.bg,'u']];
+function sw(name,hex){var t=best(hex);return'<button class="s" data-hex="'+hex+'" aria-label="Copy '+name+' '+hex+'"><div class="c" style="background:'+hex+';color:'+t+'"><span>Aa</span><span>'+cr(t,hex).toFixed(1)+':1</span></div><div class="m"><b>'+name+'</b><code>'+hex+'</code></div></button>'}
+var o='';
+var core=[['Primary','primary'],['Primary dark (pressed)','primaryDark'],['Sidebar','sidebar'],['Page background','bg'],['Cards / surface','surface'],['Text','ink'],['Muted text','muted'],['Dividers','line'],['Accent (highlights)','accent'],['Success (paid)','success'],['Warning (low stock)','warning'],['Danger (error, delete)','danger']];
+o+='<h2>Core colours</h2><p class="lead">Tap any swatch to copy its hex code. The ratio on each swatch is the contrast of its best text colour.</p><div class="sw">'+core.map(function(k){return sw(k[0],c[k[1]])}).join('')+'</div>';
+var seg=[[c.bg,40],[c.surface,20],[c.primary,15],[c.sidebar,15],[c.accent,6],[c.success,4]];
+o+='<h2>How much of each colour to use</h2><p class="lead">A 60-30-10 split keeps the screen calm and makes the important buttons easy to spot.</p><div class="bar" role="img" aria-label="Usage ratio: 60 percent neutrals, 30 percent primary and sidebar, 10 percent accent and status">'+seg.map(function(s){return'<div style="flex:'+s[1]+';background:'+s[0]+'"></div>'}).join('')+'</div><div class="grp"><div><b>60% neutrals</b><br>Page background and cards</div><div><b>30% primary</b><br>Sidebar, buttons, selected items</div><div><b>10% accent and status</b><br>Tags, paid, warnings</div></div>';
+var st=[[.92,'#FFFFFF'],[.82,'#FFFFFF'],[.65,'#FFFFFF'],[.45,'#FFFFFF'],[.22,'#FFFFFF'],[0,0],[.15,'#000000'],[.3,'#000000'],[.5,'#000000'],[.68,'#000000']],lv=[50,100,200,300,400,500,600,700,800,900];
+o+='<h2>Primary shades</h2><p class="lead">Use 50–100 for soft page areas, 500 for buttons, 600–700 for pressed states and 800–900 for dark headers. Each box shows the better text colour and its contrast.</p><div class="sc">'+st.map(function(s,n){var x=n===5?c.primary:mix(c.primary,s[1],s[0]),t=best(x);return'<div style="background:'+x+';color:'+t+'"><b>'+lv[n]+'</b>'+x+'<br>'+(t==='#FFFFFF'?'White':'Black')+' '+cr(t,x).toFixed(1)+'</div>'}).join('')+'</div>';
+o+='<h2>Status colours</h2><p class="lead">All solid, with no outlines. Green means money received, and nothing else. Red is for errors and deleting. Amber is for warnings such as low stock. Add an icon or a word so colour is never the only signal.</p><div class="sem">'+[['Success · Paid','success','✓ Paid','#FFFFFF'],['Warning · Low stock','warning','! Low stock','#FFFFFF'],['Danger · Error','danger','✕ Out of stock','#FFFFFF'],['Accent · Highlight','accent','★ Top seller',c.accentInk]].map(function(k){return'<div class="sm"><h3>'+k[0]+'</h3><div class="p" style="background:'+c[k[1]]+';color:'+k[3]+'">'+k[2]+'</div><code>'+c[k[1]]+'</code></div>'}).join('')+'</div>';
+o+='<h2>Button styles</h2><p class="lead">Two styles only: fully solid with no outline, or white with a soft shadow. Never a see-through fill with an outline.</p><div class="btns"><button class="btn" type="button">Charge Ksh 530</button><button class="btn ok" type="button">✓ Confirm payment</button><button class="btn del" type="button">Remove item</button><button class="btn alt" type="button">Cash</button><button class="btn off" type="button" aria-disabled="true">Complete sale</button><small>Solid primary · Solid green (paid only) · Solid red · White with shadow · Disabled (solid, readable)</small></div>';
+o+='<h2>Shadows instead of outlines</h2><p class="lead">Shadows separate white cards and white buttons from the sand page. Keep them soft and never coloured.</p><div class="lv"><div style="box-shadow:none"><b>Level 0 · flat</b>Solid buttons and tags. No shadow needed.</div><div style="box-shadow:var(--sh1)"><b>Level 1 · resting</b>Cards, tiles, white buttons, search box.</div><div style="box-shadow:var(--sh2)"><b>Level 2 · raised</b>Pop-ups, hovered cards, the whole screen frame.</div></div>';
+var ok=0,bad=[];
+var rows=ck.map(function(k){var r=cr(k[1],k[2]),need=k[3]==='t'?4.5:3,p=r>=need;if(p)ok++;else bad.push(k[0]);var q=rate(r);return'<tr><td>'+k[0]+'</td><td><span class="ab" style="background:'+k[2]+';color:'+k[1]+'">Aa</span></td><td><code>'+k[1]+'</code> on <code>'+k[2]+'</code></td><td><b>'+r.toFixed(2)+':1</b></td><td>'+(k[3]==='t'?'Text':'Icon / button')+'</td><td><span class="r '+q[0]+'">'+q[1]+'</span></td></tr>'}).join('');
+o+='<h2>Contrast checks (WCAG)</h2><p class="lead">Text needs at least 4.5:1 (AA). Buttons and icons need at least 3:1 against what is behind them. 7:1 or more is AAA, the easiest to read in bright sunlight.</p><p class="sum">'+ok+' of '+ck.length+' checks pass'+(bad.length?'. Needs care: '+bad.join('; '):'. Nothing needs fixing.')+'</p><div class="tw"><table><thead><tr><th>Where</th><th>Sample</th><th>Colours</th><th>Ratio</th><th>Type</th><th>Result</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+o+='<h2>Live preview</h2><p class="lead">The point of sale screen. Selected items are solid, unselected buttons use a soft shadow, and green appears only when payment is confirmed.</p><div class="pv"><aside class="pv-side"><b>Shop Yangu</b><span class="on">Point of sale</span><span>Sales</span><span>Stock</span><span>Customers</span></aside><div class="pv-main"><div class="pv-top"><h4>Point of sale</h4><span class="bd w">! Low stock: Flour</span></div><div class="pv-search">Search or scan</div><div class="pv-tiles"><div class="t">Sugar 2kg<small>Ksh 240</small><span class="bd a">★ Top seller</span></div><div class="t">Maize flour<small>Ksh 190</small><span class="bd w">! 12 left</span></div><div class="t">Soda 350ml<small>Ksh 50</small></div><div class="t">Bottled water<small>Ksh 60</small><span class="bd d">✕ Out of stock</span></div></div><div class="pv-bask"><div><span>Sugar 2kg × 2</span><span>480</span></div><div><span>Soda 350ml × 1</span><span>50</span></div><div class="tot"><span>Total</span><span>Ksh 530</span></div></div><div class="pv-pay"><span>Cash</span><span class="sel">M-Pesa</span><span>Card</span></div><button class="btn" type="button" tabindex="-1">Charge Ksh 530</button><div class="pv-ok">✓ Payment received · M-Pesa · Ksh 530</div><div class="pv-row"><button class="btn del" type="button" tabindex="-1">Remove item</button><span class="bd s">✓ Paid</span></div></div></div>';
+var css=':root {\n'+Object.keys(c).map(function(k){return'  --color-'+k.replace(/[A-Z]/g,function(m){return'-'+m.toLowerCase()})+': '+c[k]+';'}).join('\n')+'\n  --shadow-1: 0 1px 2px rgba(31,27,22,.10), 0 1px 3px rgba(31,27,22,.06);\n  --shadow-2: 0 2px 4px rgba(31,27,22,.08), 0 6px 16px rgba(31,27,22,.08);\n}';
+o+='<h2>Colour codes for your developer</h2><p class="lead">Paste this into your stylesheet and use the names instead of typing hex codes.</p><button class="btn cp" id="cp" type="button">Copy CSS</button><pre>'+css+'</pre>';
+o+='<h2>Rules to follow</h2><ul class="rules"><li><b>Stick to 60-30-10.</b> Most of the screen is page and card colour. Primary is for the sidebar, the main button and the selected item. Accent and status colours stay small.</li><li><b>Buttons are solid or white with a shadow.</b> No outlines, and no see-through fills.</li><li><b>One main button per screen.</b> Make it primary, big and in the same place every time.</li><li><b>Green is only for paid.</b> Use it for the payment received message and the Paid tag, never for decoration or the Add button.</li><li><b>Red is only for problems.</b> Errors, deleting and out of stock.</li><li><b>Text on the accent is dark.</b> White on terracotta fails the contrast check, so use the dark text colour.</li><li><b>Never use colour alone.</b> Pair it with a word or icon, such as ✓ Paid.</li></ul>';
+document.getElementById('out').innerHTML=o;
+function cp(t,b){var done=function(){if(b){var x=b.textContent;b.textContent='Copied ✓';setTimeout(function(){b.textContent=x},1400)}};
+ try{navigator.clipboard.writeText(t).then(done,done)}catch(e){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(_){}a.remove();done()}}
+[].forEach.call(document.querySelectorAll('.s'),function(b){b.onclick=function(){cp(b.dataset.hex)}});
+document.getElementById('cp').onclick=function(){cp(css,this)};
+</script>
+</body>
+</html>
