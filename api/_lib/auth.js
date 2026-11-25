@@ -584,11 +584,42 @@ export async function signInWithPassword({ email, password }, meta = {}) {
     );
   }
 
-  const right = await passwords.verifyPassword(String(password || ''), {
-    hash: login.password_hash,
-    salt: login.password_salt,
-    params: login.password_params,
-  });
+  /* Who says whether the password is right.
+
+     Neon Auth first, when it is configured: that is the account created when
+     the person signed up. Our own scrypt hash is the fallback, and it exists
+     for two real cases:
+
+     · an account made before Neon was configured, or by SQL;
+     · Neon being unreachable. A shop must not lose its till because a third
+       party is down. An outage falls through to the hash; a definite "no" from
+       Neon does not.
+
+     Keeping those apart is the whole point: a wrong password and a dead service
+     look the same in a boolean, and confusing them either refuses a real
+     shopkeeper or accepts a wrong password. */
+  let verdict = 'local';
+
+  if (neonAuth.configured()) {
+    const neon = await neonAuth.checkPassword(clean, password);
+    if (neon.ok) {
+      verdict = 'neon-yes';
+    } else if (neon.unreachable || neon.serverFault) {
+      verdict = 'local';
+    } else {
+      verdict = 'neon-no';
+    }
+  }
+
+  let right = verdict === 'neon-yes';
+
+  if (!right && verdict === 'local' && login.password_hash) {
+    right = await passwords.verifyPassword(String(password || ''), {
+      hash: login.password_hash,
+      salt: login.password_salt,
+      params: login.password_params,
+    });
+  }
 
   if (!right) {
     await db.query(
@@ -636,12 +667,35 @@ export async function setPassword({ login, currentPassword, newPassword }) {
   );
   if (!row) throw notFound('That account no longer exists.');
 
-  if (row.password_hash) {
-    const ok = await passwords.verifyPassword(String(currentPassword || ''), {
-      hash: row.password_hash,
-      salt: row.password_salt,
-      params: row.password_params,
-    });
+  /* Who confirms the CURRENT password.
+
+     Neon Auth when it is configured, because that is the authority the sign-in
+     path consults, and the two must not disagree about what the current
+     password is. Our own hash otherwise — and also when Neon cannot be
+     reached, so a password can still be changed during an outage. */
+  if (row.password_hash || neonAuth.configured()) {
+    let ok = false;
+
+    if (neonAuth.configured()) {
+      const neon = await neonAuth.checkPassword(row.email, String(currentPassword || ''));
+      if (neon.ok) ok = true;
+      else if (neon.unreachable || neon.serverFault) {
+        ok = row.password_hash
+          ? await passwords.verifyPassword(String(currentPassword || ''), {
+              hash: row.password_hash,
+              salt: row.password_salt,
+              params: row.password_params,
+            })
+          : false;
+      }
+    } else if (row.password_hash) {
+      ok = await passwords.verifyPassword(String(currentPassword || ''), {
+        hash: row.password_hash,
+        salt: row.password_salt,
+        params: row.password_params,
+      });
+    }
+
     if (!ok) throw badRequest('Your current password is not right.');
   }
 
@@ -655,6 +709,30 @@ export async function setPassword({ login, currentPassword, newPassword }) {
       where id = $1`,
     [row.id, fresh.hash, fresh.salt, fresh.params]
   );
+
+  /* Neon Auth holds the password the shop checks first, so it has to hear about
+     a change. If it cannot be told, the whole change is refused rather than
+     half-applied — an old password that still works at Neon while a new one
+     works here is exactly the kind of quiet split that loses a shop's trust.
+
+     Not configured is fine: then our hash is the only password there is. */
+  if (neonAuth.configured()) {
+    const synced = await neonAuth.changePassword(row.email, String(currentPassword || ''), String(newPassword));
+    if (!synced.ok) {
+      /* Put our own hash back so the two never disagree. */
+      await db.query(
+        `update logins
+            set password_hash = $2, password_salt = $3, password_params = $4
+          where id = $1`,
+        [row.id, row.password_hash, row.password_salt, row.password_params]
+      );
+      throw badRequest(
+        synced.unreachable
+          ? 'Neon Auth did not answer, so the password was not changed. Try again in a minute.'
+          : 'Neon Auth refused the change, so nothing was altered. Sign in with a code by email and try again.'
+      );
+    }
+  }
 
   return { ok: true };
 }

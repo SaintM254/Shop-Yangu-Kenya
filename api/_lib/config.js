@@ -126,6 +126,11 @@ export const env = {
      connect an email provider just to create an account. When it is not set,
      nothing else changes — the server sends the code itself. */
   NEON_AUTH_BASE_URL: raw.NEON_AUTH_BASE_URL || '',
+  /* 32+ characters, used by Neon's SDK to sign its own cookie cache. Optional:
+     when it is absent a value is derived from TOKEN_PEPPER, which every
+     deployment already has. Generate one with `openssl rand -base64 32` if you
+     would rather they were separate secrets. */
+  NEON_AUTH_COOKIE_SECRET: raw.NEON_AUTH_COOKIE_SECRET || '',
 
   /* Set to a real value in production. Used to sign nothing (JWTs are not
      used) but to derive the hash key for session tokens.

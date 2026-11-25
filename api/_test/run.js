@@ -863,47 +863,75 @@ group('sessions: signing out');
 
 group('Neon Auth: the first code, sent and checked by Neon');
 {
-  /* A stub standing in for the Neon Auth service, on this machine. The point is
-     not to test Neon — it is to test OUR client and OUR routes against a live
-     HTTP endpoint, including the two things that are easy to get wrong: that a
-     code Neon sent is the code Neon is asked about, and that a dead Neon does
-     not stop a shop being created. */
+  /* A REAL Better Auth 1.7 server, in this process, on a real port — the same
+     protocol Managed Better Auth speaks. Not a stub returning 200 for
+     everything: it generates a real code, rejects real wrong codes, and refuses
+     an untrusted origin exactly as the hosted service does.
+
+     This is the closest this sandbox can get to the live service. Neon's
+     endpoints are unreachable from here, so the proof is: the shop's client and
+     the shop's routes against Better Auth's own handler. */
   const http = await import('node:http');
-  const seen = { send: [], verify: [], behaviour: 'ok' };
+  const { betterAuth } = await import('better-auth');
+  const { emailOTP } = await import('better-auth/plugins/email-otp');
+  const { memoryAdapter } = await import('better-auth/adapters/memory');
 
-  const stub = http.createServer((req, res) => {
-    let raw = '';
-    req.on('data', (c) => (raw += c));
-    req.on('end', () => {
-      if (seen.behaviour === 'down') {
-        res.writeHead(503, { 'content-type': 'application/json' });
-        return res.end('{"error":"unavailable"}');
-      }
-      const body = raw ? JSON.parse(raw) : {};
-      if (req.url.endsWith('/email-otp/send-verification-otp')) {
-        seen.send.push(body);
-        res.writeHead(200, { 'content-type': 'application/json' });
-        return res.end('{"ok":true}');
-      }
-      if (req.url.endsWith('/email-otp/verify-email')) {
-        seen.verify.push(body);
-        const good = body.otp === NEON_CODE;
-        res.writeHead(good ? 200 : 401, { 'content-type': 'application/json' });
-        return res.end(good ? '{"ok":true}' : '{"error":"invalid"}');
-      }
-      res.writeHead(404);
-      res.end('{}');
-    });
+  const store = { user: [], session: [], account: [], verification: [] };
+  const delivered = { otp: '', type: '', email: '' };
+
+  const better = betterAuth({
+    secret: 'test-secret-for-the-local-better-auth-32',
+    baseURL: 'http://127.0.0.1/neondb/auth',
+    basePath: '/neondb/auth',
+    /* The hosted service trusts the domains configured on the branch. The site
+       under test is on SITE_URL, so that is what is trusted here. */
+    trustedOrigins: [process.env.SITE_URL, 'http://localhost:*'],
+    database: memoryAdapter(store),
+    emailAndPassword: { enabled: true, requireEmailVerification: false },
+    plugins: [
+      emailOTP({
+        otpLength: 6,
+        expiresIn: 300,
+        sendVerificationOTP({ email, otp, type }) {
+          Object.assign(delivered, { otp, type, email });
+        },
+      }),
+    ],
   });
-  await new Promise((r) => stub.listen(0, '127.0.0.1', r));
-  const NEON_CODE = '424242';
 
-  const neon = await import('../_lib/neon-auth.js');
+  const neonServer = http.createServer(async (req, res) => {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const body = Buffer.concat(chunks);
+    const url = new URL(req.url, 'http://127.0.0.1');
+
+    if (url.pathname === '/__delivered') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ type: delivered.type, digits: String(delivered.otp).length }));
+    }
+
+    const response = await better.handler(
+      new Request(url, {
+        method: req.method,
+        headers: req.headers,
+        body: body.length && !['GET', 'HEAD'].includes(req.method) ? body : undefined,
+      })
+    );
+    const text = await response.text();
+    res.writeHead(response.status, Object.fromEntries(response.headers));
+    res.end(text);
+  });
+
+  await new Promise((r) => neonServer.listen(0, '127.0.0.1', r));
+
   const { env } = await import('../_lib/config.js');
-  env.NEON_AUTH_BASE_URL = `http://127.0.0.1:${stub.address().port}/neondb/auth`;
+  env.NEON_AUTH_BASE_URL = `http://127.0.0.1:${neonServer.address().port}/neondb/auth`;
+
+  /* The code that was really generated, read from the server that generated it.
+     The shop's client is never given it. */
+  const realCode = () => delivered.otp;
 
   const email = 'neon-shop@jaribu.co.ke';
-  const sentBefore = seen.send.length;
 
   jar = {};
   const r = await call('POST', '/api/auth/signup', {
@@ -915,12 +943,13 @@ group('Neon Auth: the first code, sent and checked by Neon');
   });
   ok('sign-up still answers when Neon is the sender', r.status === 200, `status ${r.status}`);
   ok('and says who sent the code', r.body.sentBy === 'neon-auth', r.body.sentBy);
-  ok('Neon was actually called', seen.send.length === sentBefore + 1);
-  ok('with the sign-up verification type', seen.send[seen.send.length - 1]?.type === 'email-verification');
-  ok('and the right address', seen.send[seen.send.length - 1]?.email === email);
+  ok('a Neon account was created for the person', r.body.neonAccount === 'created', r.body.neonAccount);
+  ok('Neon really generated a six-digit code', /^\d{6}$/.test(realCode() || ''), String(realCode()));
+  ok('of the sign-up verification type', delivered.type === 'email-verification', delivered.type);
+  ok('for the right address', delivered.email === email, delivered.email);
 
-  /* The email we sent must not carry a code we cannot honour. */
-  const afterSignup = captured.slice(-12).join('\n');
+  /* The email this server sends must not name a code it cannot check. */
+  const afterSignup = captured.slice(-14).join('\n');
   ok(
     'our own email carries no code that Neon would reject',
     !/is your Shop Yangu Kenya code/.test(afterSignup),
@@ -929,23 +958,33 @@ group('Neon Auth: the first code, sent and checked by Neon');
   ok('but it does carry the link', /\/auth\/link\/\?token=/.test(afterSignup));
 
   const wrong = await call('POST', '/api/auth/signup/verify', { email, code: '000000' });
-  ok('a code Neon rejects is refused here too', wrong.status === 400, `status ${wrong.status}`);
+  ok('a code Better Auth rejects is refused here too', wrong.status === 400, `status ${wrong.status}`);
 
-  const right = await call('POST', '/api/auth/signup/verify', { email, code: NEON_CODE });
-  ok('the code Neon accepted creates the shop', right.status === 200 && right.body.user?.role === 'owner', `status ${right.status}`);
+  const right = await call('POST', '/api/auth/signup/verify', { email, code: realCode() });
+  ok(
+    'the code Better Auth accepted creates the shop',
+    right.status === 200 && right.body.user?.role === 'owner',
+    `status ${right.status}`
+  );
   ok('and the person is signed in', Boolean(jar.syk_session));
 
-  /* The password chosen at sign-up survived a Neon-sent code. */
+  /* The password chosen at sign-up must survive a Neon-verified code. */
   jar = {};
   const byPassword = await call('POST', '/api/auth/signin/password', {
     email,
     password: 'bahari-ndege-2026',
   });
   ok('the password from that sign-up works afterwards', byPassword.status === 200, `status ${byPassword.status}`);
+
+  /* Our code was never in play, and must not become a way in by accident. */
+  jar = {};
+  const ourOwn = lastCode();
+  const sneaky = await call('POST', '/api/auth/signup/verify', { email, code: ourOwn || '111111' });
+  ok('a shop cannot be created twice with the same address', sneaky.status !== 200, `status ${sneaky.status}`);
   jar = { ...ownerCookie };
 
   /* A dead Neon must not stop a shop being created. */
-  seen.behaviour = 'down';
+  await new Promise((r) => neonServer.close(r));
   const email2 = 'neon-down@jaribu.co.ke';
   jar = {};
   const fallback = await call('POST', '/api/auth/signup', {
@@ -955,17 +994,64 @@ group('Neon Auth: the first code, sent and checked by Neon');
     password: 'bahari-ndege-2026',
     confirmPassword: 'bahari-ndege-2026',
   });
-  ok('a 503 from Neon does not stop the sign-up', fallback.status === 200, `status ${fallback.status}`);
+  ok('an unreachable Neon does not stop the sign-up', fallback.status === 200, `status ${fallback.status}`);
   ok('it falls back to our own mailer, and says so', fallback.body.sentBy === 'ours', fallback.body.sentBy);
 
-  const ourCode = lastCode();
-  ok('and our own code was emailed', /^\d{6}$/.test(ourCode || ''), ourCode);
-  const madeIt = await call('POST', '/api/auth/signup/verify', { email: email2, code: ourCode });
+  const fallbackCode = lastCode();
+  ok('and our own code was emailed', /^\d{6}$/.test(fallbackCode || ''), fallbackCode);
+  const madeIt = await call('POST', '/api/auth/signup/verify', { email: email2, code: fallbackCode });
   ok('which completes a real shop', madeIt.status === 200, `status ${madeIt.status}`);
 
   env.NEON_AUTH_BASE_URL = '';
-  await new Promise((r) => stub.close(r));
   jar = { ...ownerCookie };
+}
+
+group('Neon Auth: the setting that silently breaks sign-in');
+{
+  /* `403 Invalid origin`. Better Auth refuses a POST whose Origin is not on the
+     branch's trusted-domain list, and this is the failure that makes a
+     correctly-configured deployment look broken. It is a setting, so it is
+     tested as one: the client's origin comes from SITE_URL, and if SITE_URL is
+     wrong the whole thing must fail loudly rather than half-work. */
+  const { authHealth } = await import('../_lib/neon-auth.js');
+  const { env } = await import('../_lib/config.js');
+
+  const before = authHealth();
+  ok('with nothing configured, health says the server sends codes itself', before.driver === 'none' && before.ok === true);
+
+  const savedSite = env.SITE_URL;
+  const savedPepper = env.TOKEN_PEPPER;
+
+  env.NEON_AUTH_BASE_URL = 'https://ep-example-123456.eu-central-1.aws.neon.tech/neondb/auth';
+  const good = authHealth();
+  ok('a proper base URL is ok', good.ok === true, JSON.stringify(good));
+  ok('and health names the trusted origin it will send', good.trustedOrigin === env.SITE_URL, good.trustedOrigin);
+
+  env.NEON_AUTH_BASE_URL = 'https://ep-example.neon.tech/';
+  const noPath = authHealth();
+  ok('a base URL missing /neondb/auth is caught, with the fix in the message', noPath.ok === false && /neondb\/auth/.test(noPath.error), noPath.error);
+
+  env.NEON_AUTH_BASE_URL = 'not a url';
+  const junk = authHealth();
+  ok('a nonsense base URL is caught', junk.ok === false, junk.error);
+
+  env.NEON_AUTH_BASE_URL = 'https://ep-example.neon.tech/neondb/auth';
+  env.TOKEN_PEPPER = '';
+  env.NEON_AUTH_COOKIE_SECRET = '';
+  const noSecret = authHealth();
+  ok(
+    'with no cookie secret and no pepper, health says which two settings fix it',
+    noSecret.ok === false && /NEON_AUTH_COOKIE_SECRET/.test(noSecret.error) && /TOKEN_PEPPER/.test(noSecret.error),
+    noSecret.error
+  );
+
+  env.NEON_AUTH_COOKIE_SECRET = 'a'.repeat(40);
+  ok('a cookie secret of its own is enough', authHealth().ok === true);
+  env.NEON_AUTH_COOKIE_SECRET = '';
+
+  env.TOKEN_PEPPER = savedPepper;
+  env.SITE_URL = savedSite;
+  env.NEON_AUTH_BASE_URL = '';
 }
 
 group('rate limiting');

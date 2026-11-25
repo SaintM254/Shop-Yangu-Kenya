@@ -102,6 +102,15 @@ random string — for example, open <https://random.org/strings> and ask for one
 Both variables must be ticked for **Production** (Vercel ticks all three
 environments by default; that is fine).
 
+### 3. `SITE_URL`
+
+Your site's own address, with `https://` and **no trailing slash** — copy it from
+the top of this page. Vercel can usually work it out, but Step 4 needs it to be
+exactly right, because Neon Auth checks it against its trusted domains and
+refuses anything that does not match.
+
+Add it now and you will not have to come back.
+
 ---
 
 ## Step 5 — Deploy

@@ -93,14 +93,39 @@ export default function (router) {
        which is why finishSignupWithCode asks Neon before it looks in our own
        table.
 
+       ORDER MATTERS, and this was learned the hard way by running it. Better
+       Auth's send-verification-otp answers `{"success": true}` for an address
+       that has no user yet, and sends nothing. Asking for the code first would
+       therefore show "check your email" and silently deliver zero emails. The
+       person's Neon account has to exist before the code is requested, so it is
+       created here, before the send.
+
+       The password goes to Neon at the same time as to our own hash: Neon's
+       sign-in is the one the shop checks first, and our scrypt hash is the
+       offline fallback for when Neon cannot be reached.
+
        If Neon Auth is absent, unreachable, slow, or simply says no, the code we
        just made in logins_codes is sent by our own mailer instead. Sign-up
        therefore cannot be broken by a third party being down — the worst case
        is that the email looks different from usual. */
     let sentBy = 'ours';
     let codeForMail = result.code;
+    let neonAccount = null;
 
     if (neonAuth.configured() && !result.existing) {
+      /* The account first — the code cannot be sent to somebody Neon has never
+         heard of. NEVER fatal: if Neon refuses (already registered, weak
+         password by its rules, unreachable) the shop is still created here with
+         our own code and our own hash. */
+      neonAccount = await neonAuth.signUpWithPassword({
+        email: result.email,
+        password: password || '',
+        name: result.personName,
+      });
+      if (!neonAccount.ok && !neonAccount.existed) {
+        console.warn('[auth] Neon Auth sign-up did not happen:', neonAccount.code, neonAccount.error);
+      }
+
       const sent = await neonAuth.sendSignupCode(result.email, result.personName);
       if (sent.ok) {
         sentBy = 'neon-auth';
@@ -130,6 +155,9 @@ export default function (router) {
       next: 'verify',
       shopName: result.shopName,
       sentBy,
+      /* Named for the docs and the test suite: whether a Neon account exists
+         for this person. It says nothing about a password. */
+      neonAccount: neonAccount ? (neonAccount.ok ? 'created' : neonAccount.existed ? 'already' : 'none') : 'off',
     };
   });
 

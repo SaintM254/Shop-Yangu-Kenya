@@ -15,13 +15,16 @@
     "superadmin": "node ../scripts/make-super-admin.js",
     "test": "node _test/run.js",
     "test:vercel": "node _test/vercel.js",
-    "test:all": "node _test/run.js && node _test/vercel.js"
+    "test:all": "node _test/run.js && node _test/vercel.js",
+    "prove:neon-auth": "node scripts/prove-neon-auth.mjs"
   },
   "dependencies": {
+    "@neon/auth": "^0.8.2",
     "@neondatabase/serverless": "^0.10.4",
     "nodemailer": "^6.9.16"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.2.17"
+    "@electric-sql/pglite": "^0.2.17",
+    "better-auth": "~1.7.12"
   }
 }

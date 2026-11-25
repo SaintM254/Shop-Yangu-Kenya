@@ -136,32 +136,74 @@ under **Settings → Password**.
 
 ## Neon Auth, specifically
 
-### Neon Auth is on and no first code arrives
+Four things account for almost every Neon Auth failure. Read them in order.
 
-Neon's own mail sender is still in its test mode and will only deliver to the
-address on the Neon account. Two fixes:
+### "There is no Auth URL in the Neon console"
 
-- In the Neon console: **Auth → Email provider**, connect your SMTP values
-  there, or
-- Remove `NEON_AUTH_BASE_URL` in Vercel and redeploy. Sign-up falls back to this
-  shop's own mailer, and nothing else changes.
+Correct — there is no field to copy it from. `NEON_AUTH_BASE_URL` is *generated*
+when Auth is turned on. Turn it on with the CLI:
 
-Removing that one setting is always safe. It is the only thing Neon Auth is used
-for.
+```bash
+npm install -g neon@latest
+neon login
+neon link
+neon deploy
+neon neon-auth status
+```
+
+`neon deploy` reads `neon.ts` (already in this repository, with `auth: true`) and
+writes the URL for you. `neon env pull` then puts it in `.env.local` to copy into
+Vercel. The full walkthrough is
+[Step 4 →](04-email-and-sign-in.md#way-a--let-neon-auth-hold-the-account-and-send-the-first-code).
+
+### `403 Invalid origin` — every sign-in fails
+
+Better Auth only accepts requests from the branch's **trusted domains**. Two
+values must match:
+
+1. **Vercel → Settings → Environment Variables → `SITE_URL`** — your real
+   address, `https://`, no trailing slash.
+2. **Neon console → your project → Auth → Trusted domains** — the same address,
+   added there.
+
+If they disagree by so much as a `www.`, every call is refused. This is a
+setting, not a bug, and the message it produces does not obviously say so.
+
+### `neon deploy` says Auth cannot be enabled
+
+The project has **IP Allow** or **Private Networking** on. Managed Auth cannot
+run with either. Neon → **Settings → Network** → turn it off for this project,
+then `neon deploy` again. Also confirm the project is on AWS; Managed Auth is AWS
+only.
+
+### No first code arrives, but `/api/health` says Neon is fine
+
+Neon's shared sender (`auth@mail.myneon.app`) **only delivers to the address on
+your Neon account**. Every other address is dropped silently, and the request
+still answers success. Either:
+
+- test with the address your Neon account uses, or
+- connect your own sender: Neon console → **Auth → Email provider**, with the
+  Resend values from [Step 4 →](04-email-and-sign-in.md#way-b--connect-your-own-mailer).
 
 ### Sign-up sends two emails
 
-Expected, and harmless. Neon Auth sends the code; this shop sends the one-click
-link, because the code in that email is not one this shop can check. Click
-either — they get to the same place.
+Expected. Neon sends the code; this shop sends the one-click link, because the
+code in that email is not one this shop can check. Click either.
 
 ### `/api/health` says `"auth":{"driver":"none"}`
 
-`NEON_AUTH_BASE_URL` is not set. That is a valid, working configuration — this
-shop sends the codes itself. Only change it if you specifically want Neon to
-send them.
+`NEON_AUTH_BASE_URL` is not set anywhere the deployment can see it. That is a
+valid, working setup — this shop sends the codes itself — but it is not what you
+wanted if you just turned Auth on. Re-check Vercel, then **redeploy**: a setting
+added after a deployment does nothing until the next one.
 
----
+### `/api/health` says `"auth":{"ok":false}`
+
+The `error` field names the setting. The two it catches are a base URL that does
+not end in `/neondb/auth`, and no cookie secret at all. Setting `TOKEN_PEPPER`
+fixes the second, because a cookie secret is derived from it when
+`NEON_AUTH_COOKIE_SECRET` is absent.
 
 ## M-Pesa
 
