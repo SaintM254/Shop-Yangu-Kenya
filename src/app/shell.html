@@ -8,22 +8,14 @@
         <span class="railbrand__mark" aria-hidden="true"><svg class="ic"><use href="#i-logo"/></svg></span>
         <span class="railbrand__text"><strong>Shop Yangu</strong><span>Kenya</span></span>
       </a>
-      <!-- Sign out owns the top-right corner of the rail. The collapse control
-           is not beside it: the two must never be confused under a thumb. -->
-      <button class="signoutbtn" id="signOutBtn" type="button" data-signout
-              aria-label="Sign out" title="Sign out">
-        <svg class="ic"><use href="#i-log-out"/></svg>
-      </button>
-    </div>
-    <div class="raillinks" id="railLinks"></div>
-    <!-- The collapse control lives at the foot of the rail, on the same edge as
-         the nav items it folds away. It is the only thing down here. -->
-    <div class="railfootbar">
+      <!-- Sign out lives at the far right of each screen's head, in the page
+           itself — not in the rail. The collapse control is the rail's own. -->
       <button class="railtoggle" id="railToggle" type="button" aria-expanded="true" aria-controls="rail"
               aria-label="Collapse the menu" title="Collapse the menu">
         <svg class="ic"><use href="#i-panel-left"/></svg>
       </button>
     </div>
+    <div class="raillinks" id="railLinks"></div>
   </nav>
 
   <!-- ============ phone top bar ============ -->
@@ -57,6 +49,10 @@
             <h1 id="greeting">Karibu, Wanjiku</h1>
             <p class="sub" id="todayLine">Thursday, 20 November 2026 · Mombasa Branch</p>
           </div>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
 
         <div class="cols two" style="margin-top:0">
@@ -201,6 +197,12 @@
                   <span class="sr-only">Show the basket</span>
                 </button>
                 <button class="btn ghost sm" id="clearBasket" type="button">Clear</button>
+                <!-- The till has no page head, so its top-right corner — the end
+                     of the basket's own head — is where the way out lives. -->
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
               </div>
               <div id="basket" class="pos-lines"></div>
             </div>
@@ -281,6 +283,10 @@
               <svg class="ic sm"><use href="#i-plus"/></svg>Add product
             </button>
           </div>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
 
         <div class="statgrid" style="margin-top:0">
@@ -342,6 +348,10 @@
                     <button class="btn sm" data-new-po>
             <svg class="ic sm"><use href="#i-plus"/></svg>New purchase order
           </button>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
         <div class="card">
           <div class="card-head">
@@ -389,6 +399,10 @@
               </span>
             </span>
           </div>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
         <div class="card">
           <div class="chips" id="salesChips" style="margin-bottom:11px"></div>
@@ -424,6 +438,10 @@
               <svg class="ic sm"><use href="#i-plus"/></svg>Add
             </button>
           </div>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
         <div class="card">
           <div class="searchbox" style="margin-bottom:11px">
@@ -441,6 +459,10 @@
             <h1>Import your records</h1>
             <p class="sub">Bring your old stock, customers and sales across from Excel.</p>
           </div>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
 
         <div class="card">
@@ -561,6 +583,10 @@
                 </button>
               </span>
             </span>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
         <div class="card">
           <div class="chips" id="reportChips" style="margin-bottom:11px"></div>
@@ -576,6 +602,10 @@
             <p class="sub">Every sale signed and transmitted the way KRA requires.</p>
           </div>
           <span class="pill ok"><span class="dot"></span>Connected</span>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
 
         <div class="statgrid" style="margin-top:0">
@@ -639,6 +669,10 @@
             <h1>Settings</h1>
             <p class="sub">The shop, the people, and the plan.</p>
           </div>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
 
         <div class="planbox">
@@ -746,6 +780,10 @@
                 </button>
               </span>
             </span>
+          <button class="signoutbtn screenout" type="button" data-signout
+                  aria-label="Sign out" title="Sign out">
+            <svg class="ic"><use href="#i-log-out"/></svg>
+          </button>
         </div>
         <div class="card">
           <div class="chips" id="auditChips" style="margin-bottom:11px"></div>

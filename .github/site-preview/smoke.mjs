@@ -435,24 +435,34 @@ try {
   if (!/Payment goal|Total Balance|Sales today/i.test(bodyText)) fail('app: dashboard did not paint');
   if (!/Ksh/.test(bodyText)) fail('app: no money rendered — the app did not boot');
 
-  /* Sign out owns the top-right corner of the rail and is not the collapse
-     control's neighbour: one is in the head, the other in the foot. */
-  const signOutBox = await tab.evaluate(() => {
-    const el = document.getElementById('signOutBtn');
+  /* Sign out lives at the far right of the screen's own head — the top-right
+     corner of the page, not of the rail — and the rail's collapse control is
+     back where it belongs, at the top of the rail. */
+  const corner = await tab.evaluate(() => {
+    const out = document.querySelector('.screen.active .screenout');
     const toggle = document.getElementById('railToggle');
-    if (!el || !toggle) return null;
-    const a = el.getBoundingClientRect(), b = toggle.getBoundingClientRect();
-    return { sx: a.x + a.width, sy: a.y, tx: b.x, ty: b.y,
-      railRight: document.getElementById('rail').getBoundingClientRect().right };
+    const main = document.getElementById('main');
+    if (!out || !toggle || !main) return null;
+    const a = out.getBoundingClientRect(), b = toggle.getBoundingClientRect();
+    const m = main.getBoundingClientRect();
+    return {
+      rightInset: Math.round(m.right - a.right), top: Math.round(a.top),
+      railToggleTop: Math.round(b.top), railToggleX: Math.round(b.x),
+      inRail: !!out.closest('#rail'),
+      headingTop: Math.round(document.querySelector('.screen.active h1').getBoundingClientRect().top),
+    };
   });
-  if (!signOutBox) fail('app: no sign-out control in the rail');
+  if (!corner) fail('app: no sign-out control in the screen head');
   else {
-    if (signOutBox.railRight - signOutBox.sx > 24) {
-      fail(`app: sign out is ${Math.round(signOutBox.railRight - signOutBox.sx)}px from the rail's right edge`);
-    }
-    if (signOutBox.sy > 120) fail('app: sign out is not at the top of the rail');
-    if (Math.abs(signOutBox.ty - signOutBox.sy) < 40) fail('app: sign out sits beside the collapse button');
+    if (corner.inRail) fail('app: sign out is still in the rail');
+    if (corner.rightInset > 40) fail(`app: sign out is ${corner.rightInset}px from the content edge`);
+    if (corner.top > 70) fail(`app: sign out is not at the top of the screen (${corner.top}px)`);
+    if (corner.railToggleTop > 40) fail(`app: the collapse control is not back at the top of the rail (${corner.railToggleTop}px)`);
   }
+  /* Every screen carries the way out, phone bar aside. */
+  const screens = await tab.locator('.screen .screenout').count();
+  const screenCount = await tab.locator('.screen').count();
+  if (screens !== screenCount) fail(`app: ${screenCount - screens} screen(s) have no sign-out`);
 
   /* The rail collapses, and the choice survives a reload. */
   await tab.click('#railToggle');
