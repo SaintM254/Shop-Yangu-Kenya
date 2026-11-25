@@ -86,11 +86,32 @@ for (const page of PAGES) {
     });
     const tab = await ctx.newPage();
     const errors = [];
+
+    /* When the page was built without an API address, GitHub Pages answers any
+       POST with 405 — that is what a static host does, not a bug in the page.
+       The login form is the one place this site legitimately posts, and only
+       after a person submits it. Those replies are collected separately so the
+       check can say "the page explained it" rather than "the console is dirty". */
+    const expectedApiRefusal = [];
+    const isApiRefusal = (t) => /\/api\//.test(t);
+
     tab.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
     tab.on('console', (m) => {
-      if (m.type() === 'error') errors.push('console: ' + m.text());
+      if (m.type() !== 'error') return;
+      /* "Failed to load resource: … 405" carries no URL; it is reported here
+         and matched up by the requestfailed handler below. */
+      if (/Failed to load resource/.test(m.text())) return;
+      if (isApiRefusal(m.text())) return expectedApiRefusal.push(m.text());
+      errors.push('console: ' + m.text());
     });
-    tab.on('requestfailed', (r) => errors.push('requestfailed: ' + r.url()));
+    tab.on('requestfailed', (r) => {
+      if (isApiRefusal(r.url())) expectedApiRefusal.push(r.url());
+      else errors.push('requestfailed: ' + r.url());
+    });
+    tab.on('response', (res) => {
+      /* A 405 to /api/ is the static host speaking, and the page has to cope. */
+      if (res.status() === 405 && isApiRefusal(res.url())) expectedApiRefusal.push(res.url());
+    });
 
     /* The app needs a real session, and a session comes from an emailed code.
        A published site has no API behind it, so this cannot sign in — and it
@@ -329,8 +350,16 @@ for (const page of PAGES) {
        for a code rather than letting anyone in. */
     if (page.name === 'login') {
       const body = await tab.evaluate(() => document.body.innerText);
-      if (!body.includes('owner@shopyangu.co.ke')) fail('login: the demo address is not on the page');
-      if (/Owner@2026|password/i.test(body)) fail('login: a password is still mentioned');
+      /* The demo address is in the field's placeholder, so a shop can see the
+         shape of an address without the page looking like a demo. */
+      const placeholder = await tab.locator('#email').getAttribute('placeholder');
+      if (!placeholder || !placeholder.includes('@')) fail(`login: the email field hints nothing (${placeholder})`);
+      /* "No password to remember" is the sentence we want. What must be gone
+         is a field to type one into, or a demo password on the page. */
+      if (/Owner@2026/.test(body)) fail('login: the old demo password is still on the page');
+      if (await tab.locator('#password, input[type="password"]').count()) {
+        fail('login: there is still a password field');
+      }
 
       if (await tab.locator('#password').count()) fail('login: there is still a password field');
 
@@ -355,6 +384,10 @@ for (const page of PAGES) {
       await tab.click('#loginBtn');
       await tab.waitForTimeout(1500);
 
+      if (expectedApiRefusal.length) {
+        note(`ok login: the static host refused the POST as it must (${expectedApiRefusal.length})`);
+      }
+
       const codeShown = await tab.locator('#verifyForm').isVisible().catch(() => false);
       const errorShown = !(await tab.locator('#loginError').isHidden().catch(() => true));
       if (codeShown) {
@@ -363,6 +396,11 @@ for (const page of PAGES) {
         const sentTo = await tab.locator('#sentTo').innerText().catch(() => '');
         if (!/owner@shopyangu\.co\.ke/.test(sentTo)) fail('login: the code screen does not name the address');
       } else if (errorShown) {
+        /* The message has to be one a shopkeeper can act on, not "405". */
+        const why = await tab.locator('#loginError').innerText().catch(() => '');
+        if (!/server|connect|API_URL|connection/i.test(why)) {
+          fail(`login: the error does not say what to do — "${why}"`);
+        }
         note('ok login explains it cannot reach the server');
       } else {
         fail('login: submitting the form did nothing');

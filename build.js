@@ -974,7 +974,16 @@ function loginPage() {
       clearTimeout(timer);
       return res.json().catch(function () { return {}; }).then(function (data) {
         if (!res.ok) {
-          var err = new Error(data.error || 'The server answered ' + res.status + '.');
+          /* 404 and 405 mean the request reached a static host, not the shop's
+             server: the page was published without an API address, or the API
+             is not answering. Say that, rather than a status code a shopkeeper
+             cannot act on. */
+          var why = data.error;
+          if (!why && (res.status === 404 || res.status === 405)) {
+            why = 'This copy of the site is not connected to the shop server. ' +
+                  'Ask whoever set it up to check API_URL.';
+          }
+          var err = new Error(why || 'The server answered ' + res.status + '.');
           err.status = res.status;
           throw err;
         }
@@ -1510,7 +1519,16 @@ function adminPage() {
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (data) {
         if (!res.ok) {
-          var err = new Error(data.error || 'The server answered ' + res.status + '.');
+          /* 404 and 405 mean the request reached a static host, not the shop's
+             server: the page was published without an API address, or the API
+             is not answering. Say that, rather than a status code a shopkeeper
+             cannot act on. */
+          var why = data.error;
+          if (!why && (res.status === 404 || res.status === 405)) {
+            why = 'This copy of the site is not connected to the shop server. ' +
+                  'Ask whoever set it up to check API_URL.';
+          }
+          var err = new Error(why || 'The server answered ' + res.status + '.');
           err.status = res.status;
           throw err;
         }
