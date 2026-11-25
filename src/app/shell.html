@@ -16,6 +16,12 @@
       </button>
     </div>
     <div class="raillinks" id="railLinks"></div>
+    <!-- What has not reached the server yet. Hidden until there is something
+         to say; filled by paintOutbox() in backend.js and redrawn on every
+         write, so a shop that sold through a dead connection can see it. -->
+    <div class="railfoot">
+      <span class="outbox" data-outbox hidden role="status" aria-live="polite"></span>
+    </div>
   </nav>
 
   <!-- ============ phone top bar ============ -->

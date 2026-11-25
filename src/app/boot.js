@@ -67,18 +67,37 @@ document.addEventListener('click', e => {
 
 /* ============================================================ start
 
-   1. no session, no till
-   2. the rail remembers whether it was collapsed
-   3. the address decides the screen
-   4. and from here on, the address follows the screen */
+   1. ask the server who is signed in, and for the shop — one request
+   2. no session, no till: the door, and back to the screen they asked for
+   3. the rail remembers whether it was collapsed
+   4. the address decides the screen
+   5. and from here on, the address follows the screen */
 
-function start() {
+async function start() {
+  /* The API answers with the shop, or with 401. Nothing is painted before it
+     does, because painting the sample shop and then swapping it for the real
+     one is how a shopkeeper sees the wrong day's takings for a second. */
+  const data = await BACKEND.load();
+
+  if (BACKEND.live) {
+    applyBootstrap(data);
+  }
+
   if (!requireSession()) return;
+
   initRail();
   paintNav();
   renderInventory();
   renderDashboard();
   renderSales();
+
+  /* A shop that has not sold anything yet gets one honest nudge rather than a
+     dashboard of zeroes wondering if it is broken. */
+  if (BACKEND.live && S.fresh) {
+    setTimeout(() => {
+      toast('Karibu. Add your products, then make a sale at the till — nothing else waits on you.', 'good');
+    }, 900);
+  }
 
   /* The screen named by the address. Opening the built folder from disk gives
      .../dashboard/index.html, which the router understands just as well as

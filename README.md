@@ -5,21 +5,32 @@ cash/M-Pesa/card, let a known customer go into credit, keep stock and expiry str
 import years of old records from Excel, and print KRA eTIMS-valid receipts.
 **Ksh 1,500 a month.**
 
-This repository holds three things:
+This repository holds these things:
 
 | What | Where | Why it is here |
 |---|---|---|
 | **The advert** — headline, what it does, the price, and one way in | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
-| **The door** — `/login/` | `build.js` (`loginPage`) + `content.demo_account` | Demo credentials in one place, shown on the page |
+| **The door** — `/login/`, `/auth/link/` | `build.js` (`loginPage`, `linkPage`) | Email code or link. No password anywhere. |
 | **The shop** — `/dashboard/`, `/till/`, `/stock/` … | `src/app/` → `dist/<route>/index.html` | A real front end: one shell, real addresses, no `.html` |
-| **The build spec** — the single login, data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
+| **The server** — `/api/*` | `api/` | Node + Neon Postgres. Receipts, stock, credit, M-Pesa. |
+| **The database** | `db/001`–`004` | 24 tables, the money-moving functions, row-level security |
+| **The platform console** | `/admin/` (`adminPage()`) | Every shop, who is signed in, pause a shop |
+| **How to run it** | `docs/` | Neon, migrations, linking the page to the API, email, M-Pesa, eTIMS |
+| **The build spec** — data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
+
+**Two pieces, not one.** The site is static and lives on GitHub Pages; the data
+lives in Postgres behind a small Node API. `docs/README.md` is the order to
+build that in, and `docs/03-link-the-page.md` is the one step that surprises
+people: the published page has to be *built* with the API's address.
 
 ## The addresses are real addresses
 
 | You type | You get |
 |---|---|
 | `/` | the advert |
-| `/login/` | the door |
+| `/login/` | the door (email code) |
+| `/auth/link/` | the magic-link landing |
+| `/admin/` | the platform console, for super admins only |
 | `/dashboard/` `/till/` `/stock/` `/purchases/` `/sales/` `/customers/` `/import/` `/reports/` `/etims/` `/settings/` `/audit/` | the shop, on that screen |
 | anything else | `404.html` |
 

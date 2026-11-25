@@ -1,0 +1,25 @@
+{
+  "name": "shop-yangu-kenya-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Shop Yangu Kenya backend: Neon Postgres, email sign-in, per-shop M-Pesa, and the super-admin console.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node --watch server.js",
+    "migrate": "node ../scripts/db-migrate.js",
+    "seed": "node ../scripts/db-seed.js",
+    "superadmin": "node ../scripts/make-super-admin.js",
+    "test": "node test/run.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "nodemailer": "^6.9.16"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}

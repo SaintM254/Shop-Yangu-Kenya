@@ -1975,3 +1975,469 @@ a:hover {
   background: var(--cream);
 }
 
+
+/* ==========================================================================
+   The email door — the code step, the link landing page
+   ========================================================================== */
+
+/* Only the newest thing is on screen: the tabs go away once a code has been
+   sent, because the next thing to do is read the inbox, not switch forms. */
+.authsent {
+  padding: 12px 14px;
+  border-radius: var(--r-input);
+  background: var(--primary-tint);
+}
+
+.authsent__h {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.authsent__to {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* A six-digit code is read a digit at a time, so it is set like one. */
+.field--code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 24px;
+  letter-spacing: 0.32em;
+  font-variant-numeric: tabular-nums;
+}
+
+.authresend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* ---- the link landing page --------------------------------------------- */
+
+.page-link {
+  background: var(--cream);
+}
+
+.authcard--link {
+  text-align: center;
+}
+
+.linkstate {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px 0 4px;
+}
+
+.linkstate[hidden] {
+  display: none;
+}
+
+/* A quiet ring, not a spinner that screams. Motion off for anyone who asked. */
+.linkstate__spin {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  border: 3px solid var(--primary-100);
+  border-top-color: var(--primary);
+  animation: syk-spin 0.9s linear infinite;
+}
+
+@keyframes syk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .linkstate__spin {
+    animation-duration: 3s;
+  }
+}
+
+.linkstate__h {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.linkstate__p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 32ch;
+}
+
+.linkactions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  justify-items: center;
+}
+
+.linkactions[hidden] {
+  display: none;
+}
+
+.linkactions .btn--block {
+  justify-content: center;
+}
+
+/* ==========================================================================
+   The platform console — /admin
+   A desk screen, not a till screen: wider, denser, and only ever opened on a
+   laptop or a tablet on a desk. At 390 px it still stacks rather than
+   scrolling sideways, because nobody should have to.
+   ========================================================================== */
+
+.page-admin {
+  background: var(--cream);
+}
+
+.admin {
+  min-height: 70vh;
+  padding-bottom: 48px;
+}
+
+.adminhead {
+  background: var(--sidebar);
+  color: var(--sidebar-ink);
+}
+
+.adminhead__in {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.adminhead__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sidebar-ink);
+  text-decoration: none;
+  font-size: 14.5px;
+  line-height: 1.25;
+}
+
+.adminhead__mark {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  fill: currentColor;
+}
+
+.adminhead__sub {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.adminhead__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.adminhead__who {
+  font-size: 12.5px;
+  opacity: 0.8;
+  margin-right: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* The console's buttons sit on the dark bar, so they are white on it rather
+   than the sand-page ghost button. Same rule: solid or white, never outlined. */
+.adminhead .btn--ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--sidebar-ink);
+  box-shadow: none;
+}
+
+.adminhead .btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.adminwrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 18px 0;
+}
+
+.adminlogin {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0 40px;
+}
+
+.adminlogin[hidden] {
+  display: none;
+}
+
+.adminlogin .authcard {
+  max-width: 400px;
+}
+
+/* ---- the five numbers at the top --------------------------------------- */
+
+.adminstats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.adminstat {
+  background: var(--surface);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-1);
+  padding: 13px 14px;
+}
+
+.adminstat__k {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.adminstat__v {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.adminstat__n {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- the two panels ----------------------------------------------------- */
+
+.adminpanel {
+  background: var(--surface);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-1);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.adminpanel__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px 10px;
+}
+
+.adminpanel__h {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.adminpanel__sub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.adminpanel__tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inputwrap--find {
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+.inputwrap--find .field {
+  padding: 8px 0;
+  font-size: 13.5px;
+}
+
+/* ---- the tables --------------------------------------------------------- */
+
+.admintablewrap {
+  overflow-x: auto;
+  /* The rail's own lesson: a scrollbar inside a card is fine, a page that
+     scrolls sideways is not. This one is contained. */
+}
+
+.admintable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 640px;
+}
+
+.admintable th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.admintable td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  line-height: 1.35;
+}
+
+.admintable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admintable tbody tr:hover td {
+  background: var(--primary-tint);
+}
+
+.admintable .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.adminsub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 1px;
+  overflow-wrap: anywhere;
+}
+
+.admintable__act {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.admintable tr.is-paused td {
+  opacity: 0.72;
+}
+
+.adminempty {
+  text-align: center;
+  color: var(--muted);
+  padding: 22px 16px;
+}
+
+.adminfoot {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* The pill styles live in app.css, which only the app's pages load. The
+   console uses the same pills, so it gets the two it needs here rather than
+   loading a thousand lines of till CSS for two dots. */
+.page-admin .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.page-admin .pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: currentColor;
+  flex: none;
+}
+
+.page-admin .pill.ok {
+  color: var(--success);
+}
+
+.page-admin .pill.low {
+  color: var(--warning);
+}
+
+.visuallyhidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* At phone width the tables keep their columns but lose their air, and the
+   header wraps rather than pushing the buttons off the screen. */
+@media (max-width: 640px) {
+  .adminhead__in {
+    padding: 12px 14px;
+  }
+
+  .adminhead__who {
+    display: none;
+  }
+
+  .adminwrap {
+    padding: 16px 12px 0;
+  }
+
+  .admintable th,
+  .admintable td {
+    padding: 9px 12px;
+  }
+
+  .adminstat__v {
+    font-size: 19px;
+  }
+}
+
+/* ------------------------------------------------------- the outbox badge
+
+   The rail's foot, at 900px and up only: on a phone the rail is a drawer and
+   the toast already said it. It is a status, not a button — there is nothing
+   to tap, because the app retries by itself. */
+.railfoot {
+  margin-top: auto;
+  padding: 10px 14px 14px;
+}
+.outbox {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--star, #C97B26);
+  background: color-mix(in srgb, var(--star, #C97B26) 12%, transparent);
+  border-radius: 8px;
+  padding: 7px 9px;
+}
+.outbox[hidden] { display: none; }

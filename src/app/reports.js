@@ -43,7 +43,9 @@ function renderReports() {
       '<span>' + esc(k) + ' <span class="hint">(' + byCat[k].qty + ' items)</span></span>' +
       '<span class="num" style="font-weight:600">' + fmt(byCat[k].value) + '</span></div>' +
       '<div class="progress" style="margin-top:4px"><span style="width:' + ((byCat[k].value / maxV) * 100).toFixed(0) + '%"></span></div></div>').join('') +
-    '<h3 style="font-size:14px;font-weight:600;margin:16px 0 8px">Expenses</h3>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 8px">' +
+      '<h3 style="font-size:14px;font-weight:600;margin:0">Expenses</h3>' +
+      '<button class="btn btn--ghost btn--sm" data-add-expense type="button">Record an expense</button></div>' +
     (exp.length
       ? '<div class="cards-mobile">' + exp.map(x =>
           '<div class="rowcard"><div class="top"><div style="min-width:0"><div class="ttl">' + esc(x.what) + '</div>' +
@@ -54,6 +56,37 @@ function renderReports() {
           '<td class="num">' + fmt(x.amt) + '</td></tr>').join('') + '</tbody></table></div>'
       : '<div class="empty"><b>No expenses in this range</b><p>Expenses you record come off net profit.</p></div>');
 }
+
+/* Recording an expense. It is the only number in this screen the shop types
+   rather than earns, and it is what turns gross profit into net. */
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-add-expense]')) return;
+  sheet({
+    title: 'Record an expense', sub: 'Rent, transport, a mop — anything that costs the shop money',
+    body: '<div class="formrow"><label class="lbl" for="exWhat">What was it for</label>' +
+      '<input class="field" id="exWhat" placeholder="e.g. Electricity for October" /></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px">' +
+      '<div><label class="lbl" for="exAmt">Amount</label><input class="field num" id="exAmt" inputmode="decimal" placeholder="0" /></div>' +
+      '<div><label class="lbl" for="exCat">Category</label><select class="field" id="exCat">' +
+      ['Rent', 'Utilities', 'Transport', 'Wages', 'Packaging', 'Licences', 'Other']
+        .map((c) => '<option>' + c + '</option>').join('') + '</select></div></div>',
+    actions: [{
+      label: 'Save expense', kind: '', onClick: () => {
+        const what = $('#exWhat').value.trim();
+        const amt = Number($('#exAmt').value) || 0;
+        if (!what) { toast('Say what the money was for.', 'bad'); return; }
+        if (!(amt > 0)) { toast('Enter how much was spent.', 'bad'); return; }
+        const cat = $('#exCat').value;
+        const at = ymd(today());
+        /* The API sends back the row; until then the report shows it too, so
+           the shop sees its own entry straight away. */
+        S.expenses.unshift({ id: 'x' + Date.now(), at, what, amt, cat });
+        persist('expenses', { what, amount: amt, cat, at });
+        closeSheet(); renderReports(); toast('Expense recorded: ' + fmt(amt), 'good');
+      }
+    }]
+  });
+});
 document.addEventListener('click', e => {
   const r = e.target.closest('[data-range]');
   if (r) { reportRange = r.dataset.range; renderReports(); }
@@ -154,6 +187,9 @@ document.addEventListener('click', e => {
     const k = t.dataset.toggle;
     S.settings[k] = !S.settings[k];
     t.setAttribute('aria-checked', String(S.settings[k]));
+    /* The switches are named the same on both sides, so the key goes straight
+       through — only the one that changed. */
+    persist('settings', { [k]: S.settings[k] });
     toast(k === 'allowCredit' && !S.settings[k] ? 'Credit sales are off — the till will refuse a shortfall.' : 'Saved');
   }
   if (e.target.closest('[data-save-settings]')) {
@@ -161,6 +197,7 @@ document.addEventListener('click', e => {
     S.shop.branch = $('#setBranch').value.trim();
     S.shop.phone = $('#setPhone').value.trim();
     S.shop.kra = $('#setKra').value.trim();
+    persist('shop', { name: S.shop.name, branch: S.shop.branch, phone: S.shop.phone, kra: S.shop.kra });
     paintNav(); toast('Shop profile saved. It is now on every receipt.', 'good');
   }
 });

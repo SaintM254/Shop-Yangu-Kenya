@@ -261,50 +261,49 @@ document.addEventListener('click', (e) => {
 
 /* ============================================================ session
 
-   The demo signs in on the login page and stores who it is in sessionStorage.
-   This is a demonstration: there is no server and no password is checked
-   here. When Postgres is connected, `boot` becomes a call to
-   GET /api/session and S is filled from the database — nothing else in the
-   app needs to change. */
+   Who is signed in is a cookie the API sets. Nothing in the app can forge it,
+   and nothing in the app has to remember it: the browser sends it, and
+   /api/session answers with the person behind it.
 
-const SIGNED_IN_KEY = 'syk-signed-in';
+   `boot` fills S from /api/bootstrap, which returns 401 for a request with no
+   session — so the check below costs no extra round trip. The old
+   sessionStorage flag is deliberately gone: it was a flag any visitor could
+   set from the console. */
 
-function sessionUser() {
-  try {
-    return JSON.parse(sessionStorage.getItem(SIGNED_IN_KEY) || 'null');
-  } catch (err) {
-    return null;
+/* Send them to the door, and bring them back to the screen they asked for. */
+function toLogin() {
+  if (location.protocol === 'file:') {
+    location.replace('../../login/index.html');
+    return;
   }
+  const route = location.pathname.split('/').filter(Boolean).pop();
+  location.replace('../login/?next=' + encodeURIComponent(route || 'dashboard'));
 }
 
+/* Called by boot after the API has answered. Returns the user, or null after
+   sending the browser to the login page. */
 function requireSession() {
-  const user = sessionUser();
-  if (user) return user;
-  /* Straight to the till without signing in: send them to the door, and bring
-     them back to the screen they asked for. */
-  if (location.protocol !== 'file:') {
-    location.replace('../login/?next=' + encodeURIComponent(location.pathname.split('/').filter(Boolean).pop()));
-  } else {
-    location.replace('../../login/index.html');
-  }
+  if (BACKEND.live && S.user && S.user.name) return S.user;
+  toLogin();
   return null;
 }
 
-/* Signing out drops the shop's own session, so it asks first — a mis-tap on a
+/* Signing out drops the shop's session, so it asks first — a mis-tap on a
    phone should not end the shop's day. The sheet is the app's dialog, so it
    reads the same at 360px as it does on a laptop. */
 function confirmSignOut() {
   sheet({
     title: 'Sign out of the shop?',
-    sub: 'You will need the password to get back in.',
+    sub: 'You will need the email code to get back in.',
     body: '<p class="hint" style="margin-top:2px">Nothing is lost: every sale, receipt and ' +
-      'stock change is already saved. Signing back in shows the shop exactly as you left it.</p>',
+      'stock change is already saved. Signing back in shows the shop exactly as you left it.' +
+      (queueRead().length
+        ? ' <b>' + queueRead().length + ' sale(s) on this device have not reached the server yet.</b>'
+        : '') + '</p>',
     actions: [
       { label: 'Stay signed in', kind: 'secondary', onClick: () => closeSheet() },
-      { label: 'Sign out', kind: 'danger', id: 'confirmSignOut', onClick: () => {
-        try {
-          sessionStorage.removeItem(SIGNED_IN_KEY);
-        } catch (err) {}
+      { label: 'Sign out', kind: 'danger', id: 'confirmSignOut', onClick: async () => {
+        await BACKEND.signOut();
         location.href = location.protocol === 'file:' ? '../../login/index.html' : '../login/';
       } },
     ],

@@ -325,8 +325,12 @@ const CANON = 'https://saintm254.github.io/Shop-Yangu-Kenya';
    that starts with "/" would leave it. Every link is relative to the page's
    own folder instead, which works at a domain root, under a sub-folder, and
    from disk. `depth` is how many folders deep the page sits. */
-const depth = (page) => (page === 'index' || page === '404' ? 0 : 1);
-const rel = (page, path) => (depth(page) ? '../' : '') + path;
+/* How far a page sits from the site root. /login/ is one folder down;
+   /auth/link/ and /admin/link/ are two, and every relative URL in their heads
+   has to know it. */
+const DEPTHS = { 'link': 2 };
+const depth = (page) => (page === 'index' || page === '404' ? 0 : DEPTHS[page] || 1);
+const rel = (page, path) => '../'.repeat(depth(page)) + path;
 
 /* The 404 page is served at whatever address was mistyped, so a relative link
    in it would resolve against that wrong folder. It carries a <base> pointing
@@ -712,6 +716,11 @@ function appPage(route) {
   const shell = read('src/app/shell.html').trim();
   const title = (APP_ROUTES[route] || 'Dashboard') + ' — ' + content.brand.name;
 
+  /* Where the API lives. Empty for same-origin (development, and behind the
+     Pages proxy); set API_URL at build time when the app is published from
+     GitHub Pages and the API is on another host. */
+  const apiBase = process.env.API_URL || '';
+
   return `<!doctype html>
 <html lang="en-KE" data-shell="app">
 <head>
@@ -734,6 +743,7 @@ function appPage(route) {
 <body class="page-app">
 ${icons}
 ${shell}
+<script>window.SYK_API = ${JSON.stringify(apiBase)};</script>
 <script src="../app/app.js" defer></script>
 </body>
 </html>
@@ -749,11 +759,22 @@ function writeRoute(route) {
 }
 
 /* ------------------------------------------------------------------ */
-/* login.html — the advert's door                                      */
+/* ------------------------------------------------------------------ */
+/* login.html — the door                                               */
+/*                                                                    */
+/* One email field. No password, no second screen between entering the */
+/* code and standing at the till. Sign-up asks for three things and   */
+/* emails a code; sign-in asks for one and emails a code. Both finish  */
+/* on the same "check your email" step, both accept a link instead of  */
+/* a code, and both end in one redirect.                              */
+/*                                                                    */
+/* The page has to work when the API is on another host (GitHub Pages */
+/* serving the app, the API elsewhere) and when it is on the same one */
+/* (the API serving the built site in development). AUTH.base decides: */
+/* empty for same-origin, an absolute URL otherwise.                  */
 /* ------------------------------------------------------------------ */
 
 function loginPage() {
-  const demo = content.demo_account;
   const markD = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
   /* The app's own icon, the one the home screen gets. This is the page that
      installs the app, so it is the one page that should show it. */
@@ -775,6 +796,7 @@ function loginPage() {
               aria-controls="panelSignup" tabindex="-1">Sign up</button>
     </div>
 
+    <!-- step 1: who you are --------------------------------------------- -->
     <form class="authtabpanel authform" id="loginForm" role="tabpanel" aria-labelledby="tabLogin" novalidate>
       <div class="field-group">
         <label class="label" for="email">Email address</label>
@@ -786,39 +808,17 @@ function loginPage() {
         </div>
       </div>
 
-      <div class="field-group">
-        <label class="label" for="password">Password</label>
-        <div class="inputwrap">
-          ${icon('lock', 'ic ic--sm')}
-          <input class="field" id="password" name="password" type="password"
-                 autocomplete="current-password" placeholder="Your password" required />
-          <button type="button" class="reveal" id="reveal" aria-label="Show password" aria-pressed="false">
-            ${icon('eye', 'ic ic--sm')}
-          </button>
-        </div>
-      </div>
-
-      <label class="check authcheck">
-        <input type="checkbox" id="remember" checked />
-        <span>Keep me signed in</span>
-      </label>
-
       <p class="autherror" id="loginError" role="alert" hidden></p>
 
       <button class="btn btn--primary btn--lg btn--block" id="loginBtn" type="submit">
-        Log in${icon('arrow', 'ic ic--sm')}
+        Email me a sign-in code${icon('arrow', 'ic ic--sm')}
       </button>
 
-      <div class="authdemo">
-        <p class="authdemo__h">${icon('lock', 'ic ic--sm')} Demo account</p>
-        <dl class="authdemo__list">
-          <div><dt>Email</dt><dd class="mono">${escapeHtml(demo.email)}</dd></div>
-          <div><dt>Password</dt><dd class="mono">${escapeHtml(demo.password)}</dd></div>
-        </dl>
-        <button type="button" class="btn btn--ghost btn--sm" id="fillDemo">Fill these in for me</button>
-      </div>
+      <p class="authfine">No password to remember. We send a six-digit code, and a
+        link you can tap instead if the code is a bother.</p>
     </form>
 
+    <!-- step 1: a new shop ---------------------------------------------- -->
     <form class="authtabpanel authform" id="signupForm" role="tabpanel" aria-labelledby="tabSignup" hidden novalidate>
       <div class="field-group">
         <label class="label" for="suShop">Shop name</label>
@@ -848,47 +848,75 @@ function loginPage() {
         </div>
       </div>
 
-      <div class="field-group">
-        <label class="label" for="suPassword">Choose a password</label>
-        <div class="inputwrap">
-          ${icon('lock', 'ic ic--sm')}
-          <input class="field" id="suPassword" name="password" type="password"
-                 autocomplete="new-password" placeholder="At least 6 characters" required />
-        </div>
-      </div>
-
       <p class="autherror" id="signupError" role="alert" hidden></p>
 
       <button class="btn btn--primary btn--lg btn--block" id="signupBtn" type="submit">
-        Create the shop${icon('arrow', 'ic ic--sm')}
+        Open my shop${icon('arrow', 'ic ic--sm')}
       </button>
-      <p class="authfine">One login for the whole shop. No card, nothing charged while it is a demo.</p>
+      <p class="authfine">One login for the whole shop, as you asked. The shop name
+        prints on every receipt.</p>
+    </form>
+
+    <!-- step 2: the code ----------------------------------------------- -->
+    <form class="authtabpanel authform" id="verifyForm" role="tabpanel" hidden novalidate>
+      <div class="authsent">
+        <p class="authsent__h" id="sentTitle">Check your email</p>
+        <p class="authsent__to" id="sentTo"></p>
+      </div>
+
+      <div class="field-group">
+        <label class="label" for="code">Six-digit code</label>
+        <div class="inputwrap">
+          ${icon('lock', 'ic ic--sm')}
+          <input class="field field--code" id="code" name="code" type="text"
+                 inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*"
+                 maxlength="6" placeholder="••••••" required />
+        </div>
+      </div>
+
+      <p class="autherror" id="verifyError" role="alert" hidden></p>
+
+      <button class="btn btn--primary btn--lg btn--block" id="verifyBtn" type="submit">
+        Open the shop${icon('arrow', 'ic ic--sm')}
+      </button>
+
+      <div class="authresend">
+        <button type="button" class="btn btn--ghost btn--sm" id="resendBtn">Send a new code</button>
+        <button type="button" class="btn btn--ghost btn--sm" id="backBtn">Use another email</button>
+      </div>
+
+      <p class="authfine" id="resendNote" hidden></p>
     </form>
   </div>
 </main>
 <script>
 (function () {
-  /* The demo account. In the demo, signing in with it — or with the details a
-     visitor enters on Sign up — opens the shop straight away. */
-  var DEMO = ${JSON.stringify({ email: demo.email, password: demo.password, name: demo.name, shop: demo.shop })};
-  var KEY = 'syk-signed-in';
+  /* ---------------------------------------------------------------------
+     Where the API is.
 
-  var tabs = {
-    login: { tab: document.getElementById('tabLogin'), panel: document.getElementById('loginForm') },
-    signup: { tab: document.getElementById('tabSignup'), panel: document.getElementById('signupForm') }
+     Same-origin in development, because the API serves this build. On GitHub
+     Pages the site has no API of its own, so BACKEND_BASE has to be set at
+     build time (see docs/03-link-the-page.md):
+
+       node build.js --api=https://your-api.example.com
+       API_URL=https://your-api.example.com node build.js
+
+     With nothing set, the page says so plainly instead of failing silently.
+     ------------------------------------------------------------------- */
+  var AUTH = {
+    base: ${JSON.stringify(process.env.API_URL || '')},
+    app: ${JSON.stringify(content.brand.name)}
   };
 
-  /* Nothing is shown between a correct password and the shop: no "you're in"
-     card, no second button. The form is the last thing seen. */
-  function enter(email, name) {
-    try {
-      sessionStorage.setItem(KEY, JSON.stringify({ email: email, name: name, at: Date.now() }));
-    } catch (_) {}
-    var next = new URLSearchParams(location.search).get('next');
-    /* only a route inside the app, never a link off the site */
-    var safe = next && /^[a-z]{2,12}$/.test(next) ? next : 'dashboard';
-    location.replace('../' + safe + '/');
-  }
+  var mode = 'signin';       /* signin | signup — which step 1 sent us here */
+  var pendingEmail = '';
+
+  var el = function (id) { return document.getElementById(id); };
+  var tabs = {
+    login: { tab: el('tabLogin'), panel: el('loginForm') },
+    signup: { tab: el('tabSignup'), panel: el('signupForm') }
+  };
+  var verify = el('verifyForm');
 
   function show(which) {
     Object.keys(tabs).forEach(function (k) {
@@ -898,14 +926,28 @@ function loginPage() {
       tabs[k].tab.classList.toggle('is-on', on);
       tabs[k].panel.hidden = !on;
     });
+    verify.hidden = true;
     var first = tabs[which].panel.querySelector('input');
     if (first) first.focus();
+  }
+
+  /* Step 2 replaces the form rather than sitting beneath it: one thing to look
+     at, one thing to do. */
+  function showVerify(email, title) {
+    tabs.login.panel.hidden = true;
+    tabs.signup.panel.hidden = true;
+    el('tabLogin').parentNode.hidden = false;
+    verify.hidden = false;
+    el('sentTitle').textContent = title || 'Check your email';
+    el('sentTo').textContent = email;
+    el('code').value = '';
+    clear(el('verifyError'));
+    el('code').focus();
   }
 
   tabs.login.tab.onclick = function () { show('login'); };
   tabs.signup.tab.onclick = function () { show('signup'); };
 
-  /* A tab list, not two links: arrow keys move between the two tabs. */
   document.querySelector('.authtabs').addEventListener('keydown', function (ev) {
     if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
     ev.preventDefault();
@@ -914,8 +956,46 @@ function loginPage() {
     tabs[to].tab.focus();
   });
 
-  /* Plain checks, no regex: three layers of escaping (Python, the template
-     literal, the browser) made a backslash class unreadable and wrong. */
+  /* ---------------------------------------------------------------------
+     The API. One helper, because every call wants the same three things:
+     a timeout (a phone on a bad connection should not spin forever), the
+     server's own message when it has one, and the cookie.
+     ------------------------------------------------------------------- */
+  function api(path, body) {
+    var ctl = new AbortController();
+    var timer = setTimeout(function () { ctl.abort(); }, 20000);
+    return fetch(AUTH.base + path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body || {}),
+      signal: ctl.signal
+    }).then(function (res) {
+      clearTimeout(timer);
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          var err = new Error(data.error || 'The server answered ' + res.status + '.');
+          err.status = res.status;
+          throw err;
+        }
+        return data;
+      });
+    }, function (err) {
+      clearTimeout(timer);
+      var e = new Error(
+        err.name === 'AbortError'
+          ? 'The shop server did not answer. Check your connection and try again.'
+          : 'Cannot reach the shop server. Check your connection and try again.'
+      );
+      e.offline = true;
+      throw e;
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Plain checks, no regex: three layers of escaping (Python, the template
+     literal, the browser) made a backslash class unreadable and wrong.
+     ------------------------------------------------------------------- */
   function looksLikeEmail(v) {
     if (!v || v.indexOf(' ') !== -1) return false;
     var parts = v.split('@');
@@ -939,60 +1019,168 @@ function loginPage() {
     box.textContent = '';
   }
 
-  var error = document.getElementById('loginError');
-  var email = document.getElementById('email');
-  var password = document.getElementById('password');
-
-  document.getElementById('reveal').onclick = function () {
-    var showing = password.type === 'text';
-    password.type = showing ? 'password' : 'text';
-    this.setAttribute('aria-pressed', String(!showing));
-    this.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-    password.focus();
-  };
-
-  document.getElementById('fillDemo').onclick = function () {
-    email.value = DEMO.email;
-    password.value = DEMO.password;
-    clear(error);
-    password.focus();
-  };
-
-  document.getElementById('loginForm').onsubmit = function (ev) {
-    ev.preventDefault();
-    clear(error);
-    var e = email.value.trim().toLowerCase();
-    var p = password.value;
-    [email, password].forEach(function (f) { f.setAttribute('aria-invalid', 'false'); });
-    if (!e) return fail(error, 'Enter the email address you use for the shop.', email);
-    if (!looksLikeEmail(e)) return fail(error, 'That does not look like an email address.', email);
-    if (!p) return fail(error, 'Enter your password.', password);
-    if (e !== DEMO.email.toLowerCase() || p !== DEMO.password) {
-      return fail(error, 'That email and password do not match. Use the demo details below, or sign up.', password);
+  function busy(btn, on, label) {
+    btn.disabled = on;
+    if (on) {
+      btn.dataset.label = btn.innerHTML;
+      btn.textContent = label || 'One moment…';
+    } else if (btn.dataset.label) {
+      btn.innerHTML = btn.dataset.label;
     }
-    enter(DEMO.email, DEMO.name);
+  }
+
+  /* Where to go after the code works. "next" in the address bar wins, but
+     only for a route inside this app: never a link off the site. */
+  function enter(next) {
+    var asked = new URLSearchParams(location.search).get('next');
+    var safe = asked && /^[a-z]{2,12}$/.test(asked) ? asked : null;
+    var target = next === 'admin' ? '../admin/' : '../' + (safe || 'dashboard') + '/';
+    location.replace(target);
+  }
+
+  /* --------------------------------------------------------------------
+     Step 1 — ask for a code
+     ------------------------------------------------------------------ */
+  var loginError = el('loginError');
+  var email = el('email');
+  var loginBtn = el('loginBtn');
+
+  el('loginForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    clear(loginError);
+    [email].forEach(function (f) { f.setAttribute('aria-invalid', 'false'); });
+
+    var e = email.value.trim().toLowerCase();
+    if (!e) return fail(loginError, 'Enter the email address you use for the shop.', email);
+    if (!looksLikeEmail(e)) return fail(loginError, 'That does not look like an email address.', email);
+
+    pendingEmail = e;
+    mode = 'signin';
+    busy(loginBtn, true, 'Sending…');
+
+    api('/api/auth/signin', { email: e }).then(function (data) {
+      busy(loginBtn, false);
+      if (data.role === 'super_admin') {
+        /* The admin's link goes to /admin/, not /auth/link/. */
+        sessionStorage.setItem('syk-admin-pending', e);
+      }
+      showVerify(e, 'Check your email');
+    }).catch(function (err) {
+      busy(loginBtn, false);
+      fail(loginError, err.message, email);
+    });
   };
 
-  var suError = document.getElementById('signupError');
-  var su = {
-    shop: document.getElementById('suShop'),
-    name: document.getElementById('suName'),
-    email: document.getElementById('suEmail'),
-    password: document.getElementById('suPassword')
-  };
+  /* --------------------------------------------------------------------
+     Step 1 — a new shop
+     ------------------------------------------------------------------ */
+  var suError = el('signupError');
+  var suBtn = el('signupBtn');
+  var su = { shop: el('suShop'), name: el('suName'), email: el('suEmail') };
 
-  document.getElementById('signupForm').onsubmit = function (ev) {
+  el('signupForm').onsubmit = function (ev) {
     ev.preventDefault();
     clear(suError);
+
     if (!su.shop.value.trim()) return fail(suError, 'Give the shop a name — it prints on every receipt.', su.shop);
     if (!su.name.value.trim()) return fail(suError, 'Enter your own name.', su.name);
     var e = su.email.value.trim().toLowerCase();
     if (!looksLikeEmail(e)) return fail(suError, 'That does not look like an email address.', su.email);
-    if (su.password.value.length < 6) {
-      return fail(suError, 'Use at least 6 characters for the password.', su.password);
-    }
-    enter(e, su.name.value.trim());
+
+    pendingEmail = e;
+    mode = 'signup';
+    busy(suBtn, true, 'Sending…');
+
+    api('/api/auth/signup', { shop: su.shop.value.trim(), name: su.name.value.trim(), email: e })
+      .then(function (data) {
+        busy(suBtn, false);
+        if (data.existing) {
+          /* The address already has a shop: the email that just went out is a
+             sign-in, not a sign-up. Say so rather than pretending. */
+          mode = 'signin';
+          showVerify(e, 'You already have a shop');
+        } else {
+          showVerify(e, 'Check your email');
+        }
+      })
+      .catch(function (err) {
+        busy(suBtn, false);
+        fail(suError, err.message, su.email);
+      });
   };
+
+  /* --------------------------------------------------------------------
+     Step 2 — the code
+     ------------------------------------------------------------------ */
+  var verifyError = el('verifyError');
+  var code = el('code');
+  var verifyBtn = el('verifyBtn');
+
+  /* Six digits is not a number to be formatted, it is a code. Strip anything
+     else as it is typed, and submit on the sixth digit: fewer taps. */
+  code.oninput = function () {
+    var digits = code.value.replace(/\D/g, '').slice(0, 6);
+    if (code.value !== digits) code.value = digits;
+    code.removeAttribute('aria-invalid');
+    if (digits.length === 6) el('verifyForm').requestSubmit();
+  };
+
+  el('verifyForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    clear(verifyError);
+
+    var digits = code.value.replace(/\D/g, '');
+    if (digits.length !== 6) return fail(verifyError, 'The code is six digits.', code);
+
+    busy(verifyBtn, true, 'Checking…');
+    var path = mode === 'signup' ? '/api/auth/signup/verify' : '/api/auth/signin/verify';
+
+    api(path, { email: pendingEmail, code: digits }).then(function (data) {
+      busy(verifyBtn, false);
+      enter(data.next || 'dashboard');
+    }).catch(function (err) {
+      busy(verifyBtn, false);
+      fail(verifyError, err.message, code);
+      code.value = '';
+      code.focus();
+    });
+  };
+
+  el('resendBtn').onclick = function () {
+    var btn = this;
+    busy(btn, true, 'Sending…');
+    var path = mode === 'signup' ? '/api/auth/signup' : '/api/auth/signin';
+    var payload = mode === 'signup'
+      ? { shop: su.shop.value.trim(), name: su.name.value.trim(), email: pendingEmail }
+      : { email: pendingEmail };
+
+    api(path, payload).then(function () {
+      busy(btn, false);
+      var note = el('resendNote');
+      note.hidden = false;
+      note.textContent = 'Sent again. The newest code is the one that works.';
+      setTimeout(function () { note.hidden = true; }, 6000);
+    }).catch(function (err) {
+      busy(btn, false);
+      fail(verifyError, err.message);
+    });
+  };
+
+  el('backBtn').onclick = function () {
+    show(mode === 'signup' ? 'signup' : 'login');
+  };
+
+  /* --------------------------------------------------------------------
+     A link instead of a code.
+
+     Both kinds of link land on /auth/link/?token=…; the page there posts the
+     token and redirects. Nothing is done here.
+     ------------------------------------------------------------------- */
+
+  /* The address in the query string pre-fills the field, so a link from an
+     email that says "sign in as amina@…" is one tap. */
+  var asked = new URLSearchParams(location.search).get('email');
+  if (asked) email.value = asked;
 
   email.focus();
 })();
@@ -1001,11 +1189,587 @@ function loginPage() {
   return document({
     title: `Log in — ${content.brand.name}`,
     description:
-      'Sign in to Shop Yangu Kenya to take sales, send M-Pesa prompts, print receipts and see your stock and daily reports.',
+      'Sign in to Shop Yangu Kenya to take sales, send M-Pesa prompts, print receipts and see your stock and daily reports. A six-digit code by email, no password.',
     page: 'login',
     body,
     bodyClass: 'page-auth',
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* auth/link and admin/link — where a sign-in link lands               */
+/*                                                                    */
+/* The token in the address bar is posted to the API, which consumes  */
+/* it and sets the session cookie. It is done by a POST from this page */
+/* rather than by the API answering the GET, because an email scanner  */
+/* that prefetches the link would burn it before the person taps it.   */
+/*                                                                    */
+/* Both pages are the same machine with a different endpoint.          */
+/* ------------------------------------------------------------------ */
+
+function linkPage({ admin = false } = {}) {
+  const endpoint = admin ? '/api/admin/link' : '/api/auth/link';
+  /* These pages sit two folders deep (/auth/link/, /admin/link/), so every
+     link in them goes up two. */
+  const next = admin ? '../../admin/' : '../../dashboard/';
+  const signInHref = '../../login/';
+  const title = admin ? 'Opening the console' : 'Signing you in';
+
+  const body = `<main id="main" class="auth">
+  <div class="authcard authcard--link">
+    <header class="authcard__head">
+      <h1 class="authcard__shop">${escapeHtml(title)}</h1>
+    </header>
+
+    <div class="linkstate" id="linkState" role="status" aria-live="polite">
+      <div class="linkstate__spin" aria-hidden="true"></div>
+      <p class="linkstate__h" id="linkTitle">One moment</p>
+      <p class="linkstate__p" id="linkText">Checking your link.</p>
+    </div>
+
+    <p class="autherror" id="linkError" role="alert" hidden></p>
+
+    <div class="linkactions" id="linkActions" hidden>
+      <a class="btn btn--primary btn--lg btn--block" id="linkGo" href="${signInHref}">
+        ${admin ? 'Open the console' : 'Open the shop'}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="../../login/">Use another address</a>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  var API = ${JSON.stringify(process.env.API_URL || '')};
+  var token = new URLSearchParams(location.search).get('token');
+  var state = document.getElementById('linkState');
+  var errBox = document.getElementById('linkError');
+  var actions = document.getElementById('linkActions');
+  var go = document.getElementById('linkGo');
+  var nextAfter = ${JSON.stringify(next)};
+
+  function fail(message) {
+    state.hidden = true;
+    errBox.hidden = false;
+    errBox.textContent = message;
+    actions.hidden = false;
+    go.textContent = 'Sign in instead';
+    go.href = '../../login/';
+    document.getElementById('linkGo').dataset.fallback = '1';
+  }
+
+  if (!token) return fail('This link has no token. Ask for a new email.');
+
+  /* A link is single-use, so this must run once — a re-render or a back
+     button would otherwise try to redeem a token that is already spent. */
+  fetch(API + ${JSON.stringify(endpoint)}, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token: token })
+  }).then(function (res) {
+    return res.json().catch(function () { return {}; }).then(function (data) {
+      if (!res.ok) throw new Error(data.error || 'The link did not work.');
+      return data;
+    });
+  }).then(function (data) {
+    /* The token is out of the address bar before the redirect, so it does not
+       end up in history or in a screenshot. */
+    history.replaceState(null, '', location.pathname);
+    location.replace(data.next === 'admin' ? '../../admin/' : nextAfter);
+  }).catch(function (err) {
+    fail(err.message || 'The link did not work. Ask for a new one.');
+  });
+})();
+</script>`;
+
+  /* Written standalone rather than through document(): these pages sit two
+     folders deep (/auth/link/, /admin/link/), and the site header's links are
+     relative to the root. A sign-in landing page needs no navigation anyway —
+     it needs one button. */
+  return `${head({
+    title: `${title} — ${content.brand.name}`,
+    description: 'Finishing your Shop Yangu Kenya sign-in.',
+    page: 'link',
+  })}
+<body class="page-auth page-link">
+<a class="skip" href="#main">Skip to content</a>
+${body}
+</body>
+</html>
+`;
+}
+
+function adminLinkPage() {
+  return linkPage({ admin: true });
+}
+
+/* ------------------------------------------------------------------ */
+/* admin/index.html — the super-admin console                          */
+/*                                                                    */
+/* Not part of the shop's app, and not in the rail. It is one page     */
+/* with one job: show who is signed in, across every shop, and let a   */
+/* person who runs the platform pause a shop that has stopped paying.  */
+/*                                                                    */
+/* It shares the app's stylesheet and its icon sprite, because a second */
+/* design language for one screen nobody uses daily would be a second   */
+/* thing to keep in step. It does not share the app's session: a       */
+/* super admin's cookie is rejected by every shop route (see           */
+/* api/lib/auth.js), so the two doors stay separate.                   */
+/* ------------------------------------------------------------------ */
+
+function adminPage() {
+  const markD = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
+  const icons = read('src/app/icons.svg').trim().replace(
+    /(<symbol id="i-logo"[^>]*><path d=")[^"]*/,
+    `$1${markD}`
+  );
+
+  const body = `<main id="main" class="admin">
+  <header class="adminhead">
+    <div class="adminhead__in">
+      <a class="adminhead__brand" href="../">
+        ${icon('logo', 'ic adminhead__mark')}
+        <span>
+          <b>Shop Yangu Kenya</b>
+          <span class="adminhead__sub">Platform console</span>
+        </span>
+      </a>
+      <div class="adminhead__right">
+        <span class="adminhead__who" id="adminWho" hidden></span>
+        <button type="button" class="btn btn--ghost btn--sm" id="adminRefresh" title="Refresh now">
+          ${icon('arrow-down-to-line', 'ic ic--sm')} Refresh
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" id="adminSignOut" hidden data-signout>
+          ${icon('log-out', 'ic ic--sm')} Sign out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="adminwrap">
+    <!-- the door: an email and a code, the same as a shop's -->
+    <section class="adminlogin" id="adminLogin" hidden>
+      <div class="authcard">
+        <header class="authcard__head">
+          <h1 class="authcard__shop">Platform console</h1>
+        </header>
+
+        <form class="authform" id="adminEmailForm" novalidate>
+          <div class="field-group">
+            <label class="label" for="adminEmail">Admin email address</label>
+            <div class="inputwrap">
+              ${icon('shield-check', 'ic ic--sm')}
+              <input class="field" id="adminEmail" type="email" inputmode="email"
+                     autocomplete="username" autocapitalize="none" spellcheck="false"
+                     placeholder="you@shopyangu.co.ke" required />
+            </div>
+          </div>
+          <p class="autherror" id="adminEmailError" role="alert" hidden></p>
+          <button class="btn btn--primary btn--lg btn--block" type="submit" id="adminEmailBtn">
+            Email me a code${icon('arrow', 'ic ic--sm')}
+          </button>
+        </form>
+
+        <form class="authform" id="adminCodeForm" hidden novalidate>
+          <p class="authfine" id="adminSentTo"></p>
+          <div class="field-group">
+            <label class="label" for="adminCode">Six-digit code</label>
+            <div class="inputwrap">
+              ${icon('lock', 'ic ic--sm')}
+              <input class="field field--code" id="adminCode" type="text" inputmode="numeric"
+                     autocomplete="one-time-code" maxlength="6" placeholder="••••••" required />
+            </div>
+          </div>
+          <p class="autherror" id="adminCodeError" role="alert" hidden></p>
+          <button class="btn btn--primary btn--lg btn--block" type="submit" id="adminCodeBtn">
+            Open the console${icon('arrow', 'ic ic--sm')}
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- the console -->
+    <div id="adminApp" hidden>
+      <section class="adminstats" id="adminStats" aria-label="Platform totals"></section>
+
+      <section class="adminpanel">
+        <div class="adminpanel__head">
+          <h2 class="adminpanel__h">Signed in now</h2>
+          <p class="adminpanel__sub" id="liveSub">Live sessions across every shop.</p>
+          <div class="adminpanel__tools">
+            <label class="check">
+              <input type="checkbox" id="showEnded" />
+              <span>Include ended sessions</span>
+            </label>
+          </div>
+        </div>
+        <div class="admintablewrap">
+          <table class="admintable" id="sessionsTable">
+            <thead>
+              <tr>
+                <th scope="col">Person</th>
+                <th scope="col">Shop</th>
+                <th scope="col">Device</th>
+                <th scope="col">Signed in</th>
+                <th scope="col">Last seen</th>
+                <th scope="col"><span class="visuallyhidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="sessionsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="adminpanel">
+        <div class="adminpanel__head">
+          <h2 class="adminpanel__h">Shops</h2>
+          <p class="adminpanel__sub" id="shopsSub"></p>
+          <div class="adminpanel__tools">
+            <div class="inputwrap inputwrap--find">
+              ${icon('search', 'ic ic--sm')}
+              <input class="field" id="shopFind" type="search" placeholder="Find a shop" />
+            </div>
+          </div>
+        </div>
+        <div class="admintablewrap">
+          <table class="admintable" id="shopsTable">
+            <thead>
+              <tr>
+                <th scope="col">Shop</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Live</th>
+                <th scope="col" class="num">Today</th>
+                <th scope="col" class="num">All time</th>
+                <th scope="col" class="num">Credit out</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="visuallyhidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="shopsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="adminfoot" id="adminFoot"></p>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  /* Same rule as the login page: empty for same-origin, absolute when the
+     console is served from GitHub Pages and the API lives elsewhere. */
+  var API = ${JSON.stringify(process.env.API_URL || '')};
+
+  var state = { me: null, totals: null, shops: [], sessions: [], liveOnly: true };
+  var el = function (id) { return document.getElementById(id); };
+
+  /* Money in shillings, grouped. The same rule as the app: the number is the
+     API's, the formatting is the screen's. */
+  function kes(n) {
+    var v = Number(n) || 0;
+    return 'Ksh ' + v.toLocaleString('en-KE', { maximumFractionDigits: 0 });
+  }
+
+  function when(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    var mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + ' min ago';
+    if (mins < 1440) return Math.round(mins / 60) + ' h ago';
+    if (mins < 10080) return Math.round(mins / 1440) + ' d ago';
+    return d.toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function device(ua) {
+    var s = String(ua || '');
+    if (!s) return 'Unknown device';
+    /* Escaped for the template literal: the page needs a real backslash. */
+    var browser = /Edg\\//.test(s) ? 'Edge' : /OPR\\//.test(s) ? 'Opera'
+      : /Firefox\\//.test(s) ? 'Firefox' : /Chrome\\//.test(s) ? 'Chrome'
+      : /Safari\\//.test(s) ? 'Safari' : 'Browser';
+    var os = /Android/.test(s) ? 'Android' : /iPhone|iPad|iPod/.test(s) ? 'iOS'
+      : /Windows/.test(s) ? 'Windows' : /Mac OS X/.test(s) ? 'macOS'
+      : /Linux/.test(s) ? 'Linux' : '';
+    return browser + (os ? ' on ' + os : '');
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    return fetch(API + path, {
+      method: opts.method || 'GET',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          var err = new Error(data.error || 'The server answered ' + res.status + '.');
+          err.status = res.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------------
+     The door
+     ------------------------------------------------------------------ */
+  var pendingEmail = '';
+  var emailBox = el('adminEmailError');
+  var codeBox = el('adminCodeError');
+
+  function fail(box, msg, field) {
+    box.textContent = msg;
+    box.hidden = false;
+    if (field) field.focus();
+  }
+  function clear(box) { box.hidden = true; box.textContent = ''; }
+
+  function showDoor() {
+    el('adminLogin').hidden = false;
+    el('adminApp').hidden = true;
+    el('adminWho').hidden = true;
+    el('adminSignOut').hidden = true;
+    el('adminEmail').focus();
+  }
+
+  el('adminEmailForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    clear(emailBox);
+    var email = el('adminEmail').value.trim().toLowerCase();
+    if (!email || email.indexOf('@') < 1) return fail(emailBox, 'Enter the admin email address.', el('adminEmail'));
+
+    pendingEmail = email;
+    el('adminEmailBtn').disabled = true;
+    api('/api/admin/signin', { method: 'POST', body: { email: email } }).then(function () {
+      el('adminEmailBtn').disabled = false;
+      el('adminEmailForm').hidden = true;
+      el('adminCodeForm').hidden = false;
+      el('adminSentTo').textContent = 'If ' + email + ' is an admin, the code is on its way.';
+      el('adminCode').value = '';
+      el('adminCode').focus();
+    }).catch(function (err) {
+      el('adminEmailBtn').disabled = false;
+      fail(emailBox, err.message, el('adminEmail'));
+    });
+  };
+
+  el('adminCode').oninput = function () {
+    var digits = this.value.replace(/\D/g, '').slice(0, 6);
+    if (this.value !== digits) this.value = digits;
+  };
+
+  el('adminCodeForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    clear(codeBox);
+    var digits = el('adminCode').value.replace(/\D/g, '');
+    if (digits.length !== 6) return fail(codeBox, 'The code is six digits.', el('adminCode'));
+
+    el('adminCodeBtn').disabled = true;
+    api('/api/admin/signin/verify', { method: 'POST', body: { email: pendingEmail, code: digits } })
+      .then(function () { location.reload(); })
+      .catch(function (err) {
+        el('adminCodeBtn').disabled = false;
+        fail(codeBox, err.message, el('adminCode'));
+        el('adminCode').value = '';
+      });
+  };
+
+  el('adminSignOut').onclick = function () {
+    /* Destructive, so confirm — same rule as the shop's sign-out. */
+    if (!confirm('Sign out of the platform console?')) return;
+    api('/api/auth/signout', { method: 'POST' }).then(function () { location.reload(); });
+  };
+
+  /* ------------------------------------------------------------------
+     The console
+     ------------------------------------------------------------------ */
+  function stat(label, value, note) {
+    return '<div class="adminstat"><p class="adminstat__k">' + esc(label) + '</p>' +
+      '<p class="adminstat__v">' + esc(value) + '</p>' +
+      (note ? '<p class="adminstat__n">' + esc(note) + '</p>' : '') + '</div>';
+  }
+
+  function paint() {
+    var t = state.totals || {};
+    el('adminStats').innerHTML =
+      stat('Shops', t.shops, t.newShops7d ? t.newShops7d + ' new this week' : '') +
+      stat('Signed in now', t.liveLogins, 'live sessions') +
+      stat('Taken today', kes(t.salesToday), 'every shop') +
+      stat('Taken all time', kes(t.salesAll), '') +
+      stat('Credit out', kes(t.creditOut), 'owed by customers');
+
+    var shops = state.shops;
+    el('shopsSub').textContent = shops.length + (shops.length === 1 ? ' shop' : ' shops') +
+      ', newest first.';
+
+    el('shopsBody').innerHTML = shops.map(function (s) {
+      return '<tr' + (s.suspended ? ' class="is-paused"' : '') + '>' +
+        '<td><b>' + esc(s.name) + '</b><span class="adminsub">' + esc(s.branch) +
+          (s.hasMpesa ? ' · M-Pesa ready' : ' · no till yet') + '</span></td>' +
+        '<td>' + esc(s.ownerName || '—') + '<span class="adminsub">' + esc(s.ownerEmail || '') + '</span></td>' +
+        '<td class="num">' + s.liveSessions + '</td>' +
+        '<td class="num">' + kes(s.salesToday) + '</td>' +
+        '<td class="num">' + kes(s.lifetimeSales) + '<span class="adminsub">' + s.sales + ' receipts</span></td>' +
+        '<td class="num">' + kes(s.creditOut) + '</td>' +
+        '<td>' + (s.suspended
+          ? '<span class="pill low">Paused</span>'
+          : '<span class="pill ok">Active</span>') + '</td>' +
+        '<td class="admintable__act">' +
+          '<button type="button" class="btn btn--ghost btn--sm" data-open-shop="' + esc(s.id) + '">Details</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    var sessions = state.sessions;
+    el('liveSub').textContent = state.liveOnly
+      ? sessions.length + ' live session' + (sessions.length === 1 ? '' : 's') + ' right now.'
+      : 'Every session, newest activity first.';
+
+    el('sessionsBody').innerHTML = sessions.length ? sessions.map(function (s) {
+      return '<tr>' +
+        '<td><b>' + esc(s.person) + '</b><span class="adminsub">' + esc(s.email) +
+          (s.role === 'super_admin' ? ' · admin' : '') + '</span></td>' +
+        '<td>' + (s.shopName ? esc(s.shopName) : '<span class="adminsub">no shop</span>') + '</td>' +
+        '<td>' + esc(device(s.userAgent)) + '<span class="adminsub">' + esc(s.ip || '') + '</span></td>' +
+        '<td>' + when(s.signedInAt) + '</td>' +
+        '<td>' + when(s.lastSeenAt) + '</td>' +
+        '<td class="admintable__act">' +
+          (s.revokedAt
+            ? '<span class="adminsub">ended ' + when(s.revokedAt) + '</span>'
+            : '<button type="button" class="btn btn--ghost btn--sm" data-end-session="' + esc(s.sessionId) + '">End</button>') +
+        '</td>' +
+      '</tr>';
+    }).join('') : '<tr><td colspan="6" class="adminempty">Nobody is signed in.</td></tr>';
+
+    el('adminFoot').textContent = 'Updated ' + new Date().toLocaleTimeString('en-KE');
+  }
+
+  function load() {
+    return api('/api/admin/overview').then(function (data) {
+      state.me = data.admin;
+      state.totals = data.totals;
+      state.shops = data.shops;
+      state.sessions = data.sessions;
+      document.title = 'Console — ' + data.admin.name;
+      el('adminWho').hidden = false;
+      el('adminWho').textContent = data.admin.email;
+      el('adminSignOut').hidden = false;
+      el('adminLogin').hidden = true;
+      el('adminApp').hidden = false;
+      paint();
+    });
+  }
+
+  function loadSessions() {
+    return api('/api/admin/logins' + (state.liveOnly ? '' : '?all=1')).then(function (data) {
+      state.sessions = data.sessions;
+      paint();
+    });
+  }
+
+  el('showEnded').onchange = function () {
+    state.liveOnly = !this.checked;
+    loadSessions();
+  };
+
+  el('adminRefresh').onclick = function () {
+    var btn = this;
+    btn.disabled = true;
+    load().then(function () { btn.disabled = false; }, function () { btn.disabled = false; });
+  };
+
+  el('shopFind').oninput = function () {
+    var q = this.value.trim().toLowerCase();
+    var rows = Array.prototype.slice.call(el('shopsBody').querySelectorAll('tr'));
+    rows.forEach(function (tr) {
+      tr.hidden = q && tr.textContent.toLowerCase().indexOf(q) === -1;
+    });
+  };
+
+  el('shopsBody').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('[data-open-shop]');
+    if (!btn) return;
+    var shop = state.shops.filter(function (s) { return s.id === btn.dataset.openShop; })[0];
+    if (!shop) return;
+
+    var action = shop.suspended
+      ? 'resume'
+      : 'pause';
+    var msg = shop.suspended
+      ? 'Resume ' + shop.name + '? Its owner will be able to sign in and sell again.'
+      : 'Pause ' + shop.name + '?\\n\\nIts owner is signed out immediately and cannot sell until you resume it. ' +
+        'Nothing is deleted: receipts, stock and customers stay exactly as they are.';
+    if (!confirm(msg)) return;
+
+    var body = action === 'pause' ? { reason: 'Paused from the console' } : undefined;
+    api('/api/admin/shops/' + shop.id + '/' + action, { method: 'POST', body: body })
+      .then(function () { return load(); })
+      .catch(function (err) { alert(err.message); });
+  });
+
+  el('sessionsBody').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('[data-end-session]');
+    if (!btn) return;
+    if (!confirm('End this session? That device will have to sign in again.')) return;
+    api('/api/admin/sessions/' + btn.dataset.endSession + '/end', { method: 'POST' })
+      .then(function () { return loadSessions(); })
+      .catch(function (err) { alert(err.message); });
+  });
+
+  /* An admin does not sit on this screen all day; refresh the live list while
+     it is open, and stop when the tab is hidden. */
+  var timer = null;
+  function startTimer() {
+    stopTimer();
+    timer = setInterval(function () {
+      if (document.hidden || el('adminApp').hidden) return;
+      loadSessions().catch(function () {});
+    }, 30000);
+  }
+  function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) loadSessions().catch(function () {});
+  });
+
+  /* ------------------------------------------------------------------ */
+  load().then(startTimer, function (err) {
+    if (err.status === 401 || err.status === 403) return showDoor();
+    showDoor();
+    fail(emailBox, err.message);
+  });
+})();
+</script>`;
+
+  return `<!doctype html>
+<html lang="en-KE" data-shell="admin">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1B4A63" />
+<title>Platform console — ${escapeHtml(content.brand.name)}</title>
+<meta name="robots" content="noindex" />
+<meta name="description" content="The Shop Yangu Kenya platform console: signed-in shops, live sessions and shop status." />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="../app/app.css" />
+<script>window.SYK_API = ${JSON.stringify(process.env.API_URL || '')};</script>
+</head>
+<body class="page-admin">
+${icons}
+<a class="skip" href="#main">Skip to content</a>
+${body}
+</body>
+</html>
+`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1036,6 +1800,9 @@ write(
 
 write('spec/index.html', specPage());
 write('login/index.html', loginPage());
+write('auth/link/index.html', linkPage());
+write('admin/index.html', adminPage());
+write('admin/link/index.html', adminLinkPage());
 
 /* the app: one page, one folder per screen */
 for (const route of Object.keys(APP_ROUTES)) writeRoute(route);
@@ -1123,34 +1890,6 @@ fs.copyFileSync(path.join(root, 'src/logo/og.png'), path.join(dist, 'og.png'));
    by tools/make-pos-mock.mjs, so the 1 MB original never reaches a phone. */
 fs.copyFileSync(path.join(root, 'src/pos-mock.webp'), path.join(dist, 'pos-mock.webp'));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
-
-fs.mkdirSync(path.join(dist, 'fonts'), { recursive: true });
-for (const f of fs.readdirSync(path.join(root, 'src/fonts'))) {
-  if (f.endsWith('.woff2') || f === 'OFL.txt') {
-    fs.copyFileSync(path.join(root, 'src/fonts', f), path.join(dist, 'fonts', f));
-  }
-}
-
-/* 404 → the shop's front door, so a mistyped address still lands somewhere. */
-write(
-  '404.html',
-  document({
-    title: `Page not found — ${content.brand.name}`,
-    description: 'That page does not exist. Head back to the home page or sign in to the shop.',
-    page: '404',
-    body: `<main id="main" class="missing">
-  <div class="wrap">
-    <p class="kicker">404</p>
-    <h1 class="missing__title">That shelf is empty.</h1>
-    <p class="missing__lede">The page you asked for is not here. The home page and the door to the shop both are.</p>
-    <div class="hero__cta">
-      <a class="btn btn--primary" href="${siteUrl('')}">Back home${icon('arrow')}</a>
-      <a class="btn btn--ghost" href="${siteUrl('login/')}">Sign up / Log in</a>
-    </div>
-  </div>
-</main>`,
-  })
-);
 
 /* ------------------------------------------------------------------ */
 /* checks — a broken internal link must fail the build, not the page   */
@@ -1291,6 +2030,27 @@ for (const page of pages) {
     (c) => !UNSTYLED_BY_DESIGN.has(c) && !new RegExp('\\.' + c + '(?![\\w-])').test(css)
   );
   if (missing.length) check(false, `${page}: ${missing.length} class(es) with no CSS — ${missing.slice(0, 6).join(', ')}`);
+}
+
+/* Every inline script must at least be JavaScript.
+
+   This check exists because a regex inside a template literal lost its
+   backslashes once and turned /Edg\// into /Edg//, which is a syntax error the
+   browser reports as "something went wrong" and nothing else. `new Function`
+   compiles without running, so it is a syntax check with no side effects. */
+for (const page of pages) {
+  const html = fs.readFileSync(path.join(dist, page), 'utf8');
+  const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  for (const [i, src] of scripts.entries()) {
+    if (!src.trim()) continue;
+    try {
+      /* eslint-disable-next-line no-new-func */
+      new Function(src);
+    } catch (err) {
+      const line = src.slice(0, err.message.length ? undefined : undefined);
+      check(false, `${page}: inline script ${i + 1} is not valid JavaScript — ${err.message}`);
+    }
+  }
 }
 
 /* The published pages must not reach for anything we do not ship. */
