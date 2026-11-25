@@ -1,9 +1,9 @@
-/* ============================================================ api/lib/config.js
+/* ============================================================ api/_lib/config.js
 
    Every setting comes from the environment, and nothing here has a default
    that would silently do the wrong thing in production.
 
-   Copy api/.env.example to api/.env and fill it in. See docs/01-neon-setup.md
+   Copy api/.env.example to api/.env and fill it in. See docs/01-neon.md
    for where each value comes from.
 */
 
@@ -32,7 +32,7 @@ function required(name) {
   if (!v) {
     throw new Error(
       `Missing ${name}. Copy api/.env.example to api/.env and fill it in — ` +
-        'docs/01-neon-setup.md walks through every value.'
+        'docs/01-neon.md walks through every value.'
     );
   }
   return v;
@@ -45,8 +45,24 @@ const bool = (v, fallback = false) =>
 
 const list = (v) => (v || '').split(',').map((s) => s.trim()).filter(Boolean);
 
+/* Vercel sets VERCEL=1 in every function it runs. Nothing else needs to know
+   that, but three settings below differ there: there is no site to serve from
+   the API, nothing is listening on a port, and the site's own address is the
+   deployment's address. Detecting it here means the person deploying has three
+   fewer things to type correctly. */
+const onVercel = !!process.env.VERCEL;
+
+/* Vercel's own address for this deployment, without a trailing slash:
+   https://shop-yangu-kenya.vercel.app on a preview, the real domain on
+   production. VERCEL_URL has no scheme on it, hence the https://. */
+const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? 'https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL
+  : process.env.VERCEL_URL
+    ? 'https://' + process.env.VERCEL_URL
+    : '';
+
 export const env = {
-  NODE_ENV: raw.NODE_ENV || 'development',
+  NODE_ENV: raw.NODE_ENV || (onVercel ? 'production' : 'development'),
   PORT: Number(raw.PORT || 8787),
   HOST: raw.HOST || '0.0.0.0',
 
@@ -59,12 +75,15 @@ export const env = {
   /* Where the built site lives. The API serves it too in development, so the
      app and the API share one origin and the session cookie is plain. */
   WEB_ROOT: raw.WEB_ROOT || 'dist',
-  SERVE_SITE: bool(raw.SERVE_SITE, true),
+  /* Vercel serves the built site itself, so the function must not try to. */
+  SERVE_SITE: bool(raw.SERVE_SITE, !onVercel),
 
   /* Where the site is published. Used for the links in emails, and for CORS
      in the one setup where the API is on a different host. */
-  SITE_URL: raw.SITE_URL || 'http://localhost:8787',
-  API_URL: raw.API_URL || '',
+  SITE_URL: raw.SITE_URL || vercelUrl || 'http://localhost:8787',
+  /* On Vercel the API is on the same address as the site, so links and M-Pesa
+     callbacks are built from SITE_URL and this stays empty. */
+  API_URL: raw.API_URL || vercelUrl || '',
   COOKIE_DOMAIN: raw.COOKIE_DOMAIN || '',
   /* Only needed when the API is on another origin from the site. */
   CORS_ORIGINS: list(raw.CORS_ORIGINS),
@@ -99,12 +118,31 @@ export const env = {
   MPESA_BASE_URL: raw.MPESA_BASE_URL || '',
   /* The callback must be public HTTPS. Its path must not contain "mpesa",
      "m-pesa" or "safaricom" — Safaricom rejects those. Hence /pay/<secret>. */
-  MPESA_CALLBACK_BASE: raw.MPESA_CALLBACK_BASE || '',
+  MPESA_CALLBACK_BASE: raw.MPESA_CALLBACK_BASE || vercelUrl || '',
   MPESA_TIMEOUT_SECONDS: Number(raw.MPESA_TIMEOUT_SECONDS || 60),
 
   /* Set to a real value in production. Used to sign nothing (JWTs are not
-     used) but to derive the hash key for session tokens. */
-  TOKEN_PEPPER: required('TOKEN_PEPPER'),
+     used) but to derive the hash key for session tokens.
+
+     Only the server needs this: it is what makes a session token unforgeable.
+     The setup scripts (db-migrate, db-seed, make-super-admin) never touch a
+     token, and making them demand it would be a password prompt with no
+     purpose — so they are allowed to import this module without one. If a
+     token is ever minted without a pepper, signToken() refuses. */
+  TOKEN_PEPPER: raw.TOKEN_PEPPER || '',
 };
+
+/* The server will not start without a pepper. Imported by server.js and by
+   api/index.js, so a deploy with the variable missing fails loudly at cold
+   start rather than signing tokens with an empty key. */
+export function requirePepper() {
+  if (!env.TOKEN_PEPPER) {
+    throw new Error(
+      'Missing TOKEN_PEPPER. Copy api/.env.example to api/.env and fill it in — ' +
+        'docs/01-neon.md walks through every value.'
+    );
+  }
+  return env.TOKEN_PEPPER;
+}
 
 export const isProd = env.NODE_ENV === 'production';

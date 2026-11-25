@@ -1,4 +1,4 @@
-/* ============================================================ api/routes/bootstrap.js
+/* ============================================================ api/_routes/bootstrap.js
 
    GET /api/bootstrap — everything the app needs for its first paint.
 
@@ -11,9 +11,9 @@
    row-level security policies in 003_rls.sql apply to every query at once.
 */
 
-import * as db from '../lib/db.js';
-import * as shape from '../lib/shape.js';
-import { requireOwner } from '../lib/auth.js';
+import * as db from '../_lib/db.js';
+import * as shape from '../_lib/shape.js';
+import { requireOwner } from '../_lib/auth.js';
 
 /* How much history the first paint carries. The lists scroll; anything older
    is paged in by /api/sales when the screen asks. */

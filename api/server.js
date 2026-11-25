@@ -7,8 +7,9 @@
 
    In development it also serves the built site, so the app and the API share
    one origin and the session cookie is a plain first-party cookie. In
-   production the site stays on GitHub Pages and only /api and /pay are
-   proxied here — see docs/03-link-the-page.md.
+   production on Vercel it does not serve the site: Vercel serves dist/ itself
+   and sends only /api and /pay here, which keeps them on the same origin —
+   see docs/03-vercel.md and api/index.js.
 
    Run it:
      cd api && npm install && node server.js
@@ -19,20 +20,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
-import { env, isProd } from './lib/config.js';
-import * as db from './lib/db.js';
+import { env, isProd, requirePepper } from './_lib/config.js';
+import * as db from './_lib/db.js';
 import {
   HttpError, Router, readJson, send, parseCookies, clientIp,
   notFound, unauthorized,
-} from './lib/http.js';
-import { currentSession } from './lib/auth.js';
-import { mailHealth, devInbox } from './lib/mail.js';
+} from './_lib/http.js';
+import { currentSession } from './_lib/auth.js';
+import { mailHealth, devInbox } from './_lib/mail.js';
 
-import authRoutes from './routes/auth.js';
-import shopRoutes from './routes/shop.js';
-import mpesaRoutes from './routes/mpesa.js';
-import adminRoutes from './routes/admin.js';
-import bootstrapRoutes from './routes/bootstrap.js';
+import authRoutes from './_routes/auth.js';
+import shopRoutes from './_routes/shop.js';
+import mpesaRoutes from './_routes/mpesa.js';
+import adminRoutes from './_routes/admin.js';
+import bootstrapRoutes from './_routes/bootstrap.js';
 
 /* ------------------------------------------------------------------ router */
 
@@ -168,7 +169,12 @@ function serveStatic(req, res, pathname) {
 
 /* ----------------------------------------------------------------- server */
 
-const server = http.createServer(async (req, res) => {
+/* The request handler, written against Node's own request and response.
+
+   It is separate from `http.createServer` below so that a host which supplies
+   its own request and response — Vercel, on the deployed site — can call it
+   directly. Everything below this line works the same in both places. */
+async function handleRequest(req, res) {
   const started = Date.now();
   const parsed = url.parse(req.url, true);
   const pathname = parsed.pathname || '/';
@@ -240,7 +246,9 @@ const server = http.createServer(async (req, res) => {
       ...(isProd ? {} : { detail: err.message }),
     }, headers);
   }
-});
+}
+
+const server = http.createServer(handleRequest);
 
 function log(status, method, pathname, started, rid) {
   const ms = Date.now() - started;
@@ -256,7 +264,14 @@ function log(status, method, pathname, started, rid) {
 const PORT = env.PORT;
 const HOST = env.HOST; /* 0.0.0.0 so the preview proxy can reach it */
 
-server.listen(PORT, HOST, async () => {
+/* A missing pepper would sign tokens with an empty key, so refuse to run at
+   all. On Vercel this throws on the first request (a 500 in the logs, which is
+   the right kind of loud); here it throws on start. */
+requirePepper();
+
+/* On Vercel there is no port to listen on: the file in api/ is called once per
+   request instead. The host sets VERCEL=1, so the server does not try. */
+if (!process.env.VERCEL) server.listen(PORT, HOST, async () => {
   console.log('');
   console.log('  Shop Yangu API');
   console.log(`  ${env.NODE_ENV} on http://${HOST}:${PORT}`);
@@ -291,4 +306,4 @@ process.on('unhandledRejection', (err) => {
   console.error('unhandled rejection:', err);
 });
 
-export { server, router };
+export { server, router, handleRequest };

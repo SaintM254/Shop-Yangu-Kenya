@@ -1,4 +1,4 @@
-/* ============================================================ api/routes/admin.js
+/* ============================================================ api/_routes/admin.js
 
    The super-admin console: who is signed in, which shops exist, what they are
    selling, and the ability to pause a shop that has stopped paying.
@@ -29,14 +29,14 @@
      POST /api/admin/notes
 */
 
-import * as db from '../lib/db.js';
-import { env } from '../lib/config.js';
-import * as auth from '../lib/auth.js';
-import * as shape from '../lib/shape.js';
-import * as emails from '../lib/emails.js';
-import { sendMail } from '../lib/mail.js';
-import { requireSuperAdmin, requireSession } from '../lib/auth.js';
-import { badRequest, notFound, forbidden, unauthorized } from '../lib/http.js';
+import * as db from '../_lib/db.js';
+import { env } from '../_lib/config.js';
+import * as auth from '../_lib/auth.js';
+import * as shape from '../_lib/shape.js';
+import * as emails from '../_lib/emails.js';
+import { sendMail } from '../_lib/mail.js';
+import { requireSuperAdmin, requireSession } from '../_lib/auth.js';
+import { badRequest, notFound, forbidden, unauthorized } from '../_lib/http.js';
 
 const asAdmin = (ctx) => ({ superAdmin: true, shopId: ctx ? ctx.shop_id : null });
 

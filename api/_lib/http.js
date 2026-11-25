@@ -1,4 +1,4 @@
-/* ============================================================ api/lib/http.js
+/* ============================================================ api/_lib/http.js
 
    The HTTP plumbing: JSON in, JSON out, cookies, and errors that carry a
    message the shop can actually read.

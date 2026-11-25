@@ -1,0 +1,93 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "framework": null,
+  "buildCommand": "node build.js",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.js?__path=/:path*"
+    },
+    {
+      "source": "/pay/:path*",
+      "destination": "/api/index.js?__path=/pay/:path*"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "/login/",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard/",
+      "permanent": false
+    },
+    {
+      "source": "/auth/link",
+      "destination": "/auth/link/",
+      "permanent": false
+    },
+    {
+      "source": "/admin/link",
+      "destination": "/admin/link/",
+      "permanent": false
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin/",
+      "permanent": false
+    },
+    {
+      "source": "/spec",
+      "destination": "/spec/",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    {
+      "source": "/app/(.*)",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=300"
+        }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "key": "referrer-policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
+}

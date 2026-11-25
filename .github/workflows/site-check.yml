@@ -1,8 +1,13 @@
-# After every deploy, load the live site in a real browser and prove it.
+# Loads the live site in a real browser and proves it works.
 #
 # build.js already checks the HTML on disk (links, anchors, headings, no
 # external assets). This job checks the thing that only exists once published:
 # the pages a real browser gets back over HTTPS at 360 / 768 / 1280 px.
+#
+# The site now lives on Vercel, which deploys itself from the same push to
+# main. GitHub cannot be told "run after Vercel finishes", so this is no longer
+# automatic: start it by hand from the Actions tab, or paste your address into
+# the "Site address" box.
 #
 # It runs on the GitHub-hosted runner, which ships Chromium and Node, so it
 # installs one package and drives the system browser — no browser download.
@@ -15,9 +20,9 @@ on:
   workflow_dispatch:
     inputs:
       site_url:
-        description: URL to check
+        description: 'Site address to check (leave blank for the GitHub Pages address)'
         required: false
-        default: https://saintm254.github.io/Shop-Yangu-Kenya
+        default: ''
 
 permissions:
   contents: read
@@ -35,7 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      SITE_URL: ${{ github.event.inputs.site_url || 'https://saintm254.github.io/Shop-Yangu-Kenya' }}
+      # One place to change the address: the SITE_URL repository variable
+      # (Settings → Secrets and variables → Actions → Variables). Set it to your
+      # Vercel address, e.g. https://shop-yangu-kenya.vercel.app, and the check
+      # follows the site. Left unset, it checks the old GitHub Pages address.
+      SITE_URL: ${{ github.event.inputs.site_url || vars.SITE_URL || 'https://saintm254.github.io/Shop-Yangu-Kenya' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7

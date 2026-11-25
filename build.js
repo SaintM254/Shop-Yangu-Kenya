@@ -318,17 +318,28 @@ function renderMarkdown(md) {
 /* ------------------------------------------------------------------ */
 
 /* Every address on the published site is a folder — /login/, /dashboard/ —
-   never a .html file. GitHub Pages answers the folder with its index.html. */
-const CANON = 'https://saintm254.github.io/Shop-Yangu-Kenya';
+   never a .html file. Whatever is hosting it answers the folder with its
+   index.html.
 
-/* Pages serves this site from a sub-folder (/Shop-Yangu-Kenya/), so a URL
-   that starts with "/" would leave it. Every link is relative to the page's
-   own folder instead, which works at a domain root, under a sub-folder, and
-   from disk. `depth` is how many folders deep the page sits. */
+   The public address is set at build time:
+
+     SITE_URL=https://shop.yourdomain.com node build.js
+
+   Vercel passes its own address automatically, so a deploy there needs
+   nothing typed. With nothing set it falls back to the GitHub Pages address,
+   which is where this used to live and still works. */
+const CANON = (process.env.SITE_URL
+  ? String(process.env.SITE_URL).replace(/\/$/, '')
+  : 'https://saintm254.github.io/Shop-Yangu-Kenya');
+
+/* Only the 404 page needs this: it is served at whatever address was mistyped,
+   so a relative link inside it would resolve against the wrong folder. Every
+   other page links relatively, which works at a domain root and under a
+   sub-folder. */
 /* How far a page sits from the site root. /login/ is one folder down;
    /auth/link/ and /admin/link/ are two, and every relative URL in their heads
    has to know it. */
-const DEPTHS = { 'link': 2 };
+const DEPTHS = { link: 2, 'admin-link': 2 };
 const depth = (page) => (page === 'index' || page === '404' ? 0 : DEPTHS[page] || 1);
 const rel = (page, path) => '../'.repeat(depth(page)) + path;
 
@@ -342,6 +353,18 @@ const SITE_PATH = new URL(CANON).pathname.replace(/\/$/, '');
    This is the one page allowed to carry a root-absolute URL. */
 const siteUrl = (p) => SITE_PATH + '/' + p;
 
+/* The address a page is really served at, for the canonical tag. Most pages
+   are one folder down and share the name of their folder; the two link pages
+   are two deep and must say so. */
+const CANON_PATHS = {
+  index: '/',
+  404: '/',
+  link: '/auth/link/',
+  'admin-link': '/admin/link/',
+  admin: '/admin/',
+};
+const canonicalPath = (page) => CANON_PATHS[page] || '/' + page + '/';
+
 function head({ title, description, page, styles }) {
   const fix = (p) => (page === '404' ? siteUrl(p) : rel(page, p));
   const stylesheets = styles || [fix('styles.css')];
@@ -354,7 +377,7 @@ function head({ title, description, page, styles }) {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="icon" href="${fix('favicon.svg')}" type="image/svg+xml" />
-<link rel="canonical" href="${CANON}/${page === 'index' || page === '404' ? '' : page + '/'}" />
+<link rel="canonical" href="${CANON}${canonicalPath(page)}" />
 <meta property="og:title" content="${escapeHtml(title)}" />
 <meta property="og:description" content="${escapeHtml(description)}" />
 <meta property="og:type" content="website" />
@@ -894,11 +917,14 @@ function loginPage() {
   /* ---------------------------------------------------------------------
      Where the API is.
 
-     Same-origin in development, because the API serves this build. On GitHub
-     Pages the site has no API of its own, so BACKEND_BASE has to be set at
-     build time (see docs/03-link-the-page.md):
+     Normally empty: the site and the API share one address, so a request to
+     /api/... goes to the same host that served the page. That is how it runs
+     in development (the API serves this build) and on Vercel (Vercel serves
+     dist/ and routes /api to the one function).
 
-       node build.js --api=https://your-api.example.com
+     Only a split setup — static site on one host, API on another — needs an
+     address here, set at build time (see docs/10-for-developers.md):
+
        API_URL=https://your-api.example.com node build.js
 
      With nothing set, the page says so plainly instead of failing silently.
@@ -1298,7 +1324,7 @@ function linkPage({ admin = false } = {}) {
   return `${head({
     title: `${title} — ${content.brand.name}`,
     description: 'Finishing your Shop Yangu Kenya sign-in.',
-    page: 'link',
+    page: admin ? 'admin-link' : 'link',
   })}
 <body class="page-auth page-link">
 <a class="skip" href="#main">Skip to content</a>
@@ -2117,8 +2143,11 @@ for (const page of pages) {
 /* The published pages must not reach for anything we do not ship. */
 for (const page of pages) {
   const html = fs.readFileSync(path.join(dist, page), 'utf8');
-  for (const m of html.matchAll(/(?:src|href)="(https?:\/\/[^"]+)"/g)) {
-    if (!/^https:\/\/saintm254\.github\.io/.test(m[1])) {
+  /* <link rel="canonical"> names the page itself; it is not a file to fetch,
+     and it legitimately points at whatever domain the site is published on. */
+  const markup = html.replace(/<link[^>]+rel="canonical"[^>]*>/gi, '');
+  for (const m of markup.matchAll(/(?:src|href)="(https?:\/\/[^"]+)"/g)) {
+    if (!new RegExp('^' + CANON.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(m[1])) {
       check(false, `${page}: external asset → ${m[1]} (files must be self-hosted)`);
     }
   }
