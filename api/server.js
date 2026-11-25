@@ -29,6 +29,7 @@ import {
 import { currentSession } from './_lib/auth.js';
 import { mailHealth, devInbox } from './_lib/mail.js';
 import { authHealth } from './_lib/neon-auth.js';
+import * as neonAuth from './_lib/neon-auth.js';
 
 import authRoutes from './_routes/auth.js';
 import shopRoutes from './_routes/shop.js';
@@ -135,6 +136,156 @@ router.get('/api/health', async () => {
     },
     at: new Date().toISOString(),
   };
+});
+
+/* ------------------------------------------------------------- auth doctor
+
+   /api/health tells you about CONFIGURATION. It cannot tell you why a code did
+   not arrive, because it never asks anybody. This route does the asking, and it
+   is built for one situation: the owner is out of time, cannot see a server log,
+   and needs to be told which of six known things is wrong.
+
+   GET /api/auth/doctor?email=you@example.com
+
+   It never sends an email, never returns a code, and never echoes a secret. What
+   it does is replay the decision the sign-up route makes, and report the answer.
+
+   Open to anyone on purpose: a diagnostic that requires the thing it diagnoses
+   is useless. It reveals only whether an address exists at Neon — which the
+   sign-up response already implies — and the same for a mailer that is, by
+   definition, publicly reachable. */
+router.get('/api/auth/doctor', async (req) => {
+  const email = String(((req && req.query) || {}).email || '')
+    .trim()
+    .toLowerCase();
+
+  const answer = {
+    version: 1,
+    at: new Date().toISOString(),
+    /* Each one is a plain sentence with a fix, in the order they break people. */
+    findings: [],
+    /* The verdict, so the page does not have to interpret the list. */
+    verdict: '',
+  };
+
+  const add = (level, what, why, fix) => answer.findings.push({ level, what, why, fix });
+
+  /* 1. Is anything configured at all? */
+  const health = authHealth();
+
+  /* The first thing to say, if it is true, is that the server refused to boot
+     properly: without TOKEN_PEPPER no sign-in of any kind can work, and that
+     outranks every email question below. */
+  const notConfigured = misconfigured();
+  if (notConfigured.length) {
+    add(
+      'fail',
+      `The server is missing ${notConfigured.join(', ')}.`,
+      'Every route except this page and /api/health is refusing until it is set, so no email could be sent by anything.',
+      'Vercel → Settings → Environment Variables. TOKEN_PEPPER is any long random string (32+ characters). DATABASE_URL comes from Neon.'
+    );
+  }
+
+  if (health.driver === 'none') {
+    add(
+      'warn',
+      'Neon Auth is not configured, so this shop sends codes itself.',
+      'NEON_AUTH_BASE_URL is empty. That is a valid way to run, but then no Neon account exists and Neon sends nothing.',
+      'To use Neon Auth: Neon console → project → Vercel → tick NEON_AUTH_BASE_URL, then redeploy Vercel.'
+    );
+  } else if (!health.ok) {
+    add('fail', 'Neon Auth is configured but unusable.', health.error, 'Fix that setting, then reload this page.');
+  } else {
+    add(
+      'ok',
+      `Neon Auth is configured on ${health.host}.`,
+      `Origin sent to Neon: ${health.trustedOrigin || '(SITE_URL is empty)'}.`,
+      ''
+    );
+    if (!health.trustedOrigin || !/^https?:\/\//.test(health.trustedOrigin)) {
+      add(
+        'warn',
+        'SITE_URL is empty or not a full address.',
+        'Neon checks the Origin on every request. Without SITE_URL this shop sends an address Neon may not trust, and the answer is 403 Invalid origin.',
+        'Vercel → Settings → Environment Variables → SITE_URL = your live address, e.g. https://shop-yangu-kenya.vercel.app (no trailing slash).'
+      );
+    }
+  }
+
+  /* 2. Reachability. A real HTTP call, the cheapest one that proves Neon answers. */
+  if (health.driver === 'neon-auth' && health.ok) {
+    const reach = await neonAuth.ping();
+    if (reach.ok) {
+      add('ok', 'Neon Auth answers.', `It replied in ${reach.ms} ms.`, '');
+    } else {
+      add(
+        'fail',
+        'Neon Auth does not answer.',
+        reach.error,
+        'Either the URL is wrong or the deployed site cannot reach Neon. Re-run the Prove Neon Auth workflow in the Actions tab for the detail.'
+      );
+    }
+  }
+
+  /* 3. The mailer. Two separate questions: configured, and reachable. */
+  const mail = await mailHealth();
+  if (!mail.ok) {
+    add(
+      'fail',
+      'The mail server does not answer.',
+      mail.error,
+      'Check SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS in Vercel. A wrong app password is the usual cause.'
+    );
+  } else if (mail.driver === 'console') {
+    add(
+      'warn',
+      'No mail server is set: codes are printed to the server log, not emailed.',
+      'EMAIL_DRIVER is unset or "console", so nothing can arrive in any inbox — this alone explains "no email".',
+      'Vercel → Settings → Environment Variables → EMAIL_DRIVER=smtp, plus SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM. Then redeploy.'
+    );
+  } else {
+    add('ok', 'The mail server answers.', `Sending from ${env.MAIL_FROM}.`, '');
+  }
+
+  /* 4. The address, and which kind of code it is entitled to. This is the part
+     that was invisible for two weeks. */
+  if (email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && health.driver === 'neon-auth' && health.ok) {
+    const where = await neonAuth.whichCode(email);
+    if (!where.ok) {
+      add('warn', `Could not ask Neon about ${email}.`, where.error, 'Try again; if it persists, re-run the Actions proof.');
+    } else {
+      answer.address = { email, existsAtNeon: where.exists, emailVerified: where.verified };
+
+      add(
+        'ok',
+        `${email} is worth trying.`,
+        'Sign-up will ask Neon for a code and this shop accepts BOTH kinds — a verification code and a sign-in code — so whichever one Neon sends will work here.',
+        ''
+      );
+
+      if (where.exists === true && where.verified === true) {
+        add(
+          'warn',
+          `${email} is already verified at Neon.`,
+          'An already-verified address is never sent a sign-up verification code. That was the whole "no OTP" problem.',
+          'Nothing to fix — the shop now asks for a sign-in code instead. To be sure of receiving it, use "sign in with a code by email" on the sign-in page.'
+        );
+      }
+    }
+  }
+
+  /* 5. The verdict, in one sentence, chosen from the worst finding. */
+  const worst = answer.findings.find((f) => f.level === 'fail') || answer.findings.find((f) => f.level === 'warn');
+  if (!worst) {
+    answer.verdict =
+      'Nothing is broken. Every setting is present, Neon answers, and the mailer answers. ' +
+      'If no code arrived, check spam — and remember two emails are sent at sign-up, one from Neon and one from this shop.';
+  } else {
+    answer.verdict = `${worst.what} ${worst.fix}`.trim();
+  }
+
+  answer.ok = !answer.findings.some((f) => f.level === 'fail');
+  return answer;
 });
 
 /* ------------------------------------------------------------------ dev inbox
@@ -264,7 +415,10 @@ async function handleRequest(req, res) {
     /* Health is allowed through even when settings are missing — it is the
        page that says so. Everything else refuses, with a message a person can
        act on, instead of failing later in a way nobody can trace. */
-    if (!isConfigured() && pathname !== '/api/health') {
+    /* The doctor is exempt for the same reason health is: a diagnostic that
+       requires the thing it diagnoses cannot diagnose anything. When TOKEN_PEPPER
+       is missing, this is the page that says so. */
+    if (!isConfigured() && pathname !== '/api/health' && pathname !== '/api/auth/doctor') {
       const names = misconfigured().map((m) => m.name).join(', ');
       throw new HttpError(
         503,

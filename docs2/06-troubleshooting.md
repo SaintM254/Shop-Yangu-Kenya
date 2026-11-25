@@ -201,6 +201,16 @@ requested before `signUpWithPassword()` sends zero emails and looks fine.
 > **`{"success": true}` is never proof that an email went out.** The only proof
 > is an email in an inbox, or a code that a wrong guess is refused against.
 
+### Nothing works and you do not know which thing is broken
+
+Open **`/auth/doctor/`** — linked at the bottom of the sign-in form. Type the
+address, press **Check**. It names each problem with the fix, worst first, and
+sends no email.
+
+It is deliberately open to anyone: a diagnostic that needs a working sign-in to
+reach is useless, and it reveals nothing beyond whether the deployment can send
+email.
+
 ### "The app is not requesting the OTP" — a success and no email
 
 This is the one that looks like a code bug and is a Better Auth rule.

@@ -2056,6 +2056,93 @@ a:hover {
 /* Who sent the code, and which kind it is. Set apart from the address because
    it is the answer to a different question: "where do I look, and why is this
    code not what I expected". */
+/* ------------------------------------------------ /auth/doctor — the report
+
+   A list of findings, not a table: each one is a sentence with the fix beneath
+   it, and the colour only says how bad it is. Read on a phone, one-handed,
+   which is the situation this page exists for. */
+.authfine--last {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.authnote {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.authnote--last {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.authmsg {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--danger, #B3261E);
+}
+
+.doctorverdict {
+  margin: 18px 0 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #FFF8E1;
+  color: var(--primary-dark);
+  border-left: 3px solid var(--primary, #1B4A63);
+}
+
+.doctorverdict--ok {
+  background: #F1F7F3;
+  border-left-color: var(--ok, #2E7D4F);
+}
+
+.doctorlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.doctoritem {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #FBF8F3;
+  border-left: 3px solid var(--line);
+}
+
+.doctoritem--ok { border-left-color: var(--ok, #2E7D4F); }
+.doctoritem--warn { border-left-color: #C98A00; }
+.doctoritem--fail { border-left-color: var(--danger, #B3261E); }
+
+.doctoritem__what {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink, #1F1B16);
+}
+
+.doctoritem__why,
+.doctoritem__fix {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.doctoritem__fix {
+  color: var(--primary-dark);
+}
+
 .authsent__note {
   margin-top: 6px;
   font-size: 12.5px;

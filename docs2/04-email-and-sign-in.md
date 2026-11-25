@@ -280,6 +280,29 @@ its own and Neon must never steer them.
 
 ---
 
+## Do this first: open the health check
+
+**`/auth/doctor/`** — it is linked at the bottom of the sign-in form, under
+"No email arriving at all?".
+
+Type the address you are using, press **Check**, and it prints every problem it
+can find as a sentence with the fix underneath, worst first. It sends no email,
+and it never shows a secret.
+
+It looks for the things that actually stop email:
+
+| What it checks | Why it matters |
+|---|---|
+| Is `TOKEN_PEPPER` set? | if not, every page except the doctor refuses. Nothing can send anything |
+| Is Neon Auth configured? | if not, this shop sends codes itself and Neon sends nothing |
+| Does the mailer answer? | a wrong SMTP password is silent and total |
+| Is `EMAIL_DRIVER` still `console`? | **the usual answer** — codes go to a server log, not an inbox |
+| Is the address already verified at Neon? | an already-verified address never gets a sign-up code |
+
+**If the last row is your answer,** the section below explains it. If it is the
+`EMAIL_DRIVER` row, that is not a bug at all: the deployment has no mail server,
+so no code can arrive in any inbox until `SMTP_HOST` and friends are set.
+
 ## "The app is not requesting the OTP" — the actual cause
 
 This was the real problem, and it is worth understanding because it is not a bug
