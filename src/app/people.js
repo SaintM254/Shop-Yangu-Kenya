@@ -37,8 +37,8 @@ document.addEventListener('click', e => {
         const amt = Number($('#payAmt').value) || 0;
         if (amt <= 0) { toast('Enter an amount.', 'bad'); return; }
         c.bal = Math.round((c.bal - amt) * 100) / 100;
-        S.ledger.unshift({ at: now().toISOString(), customer: c.id, amt, how: $('#payHow').value, who: S.me.name });
-        S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Recorded payment', detail: c.name + ', ' + fmt(amt) });
+        S.ledger.unshift({ at: now().toISOString(), customer: c.id, amt, how: $('#payHow').value, who: S.user.name });
+        S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Recorded payment', detail: c.name + ', ' + fmt(amt) });
         closeSheet(); renderCustomers();
         toast('Payment recorded. ' + c.name + ' now owes ' + fmt(c.bal), 'good');
       }}],

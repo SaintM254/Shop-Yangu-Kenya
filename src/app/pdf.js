@@ -498,9 +498,6 @@ const PDF = (() => {
     if (doc.customer) {
       pair('Customer', doc.customer, { size: 7.8, rightW: 96 });
     }
-    if (doc.cashier) {
-      pair('Served by', doc.cashier, { size: 7.8, rightW: 96, color: MUTED });
-    }
 
     dashed();
 

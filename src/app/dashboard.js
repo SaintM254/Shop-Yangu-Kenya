@@ -45,18 +45,11 @@ function renderDashboard() {
   const yProfit = sum(salesOn(ymd(addDays(today(), -1))), s => s.total - costOf(s));
   const owed = sum(S.customers, c => c.bal);
 
-  /* a sales user gets their own day, not the shop's profit */
-  const owner = isOwner();
+  /* one login per shop: the dashboard is the shop's day, every figure on it */
   ['#statProfit', '#statOwed'].forEach(sel => {
-    const card = $(sel).closest('.stat');
-    card.hidden = !owner;
+    $(sel).closest('.stat').hidden = false;
   });
-  if (!owner) {
-    $('#goalAmount').closest('.goal').querySelector('h2').textContent = 'My sales today';
-    $('#goalAmount').closest('.goal').querySelector('.sub').textContent = 'Your own receipts';
-  }
-  const pre = $('.pagehead h1');
-  $('#greeting').textContent = (owner ? 'Karibu, ' : 'Habari, ') + S.me.name.split(' ')[0];
+  $('#greeting').textContent = 'Karibu, ' + S.user.name.split(' ')[0];
   $('#todayLine').textContent = longDate(now()) + ' · ' + S.shop.branch;
   $('#goalAmount').innerHTML = fmt2(todayTotal).replace(/\.(\d\d)$/, '<span class="cents">.$1</span>');
   $('#goalSpark').innerHTML = sparkline(dayTotals(7));
@@ -103,7 +96,7 @@ function renderDashboard() {
   $('#recentSales').innerHTML = S.sales.slice(0, 6).map(s => {
     const c = cust(s.customer);
     return '<div class="setrow"><div><div class="t">' + esc(s.no) + ' · ' + fmt(s.total) + '</div>' +
-      '<div class="d">' + esc(c ? c.name : 'Walk-in') + ' · ' + clock(new Date(s.at)) + ' · ' + esc(s.cashier.split(' ')[0]) + '</div></div>' +
+      '<div class="d">' + esc(c ? c.name : 'Walk-in') + ' · ' + clock(new Date(s.at)) + '</div></div>' +
       (s.credit ? '<span class="pill low">' + fmt(s.credit) + ' credit</span>' : '<span class="pill ok">' + icon('check', 'sm') + 'Paid</span>') + '</div>';
   }).join('');
 

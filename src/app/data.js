@@ -1,14 +1,10 @@
 /* ============================================================ sample data */
 const SEED = () => ({
   shop: { name: 'Shop Yangu Kenya', branch: 'Mombasa Branch', phone: '0722 000 111', kra: 'P051234567X', plan: 1500 },
-  me: { name: 'Wanjiku Kamau', role: 'owner' },
+  /* One login per shop. The person who runs the shop is the only account, so
+     there is no role to check and nothing to switch between. */
+  user: { name: 'Wanjiku Kamau', phone: '0722 000 111' },
   settings: { allowCredit: true, askCustomer: false, smsReceipt: true, offline: true },
-  users: [
-    { id: 'u1', name: 'Wanjiku Kamau', phone: '0722 000 111', role: 'owner', active: true, last: 'Today, 14:26' },
-    { id: 'u2', name: 'Otieno Were', phone: '0733 442 118', role: 'sales', active: true, last: 'Today, 13:58' },
-    { id: 'u3', name: 'Fatuma Ali', phone: '0711 909 233', role: 'sales', active: true, last: 'Yesterday, 18:04' },
-    { id: 'u4', name: 'Peter Mwangi', phone: '0700 221 664', role: 'sales', active: false, last: '2 weeks ago' }
-  ],
   cats: ['Drinks', 'Grocery', 'Household', 'Personal care', 'Hardware'],
   products: [
     { id: 'p01', sku: 'GRC-001', name: 'Sugar 2kg', cat: 'Grocery', unit: 'packet', cost: 205, price: 240, qty: 68, reorder: 24, exp: '' },
@@ -95,7 +91,6 @@ const S = SEED();
         no: 'R-' + (++n), at: at.toISOString(), items, total,
         paid: paidAmt ? [{ m: i % 3 === 0 ? 'Cash' : i % 3 === 1 ? 'M-Pesa' : 'Card', amt: paidAmt }] : [],
         credit: credit ? total - paidAmt : 0, customer: cust,
-        cashier: ['Otieno Were', 'Fatima Ali', 'Wanjiku Kamau'][(i + d) % 3],
         etims: { status: 'sent', sig: 'KRA' + (721000 + n) }
       });
     }
@@ -111,8 +106,4 @@ const salesToday = () => S.sales.filter(s => ymd(new Date(s.at)) === ymd(today()
 const salesOn = d => S.sales.filter(s => ymd(new Date(s.at)) === d);
 const sum = (a, f) => a.reduce((t, x) => t + (f ? f(x) : x), 0);
 const costOf = s => sum(s.items, it => (it.cost || 0) * it.qty);
-const isOwner = () => S.me.role === 'owner';
-const can = what => {
-  if (isOwner()) return true;
-  return ['pos', 'mysales', 'stock', 'purchases'].includes(what);
-};
+

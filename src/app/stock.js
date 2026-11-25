@@ -17,7 +17,7 @@ function expBadge(p) {
 function renderInventory() {
   const list = S.products;
   $('#invCount').textContent = list.length;
-  $('#invValue').closest('.stat').hidden = !isOwner();
+  $('#invValue').closest('.stat').hidden = false;
   $('#invValue').textContent = fmt(sum(list, p => p.cost * p.qty));
   $('#invLow').textContent = list.filter(p => p.qty > 0 && p.qty <= p.reorder).length;
   $('#invOut').textContent = list.filter(p => p.qty === 0).length;
@@ -40,20 +40,20 @@ function renderInvList() {
     '<tr data-open="' + p.id + '" style="cursor:pointer">' +
     '<td><b>' + esc(p.name) + '</b><div class="hint">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div></td>' +
     '<td class="num">' + p.qty + ' <span class="hint">' + esc(p.unit) + 's</span></td>' +
-    (isOwner() ? '<td class="num">' + fmt(p.cost) + '</td>' : '') +
+    '<td class="num">' + fmt(p.cost) + '</td>' +
     '<td class="num">' + fmt(p.price) + '</td>' +
-    (isOwner() ? '<td class="num">' + fmt(p.price - p.cost) + '</td>' : '') +
+    '<td class="num">' + fmt(p.price - p.cost) + '</td>' +
     '<td>' + stockBadge(p) + (p.exp ? ' <span class="hint">' + (expBadge(p) || 'exp ' + p.exp) + '</span>' : '') + '</td>' +
     '</tr>').join('');
 
   $('#invList').innerHTML =
     '<div class="tablewrap desk"><table><thead><tr><th>Product</th><th>Qty</th>' +
-    (isOwner() ? '<th>Cost</th>' : '') + '<th>Price</th>' + (isOwner() ? '<th>Margin</th>' : '') + '<th>Status</th></tr></thead>' +
+    '<th>Cost</th><th>Price</th><th>Margin</th><th>Status</th></tr></thead>' +
     '<tbody>' + rows.replace(/<tr data-open="([^"]+)"/g, '<tr data-openrows="$1"') + '</tbody></table></div>' +
     '<div class="cards-mobile">' + list.map(p =>
       '<div class="rowcard"><div class="top"><div style="min-width:0"><div class="ttl">' + esc(p.name) + '</div>' +
       '<div class="meta">' + esc(p.sku) + ' · ' + fmt(p.price) + ' per ' + esc(p.unit) +
-      (isOwner() ? ' · cost ' + fmt(p.cost) : '') + '</div></div>' +
+      ' · cost ' + fmt(p.cost) + '</div></div>' +
       '<div class="amt">' + p.qty + '<small style="font-size:10px;color:var(--ink-muted)"> ' + esc(p.unit) + '</small></div></div>' +
       '<div class="bottom">' + stockBadge(p) + (expBadge(p) ? ' ' + expBadge(p) : '') +
       '<button class="btn secondary sm" data-edit="' + p.id + '">' + icon('pencil', 'sm') + 'Adjust</button></div></div>').join('') + '</div>';
@@ -111,7 +111,7 @@ function openProduct(id) {
             { label: 'Keep it' },
             { label: 'Remove', onClick: () => {
               S.products = S.products.filter(x => x.id !== p.id);
-              S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Removed ' + p.name, detail: 'Was ' + fmt(p.price) });
+              S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Removed ' + p.name, detail: 'Was ' + fmt(p.price) });
               closeSheet(); renderInventory(); toast('Removed ' + p.name);
             }}
           ]
@@ -150,7 +150,7 @@ function saveProduct(p) {
   };
   if (p) Object.assign(p, data);
   else S.products.push(Object.assign({ id: 'p' + (S.products.length + 1) + 'x' }, data));
-  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: (p ? 'Edited ' : 'Added ') + name, detail: p ? 'Stock now ' + data.qty : 'Opening stock ' + data.qty });
+  S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: (p ? 'Edited ' : 'Added ') + name, detail: p ? 'Stock now ' + data.qty : 'Opening stock ' + data.qty });
   closeSheet();
   renderInventory();
   toast(p ? 'Saved ' + name : 'Added ' + name, 'good');
@@ -182,7 +182,7 @@ document.addEventListener('click', e => {
   if (rec) {
     const po = S.pos.find(x => x.no === rec.dataset.receive);
     po.status = 'received';
-    S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Received ' + po.no, detail: fmt(po.total) + ' from ' + sup(po.supplier).name });
+    S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Received ' + po.no, detail: fmt(po.total) + ' from ' + sup(po.supplier).name });
     renderPurchases();
     toast(po.no + ' marked received, stock updated', 'good');
   }
@@ -213,7 +213,7 @@ document.addEventListener('click', e => {
         const s = S.suppliers.find(x => x.name === supName);
         const total = (Number($('#poQty').value) || 0) * (Number($('#poCost').value) || 0);
         S.pos.push({ no: 'PO-' + (1046 + S.pos.length), supplier: s.id, at: ymd(today()), status: 'draft', total, lines: 1 });
-        S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Created purchase order', detail: supName + ', ' + fmt(total) });
+        S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Created purchase order', detail: supName + ', ' + fmt(total) });
         closeSheet(); renderPurchases(); toast('Draft order saved');
       }}]
     });

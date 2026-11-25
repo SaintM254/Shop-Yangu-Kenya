@@ -11,10 +11,10 @@
     "period": "month",
     "trial_days": 14,
     "includes": [
-      "Unlimited sales, products and staff accounts",
+      "Unlimited sales, products and receipts",
       "M-Pesa prompts sent from the till, at no extra charge",
       "Receipts, daily reports and stock that keeps itself right",
-      "Use it on as many phones and laptops as your shop needs"
+      "One login for the shop, on the phones and laptops you use at the counter"
     ],
     "card_title": "Start Today",
     "card_cta": {
@@ -65,7 +65,7 @@
     {
       "icon": "receipt",
       "title": "A receipt you can hand over",
-      "body": "Every sale prints a proper receipt with your shop name, KRA PIN, VAT and the cashier's name. Print it at the counter, or save it as a PDF and send it on WhatsApp."
+      "body": "Every sale prints a proper receipt with your shop name, KRA PIN, VAT and the total. Print it at the counter, or save it as a PDF and send it on WhatsApp."
     },
     {
       "icon": "box",
@@ -258,8 +258,8 @@
     "email": "owner@shopyangu.co.ke",
     "password": "Owner@2026",
     "name": "Wanjiku Kamau",
-    "role": "Owner",
+    "role": "Shop owner",
     "shop": "Shop Yangu Kenya · Mombasa Branch",
-    "note": "Demo account. The app in this repository runs entirely in the browser, so this sign-in demonstrates the flow rather than protecting anything."
+    "note": "Demo account. One login per shop: this account is the shop's only sign-in, and everyone at the counter uses it. The app in this repository runs entirely in the browser, so this sign-in demonstrates the flow rather than protecting anything."
   }
 }

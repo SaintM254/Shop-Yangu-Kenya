@@ -8,8 +8,8 @@ const RENDER = {
 
 let saleFilter = 'All';
 function renderSales() {
-  /* sales users see only the receipts they took */
-  const mine = isOwner() ? S.sales : S.sales.filter(s => s.cashier === S.me.name);
+  /* one login per shop, so every receipt in the shop is in view */
+  const mine = S.sales;
   const list = mine.filter(s => {
     if (saleFilter === 'All') return true;
     if (saleFilter === 'On credit') return s.credit > 0;
@@ -33,7 +33,7 @@ function renderSales() {
     const c = cust(s.customer);
     return '<div class="rowcard"><div class="top"><div style="min-width:0">' +
       '<div class="ttl">' + esc(s.no) + ' <span class="hint">' + clock(new Date(s.at)) + '</span></div>' +
-      '<div class="meta">' + dmy(new Date(s.at)) + ' · ' + esc(s.customer_name || (c ? c.name : 'Walk-in')) + ' · ' + esc(s.cashier) + '</div></div>' +
+      '<div class="meta">' + dmy(new Date(s.at)) + ' · ' + esc(s.customer_name || (c ? c.name : 'Walk-in')) + '</div></div>' +
       '<div class="amt">' + fmt(s.total) + '</div></div>' +
       '<div class="bottom"><div style="display:flex;gap:5px;flex-wrap:wrap;min-width:0">' +
       s.paid.map(p => '<span class="pill info">' + esc(p.m) + '</span>').join('') +
