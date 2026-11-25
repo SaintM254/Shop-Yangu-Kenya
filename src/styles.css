@@ -267,10 +267,11 @@ a:hover {
   color: var(--syk);
 }
 
-/* The footer sits on the dark band, so the same mark is drawn in cream. It
-   is the artwork itself — no plate behind it in either place. */
+/* In the footer the mark is the shop's teal, not cream: it is the one place the
+   artwork sits on sand rather than on navy, and teal is what the palette uses
+   for the brand on light ground. */
 .brand__mark--light {
-  color: var(--cream);
+  color: var(--syk);
 }
 
 .brand__text {
@@ -1481,151 +1482,124 @@ a:hover {
    because without them there is no way in. Lost once to a CSS sweep; every
    selector in build.js's loginPage() has a rule here. */
 
-.page-auth .hdr__nav {
+/* The login page has no marketing around it and no second way in: the card is
+   the page. The header keeps the brand and drops the button that would lead
+   back to itself. */
+.page-auth .hdr__nav,
+.page-auth .hdr__cta {
   display: none;
 }
 
+/* ============================================================ log in / sign up
+   One card, centred, with two tabs. The page has exactly one job — get the shop
+   inside — so there is no second column of marketing, no bullet list and no
+   paragraph about what the product does. The demo details sit under the login
+   fields where they are needed, and they are easy to delete later: they are one
+   block, `.authdemo`.
+   ========================================================================== */
+
 .auth {
   background: var(--cream);
-  border-bottom: 1px solid var(--sand);
-  padding: clamp(28px, 5vw, 64px) 0 clamp(40px, 6vw, 80px);
-}
-
-.auth__in {
-  display: grid;
-  gap: 28px;
-  align-items: start;
-}
-
-@media (min-width: 900px) {
-  .auth__in {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
-    gap: 56px;
-    align-items: start;
-  }
-}
-
-.auth__aside {
-  max-width: 46ch;
-}
-
-.auth__title {
-  font-size: clamp(30px, 4.6vw, 46px);
-  line-height: 1.04;
-  letter-spacing: -0.035em;
-  font-weight: 700;
-  color: var(--syk-dark);
-}
-
-.auth__lede {
-  margin-top: 12px;
-  font-size: 16.5px;
-  line-height: 1.6;
-  color: var(--ink-muted);
-}
-
-.auth__list {
-  list-style: none;
-  margin: 26px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0;
-  border-top: 1px solid var(--sand);
-}
-
-.auth__list li {
+  padding: clamp(24px, 5vw, 56px) 16px clamp(32px, 6vw, 72px);
   display: flex;
+  justify-content: center;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--sand);
-  font-size: 14.5px;
-  line-height: 1.5;
-  color: var(--ink);
+  min-height: 60vh;
 }
 
-.auth__list .ic {
-  flex: none;
-  margin-top: 2px;
-  color: var(--syk);
-}
-
-/* The demo account: a card the reader can copy from, not a fixture. */
-.auth__demo {
-  margin-top: 26px;
-  padding: 18px;
-  border: 0;
-  border-radius: var(--r-panel);
+.authcard {
+  width: 100%;
+  max-width: 428px;
   background: var(--surface);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-2);
+  padding: clamp(22px, 4vw, 32px);
+}
+
+.authcard__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+/* The installable app's icon, drawn at the size a launcher would use. It is a
+   rounded plate because that is what a home screen shows, and it is the same
+   artwork the manifest points at. */
+.authicon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  overflow: hidden;
+  display: block;
   box-shadow: var(--shadow-1);
 }
 
-.auth__demo-h {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--syk);
+.authicon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-.auth__demo-h .ic {
-  color: var(--syk);
-}
-
-.auth__demo-list {
-  margin: 12px 0 0;
-  display: grid;
-  gap: 0;
-}
-
-.auth__demo-list > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--sand-soft);
-}
-
-.auth__demo-list dt {
-  font-size: 12.5px;
+.authcard__shop {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--ink-muted);
 }
 
-.auth__demo-list dd {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--syk-dark);
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.auth__demo .btn {
-  margin-top: 14px;
-}
-
-.auth__card {
-  border: 0;
-  border-radius: var(--r-panel);
-  background: var(--surface);
-  padding: clamp(18px, 3vw, 28px);
-  box-shadow: var(--shadow-2);
-}
-
-@media (min-width: 900px) {
-  .auth__card {
-    padding: 28px;
-  }
-}
-
-.auth__form {
+/* ---- the tabs ---------------------------------------------------------- */
+.authtabs {
   display: grid;
-  gap: 18px;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 18px 0 20px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--cream);
 }
 
+.authtab {
+  appearance: none;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 40px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.authtab:hover {
+  color: var(--ink);
+}
+
+.authtab.is-on {
+  background: var(--surface);
+  color: var(--syk-dark);
+  box-shadow: var(--shadow-1);
+}
+
+.authtab:focus-visible {
+  outline: 2px solid var(--syk);
+  outline-offset: 2px;
+}
+
+/* ---- the two panels ---------------------------------------------------- */
+.authform {
+  display: grid;
+  gap: 14px;
+}
+
+.authform[hidden] {
+  display: none;
+}
+
+/* ---- the form primitives (shared with every other form on the site) ---- */
 .field-group {
   display: grid;
   gap: 7px;
@@ -1713,16 +1687,6 @@ a:hover {
   background: var(--cream-deep);
   color: var(--syk-dark);
 }
-
-.auth__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 14px;
-  margin-top: -4px;
-}
-
 .check {
   display: inline-flex;
   align-items: center;
@@ -1739,30 +1703,6 @@ a:hover {
   cursor: pointer;
 }
 
-.auth__help {
-  font-size: 12.5px;
-  color: var(--ink-muted);
-}
-
-.auth__error {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 11px 13px;
-  border: 1px solid var(--danger);
-  border-radius: var(--r-input);
-  background: var(--danger-tint);
-  color: var(--danger);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.auth__fine {
-  font-size: 12.5px;
-  color: var(--ink-muted);
-  text-align: center;
-}
-
 .btn--lg {
   padding: 15px 24px;
   font-size: 15.5px;
@@ -1773,105 +1713,74 @@ a:hover {
   width: 100%;
 }
 
-.auth__done {
-  display: grid;
-  gap: 14px;
-  justify-items: start;
-  text-align: left;
+.autherror {
+  margin-top: 2px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--danger-tint);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
-.auth__tick {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--primary-tint);
-  color: var(--primary);
+.authcheck {
+  margin-top: -2px;
 }
 
-.auth__done-h {
-  font-size: 22px;
-  letter-spacing: -0.025em;
-  color: var(--syk-dark);
-}
-
-.auth__done-p {
-  font-size: 14px;
-  line-height: 1.55;
+.authfine {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--ink-muted);
+  text-align: center;
 }
 
-.auth__done .btn + .btn {
-  margin-top: -4px;
+/* ---- the demo block ----------------------------------------------------
+   This is the one part to delete when the demo is over: remove `.authdemo`
+   from loginPage() in build.js and nothing else changes.
+   ---------------------------------------------------------------------- */
+.authdemo {
+  margin-top: 6px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  background: var(--cream);
 }
 
-/* the inline demo card carries the logo, so the page feels like the till */
-.auth__brand {
-  display: inline-flex;
+.authdemo__h {
+  display: flex;
   align-items: center;
-  gap: 11px;
-  margin-bottom: 18px;
-  text-decoration: none;
-  color: var(--syk-dark);
-}
-
-.auth__brand svg.auth__mark {
-  width: 26px;
-  height: 30px;
-  flex: none;
-  color: var(--syk);
-}
-
-.auth__brand span {
-  font-size: 12.5px;
+  gap: 6px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--syk);
-}
-
-.auth__cardhead {
-  margin-bottom: 20px;
-}
-
-.auth__cardh {
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: var(--syk-dark);
-}
-
-.auth__cardp {
-  margin-top: 6px;
-  font-size: 13px;
-  line-height: 1.5;
   color: var(--ink-muted);
 }
 
-/* On a phone the list is the first thing to go: the demo details are what the
-   reader actually needs, and the card must not start below the fold. */
-@media (max-width: 899px) {
-  .auth__list {
-    display: none;
-  }
-
-  .auth__title {
-    font-size: 32px;
-  }
-
-  .auth__demo {
-    margin-top: 18px;
-  }
+.authdemo__h .ic {
+  color: var(--syk);
 }
 
-@media (min-width: 900px) {
-  .auth__aside {
-    position: sticky;
-    top: 24px;
-  }
+.authdemo__list {
+  margin: 8px 0 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.authdemo__list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+}
+
+.authdemo__list dt {
+  color: var(--ink-muted);
+}
+
+.authdemo__list dd {
+  font-weight: 600;
+  color: var(--ink);
 }
 
 /* ------------------------------------------------------------- the mark

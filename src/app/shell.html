@@ -8,17 +8,22 @@
         <span class="railbrand__mark" aria-hidden="true"><svg class="ic"><use href="#i-logo"/></svg></span>
         <span class="railbrand__text"><strong>Shop Yangu</strong><span>Kenya</span></span>
       </a>
-      <div class="railact">
-        <button class="railtoggle" id="railToggle" type="button" aria-expanded="true" aria-controls="rail"
-                aria-label="Collapse the menu" title="Collapse the menu">
-          <svg class="ic"><use href="#i-panel-left"/></svg>
-        </button>
-        <button class="iconbtn signoutbtn" id="signOutBtn" type="button" data-signout aria-label="Sign out" title="Sign out">
-          <svg class="ic"><use href="#i-log-out"/></svg>
-        </button>
-      </div>
+      <!-- Sign out owns the top-right corner of the rail. The collapse control
+           is not beside it: the two must never be confused under a thumb. -->
+      <button class="signoutbtn" id="signOutBtn" type="button" data-signout
+              aria-label="Sign out" title="Sign out">
+        <svg class="ic"><use href="#i-log-out"/></svg>
+      </button>
     </div>
     <div class="raillinks" id="railLinks"></div>
+    <!-- The collapse control lives at the foot of the rail, on the same edge as
+         the nav items it folds away. It is the only thing down here. -->
+    <div class="railfootbar">
+      <button class="railtoggle" id="railToggle" type="button" aria-expanded="true" aria-controls="rail"
+              aria-label="Collapse the menu" title="Collapse the menu">
+        <svg class="ic"><use href="#i-panel-left"/></svg>
+      </button>
+    </div>
   </nav>
 
   <!-- ============ phone top bar ============ -->

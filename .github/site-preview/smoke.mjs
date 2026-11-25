@@ -99,7 +99,8 @@ for (const page of PAGES) {
       await tab.fill('#email', 'owner@shopyangu.co.ke');
       await tab.fill('#password', 'Owner@2026');
       await tab.click('#loginBtn');
-      await tab.locator('#loginDone a[href$="dashboard/"]').click();
+      /* Correct details go straight into the shop: there is no "you're in"
+         card and no second button between the password and the till. */
       await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
       await tab.waitForTimeout(300);
     }
@@ -310,11 +311,26 @@ for (const page of PAGES) {
       await tab.waitForTimeout(150);
       if (await tab.locator('#loginError').isHidden()) fail('login: a wrong password was not refused');
 
+      /* Two tabs, one card, nothing else: no marketing column. */
+      if (await tab.locator('.authtab').count() !== 2) fail('login: expected exactly two tabs');
+      if (await tab.locator('#loginForm').isHidden()) fail('login: the login panel is not the one shown');
+      await tab.click('#tabSignup');
+      await tab.waitForTimeout(120);
+      if (await tab.locator('#signupForm').isHidden()) fail('login: the Sign up tab did not switch panels');
+      if (!(await tab.locator('#loginForm').isHidden())) fail('login: both panels are showing at once');
+      await tab.click('#tabLogin');
+      await tab.waitForTimeout(120);
+      if (await tab.locator('.auth__aside, .auth__title').count()) {
+        fail('login: the old marketing column is still on the page');
+      }
+      /* The app's own icon is on the page that installs the app. */
+      if (!(await tab.locator('.authicon svg').count())) fail('login: the app icon is missing');
+
       await tab.fill('#password', 'Owner@2026');
       await tab.click('#loginBtn');
-      await tab.waitForTimeout(200);
-      if (await tab.locator('#loginDone').isHidden()) fail('login: the demo credentials did not sign in');
-      if (!(await tab.locator('#loginDone a[href$="dashboard/"]').count())) fail('login: no way through to the shop');
+      /* Straight in: no intermediate card to click through. */
+      await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
+      if (await tab.locator('#loginDone').count()) fail('login: an intermediate sign-in card came back');
     }
 
     /* Every internal link on the page must resolve. */
@@ -388,8 +404,6 @@ try {
   await tab.fill('#email', 'owner@shopyangu.co.ke');
   await tab.fill('#password', 'Owner@2026');
   await tab.click('#loginBtn');
-  await tab.waitForTimeout(250);
-  await tab.locator('#loginDone a[href$="dashboard/"]').click();
   await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
   await tab.waitForTimeout(500);
   const booted = await tab.locator('#rail .navlink').count();
@@ -410,7 +424,6 @@ try {
   await tab.fill('#email', 'owner@shopyangu.co.ke');
   await tab.fill('#password', 'Owner@2026');
   await tab.click('#loginBtn');
-  await tab.locator('#loginDone a[href$="dashboard/"]').click();
   await tab.waitForURL(/\/dashboard\/$/, { timeout: 15_000 });
   await tab.waitForTimeout(400);
 
@@ -421,6 +434,25 @@ try {
   const bodyText = await tab.evaluate(() => document.body.innerText);
   if (!/Payment goal|Total Balance|Sales today/i.test(bodyText)) fail('app: dashboard did not paint');
   if (!/Ksh/.test(bodyText)) fail('app: no money rendered — the app did not boot');
+
+  /* Sign out owns the top-right corner of the rail and is not the collapse
+     control's neighbour: one is in the head, the other in the foot. */
+  const signOutBox = await tab.evaluate(() => {
+    const el = document.getElementById('signOutBtn');
+    const toggle = document.getElementById('railToggle');
+    if (!el || !toggle) return null;
+    const a = el.getBoundingClientRect(), b = toggle.getBoundingClientRect();
+    return { sx: a.x + a.width, sy: a.y, tx: b.x, ty: b.y,
+      railRight: document.getElementById('rail').getBoundingClientRect().right };
+  });
+  if (!signOutBox) fail('app: no sign-out control in the rail');
+  else {
+    if (signOutBox.railRight - signOutBox.sx > 24) {
+      fail(`app: sign out is ${Math.round(signOutBox.railRight - signOutBox.sx)}px from the rail's right edge`);
+    }
+    if (signOutBox.sy > 120) fail('app: sign out is not at the top of the rail');
+    if (Math.abs(signOutBox.ty - signOutBox.sy) < 40) fail('app: sign out sits beside the collapse button');
+  }
 
   /* The rail collapses, and the choice survives a reload. */
   await tab.click('#railToggle');
