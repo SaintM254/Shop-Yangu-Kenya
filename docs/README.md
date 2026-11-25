@@ -33,6 +33,13 @@ Reference, once you are running:
 | 9 | [Troubleshooting](09-troubleshooting.md) | Message → fix |
 | 10 | [For developers](10-for-developers.md) | The technical version, for whoever maintains the code |
 
+Two pages that answer questions the setup raises:
+
+| | Guide | For |
+|---|---|---|
+| 3b | [The settings, and what each one is for](03b-vercel-settings.md) | Which setting is to blame, and which ones you can ignore |
+| 3c | [Should I turn on Neon Auth?](03c-neon-auth.md) | No — and why, before you click the button next to your database |
+
 ---
 
 ## If you only read one page

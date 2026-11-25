@@ -101,7 +101,8 @@ every failure in the setup. The four that account for most of them:
 | Symptom | Cause | Fix |
 |---|---|---|
 | Every page is `404: NOT_FOUND` from Vercel | Wrong output directory | Set it to `dist` and redeploy |
-| `/api/health` is `500 FUNCTION_INVOCATION_FAILED` | `TOKEN_PEPPER` missing or empty | Add it, ticked for Production, then **Redeploy** |
+| `/api/health` shows an error page | `TOKEN_PEPPER` missing or empty | Add it, ticked for Production, then **Redeploy** |
+| `/api/health` says `"configured":false` | it names the missing setting | Add what it names, then **Redeploy** |
 | `/api/health` says `"ok":false` | `DATABASE_URL` wrong, or tables not built | Re-paste the pooled string; run `apply-all.sql` in Neon |
 | A setting changed but nothing happened | Settings are read at build time | **Deployments → ⋯ → Redeploy** |
 

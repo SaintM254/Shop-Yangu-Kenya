@@ -118,6 +118,10 @@ These are for reference once you are running, not for setup:
 - [eTIMS and KRA](07-etims.md) — what is finished, and what is not yet
 - [How much this costs](08-cost-and-limits.md) — free-plan limits, honestly
 - [Troubleshooting](09-troubleshooting.md) — message → fix
+- [The settings](03b-vercel-settings.md) — what each one does, and which you can
+  ignore
+- [Neon Auth](03c-neon-auth.md) — the Auth button next to your database: leave
+  it alone, and here is why
 - [For developers](10-for-developers.md) — the technical version, if you are
   handing this to someone who codes
 

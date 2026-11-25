@@ -148,6 +148,71 @@ for (const [label, url] of shapes) {
   ok('a hostile __path is not followed', res._out.status === 404, `status ${res._out.status}`);
 }
 
+/* 5b. A deployment with a setting missing must still answer /api/health.
+
+      This is the failure that is hardest to debug in real life: the function
+      used to throw while being imported, so the host answered with its own
+      error page, the health check was "unavailable", and the person had no way
+      to find out which setting was wrong. The only acceptable behaviour is a
+      200 that names it.
+
+      The module is imported fresh with a cleared pepper, to get the state a
+      cold start on a misconfigured deployment actually sees. */
+{
+  /* config.js snapshots the environment once, at import, so the way to simulate
+     a deployment with the variable missing is to empty the value the server
+     actually reads. It is a plain object; this is a documented property, not a
+     private one. */
+  const { env } = await import('../_lib/config.js');
+  const saved = env.TOKEN_PEPPER;
+  env.TOKEN_PEPPER = '';
+
+  try {
+    const fresh = await import('../server.js');
+    const out = { status: 0, body: null, headers: {} };
+    const res = {
+      status(c) { out.status = c; return this; },
+      writeHead(c) { out.status = c; return this; },
+      setHeader(k, v) { out.headers[k.toLowerCase()] = v; },
+      send(b) { out.body = b; },
+      end(b) { if (b !== undefined) out.body = b; },
+    };
+    await fresh.handleRequest(
+      { method: 'GET', url: '/api/health', headers: {}, on() {}, destroy() {}, socket: {} },
+      res
+    );
+    const health = safeJson(out.body);
+    ok('a missing setting does not crash the function', out.status === 200, `status ${out.status}`);
+    ok('health names the missing setting', health && health.configured === false &&
+      Array.isArray(health.missing) && health.missing.some((m) => m.name === 'TOKEN_PEPPER'),
+      health && health.missing ? JSON.stringify(health.missing.map((m) => m.name)) : 'configured, so nothing named');
+
+    /* And another route refuses with something a person can read. */
+    const out2 = { status: 0, body: null, headers: {} };
+    const res2 = {
+      status(c) { out2.status = c; return this; },
+      writeHead(c) { out2.status = c; return this; },
+      setHeader(k, v) { out2.headers[k.toLowerCase()] = v; },
+      send(b) { out2.body = b; },
+      end(b) { if (b !== undefined) out2.body = b; },
+    };
+    /* A POST needs a body stream, or readJson() waits for one that never
+       ends. Readable.from gives it the 'data' and 'end' events it listens for. */
+    const { Readable } = await import('node:stream');
+    const postReq = Readable.from([Buffer.from(JSON.stringify({ email: 'demo@shopyangu.co.ke' }))]);
+    postReq.method = 'POST';
+    postReq.url = '/api/auth/signin';
+    postReq.headers = { 'content-type': 'application/json' };
+    postReq.socket = {};
+    await fresh.handleRequest(postReq, res2);
+    const refused = safeJson(out2.body);
+    ok('another route refuses with a readable 503', out2.status === 503 && /TOKEN_PEPPER/.test(refused && refused.error || ''),
+      `status ${out2.status}`);
+  } finally {
+    env.TOKEN_PEPPER = saved;
+  }
+}
+
 /* 6. The old-style response object (plain http.ServerResponse) must pass
       straight through untouched. */
 {
