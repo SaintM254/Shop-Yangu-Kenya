@@ -111,6 +111,10 @@ export default function (router) {
     let sentBy = 'ours';
     let codeForMail = result.code;
     let neonAccount = null;
+    /* Named in the response so the page — and whoever is debugging — can see
+       WHICH kind of code was sent. This is the difference between "no code
+       arrived" and "a code arrived but the page checked it the wrong way". */
+    let codeType = '';
 
     if (neonAuth.configured() && !result.existing) {
       /* The account first — the code cannot be sent to somebody Neon has never
@@ -126,9 +130,16 @@ export default function (router) {
         console.warn('[auth] Neon Auth sign-up did not happen:', neonAccount.code, neonAccount.error);
       }
 
-      const sent = await neonAuth.sendSignupCode(result.email, result.personName);
+      /* The type depends on whether Neon already considers the address
+         verified. With "Verify at Sign-up" ON in the Neon console, it does —
+         and asking for an 'email-verification' code then sends nothing at all.
+         That is the reported symptom: a successful request and no email. */
+      const sent = await neonAuth.sendSignupCode(result.email, result.personName, {
+        verified: Boolean(neonAccount.emailVerified),
+      });
       if (sent.ok) {
         sentBy = 'neon-auth';
+        codeType = sent.type || '';
         /* Never put a live code in a response, and do not put one we did not
            send into an email either. */
         codeForMail = null;
@@ -155,6 +166,11 @@ export default function (router) {
       next: 'verify',
       shopName: result.shopName,
       sentBy,
+      codeType,
+      /* Whether Neon considers the address already verified. With "Verify at
+         Sign-up" ON it is true as soon as the account is created, which is why
+         no verification code is ever requested for it. */
+      verifiedAtNeon: Boolean(neonAccount && neonAccount.emailVerified),
       /* Named for the docs and the test suite: whether a Neon account exists
          for this person. It says nothing about a password. */
       neonAccount: neonAccount ? (neonAccount.ok ? 'created' : neonAccount.existed ? 'already' : 'none') : 'off',
@@ -247,6 +263,11 @@ export default function (router) {
     const code = await auth.issueCode(login.id, 'signin');
     const { token } = await auth.issueLink(login.id, 'signin');
 
+    /* Day-to-day code sign-in stays OURS, deliberately: the code is tied to a
+       login row and therefore to a shop, and Neon knows nothing about shops. So
+       this path always reports `sentBy: 'ours'` and never depends on Neon. */
+    const sentBy = 'ours';
+
     const mail =
       login.role === 'super_admin'
         ? emails.adminSigninEmail({
@@ -265,7 +286,7 @@ export default function (router) {
 
     await sendMail({ ...mail, to: email });
 
-    return { ok: true, next: 'verify', email, role: login.role };
+    return { ok: true, next: 'verify', email, role: login.role, sentBy };
   });
 
   router.post('/api/auth/signin/verify', async (req, res) => {

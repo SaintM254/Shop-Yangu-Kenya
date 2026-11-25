@@ -167,35 +167,77 @@ function readable(error) {
 
 /* ------------------------------------------------------- what the shop asks */
 
-/* "Email this person a code they can use to verify their address." */
-export async function sendSignupCode(email, name) {
+/* "Email this person a code they can use to prove the address is theirs."
+
+   WHICH TYPE, AND WHY IT MATTERS.
+
+   Better Auth has two kinds of emailed code, and they are not interchangeable:
+
+     type: 'email-verification'  confirms an address while creating an account
+     type: 'sign-in'             signs in somebody who already has an account
+
+   An address that is ALREADY VERIFIED is not sent a sign-up verification code.
+   That is documented behaviour, and it is the exact symptom of "the app is not
+   requesting the OTP": the request succeeds, nothing is sent, and the API
+   answers {"success": true}.
+
+   It happens routinely, because turning on "Verify at Sign-up" in the Neon
+   console means signUp.email() itself marks the user verified. So by the time
+   we ask, there is nothing left to verify.
+
+   `verified` therefore decides the type. The caller gets it from
+   signUpWithPassword(). Pass the wrong one and no email arrives. */
+export async function sendSignupCode(email, name, { verified = false } = {}) {
   const auth = await client();
   if (!auth) return { ok: false, code: 'NOT_CONFIGURED', error: 'Neon Auth is not configured.' };
 
-  return attempt(() =>
+  const type = verified ? 'sign-in' : 'email-verification';
+
+  const result = await attempt(() =>
     auth.emailOtp.sendVerificationOtp({
       email: String(email || '').trim().toLowerCase(),
-      type: 'email-verification',
+      type,
       /* Better Auth's sendVerificationOTP hook receives `name` on some versions
          and not others; passing it is harmless and lets Neon personalise the
          email when it does. */
       name: name || undefined,
     })
   );
+
+  return { ...result, type };
 }
 
-/* "Is this the code we sent when they signed up?" */
+/* "Is this the code we sent when they signed up?"
+
+   Tries BOTH kinds, because the type is not known here — it is decided by the
+   branch's settings, not by this shop. Verified against a real Better Auth
+   server:
+
+     /email-otp/verify-email  accepts an 'email-verification' code
+                              REJECTS a 'sign-in' code with 400 Invalid OTP
+     /sign-in/email-otp       accepts a 'sign-in' code
+
+   So one endpoint is not enough. Trying verification first keeps the strict
+   guarantee for a fresh sign-up: the address really was proved. Falling through
+   to the sign-in check covers the already-verified case, where Neon sends a
+   sign-in code instead.
+
+   Neither call can throw; a wrong code is `false`, not an exception. */
 export async function verifySignupCode(email, code) {
   const auth = await client();
   if (!auth || !code) return false;
 
-  const result = await attempt(() =>
-    auth.emailOtp.verifyEmail({
-      email: String(email || '').trim().toLowerCase(),
-      otp: String(code || '').trim(),
-    })
-  );
-  return result.ok === true;
+  const clean = String(email || '').trim().toLowerCase();
+  const otp = String(code || '').trim();
+
+  const asVerification = await attempt(() => auth.emailOtp.verifyEmail({ email: clean, otp }));
+  if (asVerification.ok) return true;
+
+  const asSignIn = await attempt(() => auth.signIn.emailOtp({ email: clean, otp }));
+
+  /* A sign-in code that is accepted also means the inbox was reachable, which is
+     the whole point of the first code. */
+  return asSignIn.ok === true;
 }
 
 /* "Email a sign-in code." Used for the way back in when a password is lost. */
@@ -255,10 +297,34 @@ export async function signUpWithPassword({ email, password, name }) {
   const result = await attempt(() =>
     auth.signUp.email({ email: clean, password: String(password), name: String(name || clean) })
   );
-  if (result.ok) return { ok: true, existed: false, user: result.data?.user || null };
+  if (result.ok) {
+    const user = result.data?.user || null;
+    return {
+      ok: true,
+      existed: false,
+      user,
+      /* THE FACT THAT DECIDES WHICH CODE TO SEND.
+
+         With "Verify at Sign-up" ON, Neon marks the user verified as part of
+         this call, and may email a code of its own. An already-verified user
+         never gets a sign-up verification code — that is documented Better Auth
+         behaviour, not a fault. So the type of code we ask for depends on this
+         flag, and asking for the wrong one is exactly how "the app is not
+         requesting the OTP" happens. */
+      emailVerified: Boolean(user?.emailVerified),
+    };
+  }
 
   const alreadyThere = /already|exists|registered/i.test(result.error || '');
-  return { ok: false, existed: alreadyThere, error: result.error, code: result.code };
+  return {
+    ok: false,
+    existed: alreadyThere,
+    error: result.error,
+    code: result.code,
+    /* An address that already exists at Neon has usually verified its inbox
+       already, by definition of having used it before. */
+    emailVerified: alreadyThere,
+  };
 }
 
 /* "Is this the right password?" True only on a real yes.
