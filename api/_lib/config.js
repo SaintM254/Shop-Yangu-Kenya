@@ -122,8 +122,27 @@ export const env = {
   MPESA_TIMEOUT_SECONDS: Number(raw.MPESA_TIMEOUT_SECONDS || 60),
 
   /* Set to a real value in production. Used to sign nothing (JWTs are not
-     used) but to derive the hash key for session tokens. */
-  TOKEN_PEPPER: required('TOKEN_PEPPER'),
+     used) but to derive the hash key for session tokens.
+
+     Only the server needs this: it is what makes a session token unforgeable.
+     The setup scripts (db-migrate, db-seed, make-super-admin) never touch a
+     token, and making them demand it would be a password prompt with no
+     purpose — so they are allowed to import this module without one. If a
+     token is ever minted without a pepper, signToken() refuses. */
+  TOKEN_PEPPER: raw.TOKEN_PEPPER || '',
 };
+
+/* The server will not start without a pepper. Imported by server.js and by
+   api/index.js, so a deploy with the variable missing fails loudly at cold
+   start rather than signing tokens with an empty key. */
+export function requirePepper() {
+  if (!env.TOKEN_PEPPER) {
+    throw new Error(
+      'Missing TOKEN_PEPPER. Copy api/.env.example to api/.env and fill it in — ' +
+        'docs/01-neon.md walks through every value.'
+    );
+  }
+  return env.TOKEN_PEPPER;
+}
 
 export const isProd = env.NODE_ENV === 'production';

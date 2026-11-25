@@ -15,10 +15,24 @@
 
 import path from 'node:path';
 import url from 'node:url';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import readline from 'node:readline/promises';
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
+
+/* The scripts sit outside api/, and npm puts the API's packages in
+   api/node_modules. Resolving from api/package.json finds them wherever npm
+   decided to hoist them — root or workspace — instead of depending on which. */
+const apiRequire = createRequire(path.join(root, 'api', 'package.json'));
+const apiModule = async (name) => {
+  const mod = await import(pathToFileURL(apiRequire.resolve(name)).href);
+  /* A CommonJS package imported by URL arrives wrapped in `default`, which
+     named imports would hide. Unwrap so both shapes look the same. */
+  return mod && mod.default && !mod.neon ? { ...mod.default, ...mod } : mod;
+};
+
 
 process.chdir(path.join(root, 'api'));
 const { env } = await import('../api/_lib/config.js');
@@ -41,7 +55,7 @@ if (!env.DATABASE_URL) {
   process.exit(1);
 }
 
-const { neon } = await import('@neondatabase/serverless');
+const { neon } = await apiModule('@neondatabase/serverless');
 const sql = neon(env.DATABASE_URL);
 
 const clean = email.trim().toLowerCase();

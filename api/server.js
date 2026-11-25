@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
-import { env, isProd } from './_lib/config.js';
+import { env, isProd, requirePepper } from './_lib/config.js';
 import * as db from './_lib/db.js';
 import {
   HttpError, Router, readJson, send, parseCookies, clientIp,
@@ -263,6 +263,11 @@ function log(status, method, pathname, started, rid) {
 
 const PORT = env.PORT;
 const HOST = env.HOST; /* 0.0.0.0 so the preview proxy can reach it */
+
+/* A missing pepper would sign tokens with an empty key, so refuse to run at
+   all. On Vercel this throws on the first request (a 500 in the logs, which is
+   the right kind of loud); here it throws on start. */
+requirePepper();
 
 /* On Vercel there is no port to listen on: the file in api/ is called once per
    request instead. The host sets VERCEL=1, so the server does not try. */

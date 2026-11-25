@@ -134,9 +134,9 @@ thing. You need Node.js installed (version 22 or newer) — type
 `node --version` to check.
 
 ```bash
-# in the repository folder
-cd api
-cp .env.example .env      # then open api/.env and fill in the two lines below
+# in the repository folder, not inside api/
+npm install               # once, at the root — this is the API's dependencies too
+cp api/.env.example api/.env   # then open api/.env and fill in the two lines below
 ```
 
 Open `api/.env` in any text editor and set:
@@ -155,8 +155,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Then:
 
 ```bash
-cd ..                     # back to the repository root
-npm install               # once
 node scripts/build-sql.js # writes the three apply-*.sql files
 npm run test:sql          # proves them against a real database
 node scripts/db-migrate.js --seed
@@ -214,8 +212,14 @@ It is in the left sidebar of the Neon console, inside your project — not on th
 dashboard, and not inside Connection Details.
 
 **Way B: `No DATABASE_URL`**
-`api/.env` does not exist or is empty. Run `cp .env.example .env` from inside
-`api/` first. The file must be called `.env` exactly — no `.txt` on the end.
+`api/.env` does not exist or is empty. From the repository root, run
+`cp api/.env.example api/.env` first. The file must be called `.env` exactly —
+no `.txt` on the end.
+
+**Way B: `Cannot find package '@neondatabase/serverless'`**
+`npm install` was run inside `api/` instead of at the top of the repository.
+Delete `api/node_modules` if it appeared, `cd` to the repository root, and run
+`npm install` there.
 
 ---
 

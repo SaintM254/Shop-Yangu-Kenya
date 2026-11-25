@@ -16,7 +16,7 @@
    file resolved. Two independent checks, on purpose.
 */
 
-import { env, isProd } from './config.js';
+import { env, isProd, requirePepper } from './config.js';
 import * as db from './db.js';
 import {
   cookie, hmac, randomCode, randomToken, sameHash, sha256,
@@ -28,8 +28,11 @@ import {
 /* Session tokens are stored as HMAC(pepper, token), not sha256(token): a
    plain hash of a known-format token is brute-forceable off a leaked dump,
    an HMAC needs the pepper, which lives in the environment. */
-const sessionHash = (token) => hmac(env.TOKEN_PEPPER, 'session:' + token);
-const codeHash = (loginId, code) => hmac(env.TOKEN_PEPPER, 'code:' + loginId + ':' + code);
+/* requirePepper() throws if it is missing, so a pepper-less process cannot
+   mint a token that any other process would honour. That is a louder, safer
+   failure than signing with an empty key. */
+const sessionHash = (token) => hmac(requirePepper(), 'session:' + token);
+const codeHash = (loginId, code) => hmac(requirePepper(), 'code:' + loginId + ':' + code);
 
 export const COOKIE_OPTS = {
   httpOnly: true,
@@ -212,7 +215,7 @@ export async function issueLink(loginId, purpose, { minutes = env.LINK_MINUTES }
   await db.query(
     `insert into login_tokens (login_id, token_hash, purpose, expires_at)
      values ($1, $2, $3, now() + ($4 || ' minutes')::interval)`,
-    [loginId, hmac(env.TOKEN_PEPPER, 'signinlink:' + token), purpose, String(minutes)]
+    [loginId, hmac(requirePepper(), 'signinlink:' + token), purpose, String(minutes)]
   );
   return { token, minutes };
 }
@@ -228,7 +231,7 @@ export async function redeemLink(token) {
         and consumed_at is null
         and expires_at > now()
       returning login_id, purpose`,
-    [hmac(env.TOKEN_PEPPER, 'signinlink:' + String(token))]
+    [hmac(requirePepper(), 'signinlink:' + String(token))]
   );
   if (!row) return null;
 
@@ -297,12 +300,12 @@ export async function startSignup({ email, shopName, personName }) {
   await db.query(
     `insert into login_codes (pending_id, code_hash, purpose, expires_at)
      values ($1, $2, 'signup', now() + ($3 || ' minutes')::interval)`,
-    [pending.id, hmac(env.TOKEN_PEPPER, 'pending:' + pending.id + ':' + code), String(minutes)]
+    [pending.id, hmac(requirePepper(), 'pending:' + pending.id + ':' + code), String(minutes)]
   );
   await db.query(
     `insert into login_tokens (pending_id, token_hash, purpose, expires_at)
      values ($1, $2, 'signup', now() + ($3 || ' minutes')::interval)`,
-    [pending.id, hmac(env.TOKEN_PEPPER, 'signuplink:' + token), String(env.LINK_MINUTES)]
+    [pending.id, hmac(requirePepper(), 'signuplink:' + token), String(env.LINK_MINUTES)]
   );
 
   return {
@@ -331,7 +334,7 @@ export async function finishSignupWithCode({ email, code }) {
       where pending_id = $1 and purpose = 'signup'
         and consumed_at is null and attempts < $2 and expires_at > now()
         and code_hash = $3`,
-    [pending.id, env.OTP_ATTEMPTS, hmac(env.TOKEN_PEPPER, 'pending:' + pending.id + ':' + String(code))]
+    [pending.id, env.OTP_ATTEMPTS, hmac(requirePepper(), 'pending:' + pending.id + ':' + String(code))]
   );
 
   if (!row) {
@@ -359,7 +362,7 @@ export async function finishSignupWithLink({ token }) {
       where token_hash = $1 and consumed_at is null and expires_at > now()
         and purpose = 'signup'
       returning pending_id`,
-    [hmac(env.TOKEN_PEPPER, 'signuplink:' + String(token || ''))]
+    [hmac(requirePepper(), 'signuplink:' + String(token || ''))]
   );
   if (!row || !row.pending_id) {
     throw badRequest('That link has expired or was already used. Start again.');
