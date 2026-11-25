@@ -621,6 +621,11 @@ table.t tbody tr:hover{background:var(--bg)}
   flex: none;
 }
 
+/* the till's way out sits last in the basket head, at the far right */
+.pos-ticket__head .screenout {
+  margin-left: 2px;
+}
+
 .pos-ticket__head .fold {
   display: none;
 }
@@ -1717,13 +1722,6 @@ img.logo {
   min-height: 44px;
 }
 
-/* Sign out is pinned to the top corner of the rail, clear of the collapse
-   button: the two destructive-adjacent controls are never neighbours. */
-.railhead .signoutbtn {
-  margin-left: auto;
-  flex: none;
-}
-
 .signoutbtn {
   width: 34px;
   height: 34px;
@@ -1739,6 +1737,41 @@ img.logo {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
   box-shadow: none;
+}
+
+/* On a screen's own head it sits on cream, at the far right: a soft plate with
+   a hairline, the same weight as the other quiet controls in the app. */
+.screenout {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: var(--shadow-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.screenout:hover,
+.screenout:focus-visible {
+  background: var(--surface);
+  color: var(--danger);
+  box-shadow: var(--shadow-2);
+}
+
+.screenout svg.ic {
+  width: 18px;
+  height: 18px;
+}
+
+/* On a phone the top bar already carries sign-out beside the bell, so the one
+   in the page head would be a second road to the same place. */
+@media (max-width: 899px) {
+  .screenout {
+    display: none;
+  }
 }
 
 /* In the phone bar it sits on cream beside the bell, so it takes the same white
@@ -1811,17 +1844,6 @@ img.logo {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.55);
-}
-
-/* The strip at the foot of the rail that holds the collapse control. It is
-   pinned: the links scroll above it, and nothing else lives down here. */
-.railfootbar {
-  flex: none;
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 4px 2px;
-  margin-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .railtoggle {
@@ -1914,16 +1936,6 @@ img.logo {
     flex-direction: column;
     gap: 10px;
     padding: 2px 0 14px;
-  }
-
-  .app[data-rail='closed'] .railhead .signoutbtn {
-    margin-left: 0;
-  }
-
-  /* the foot toggle is the one control down here, on the rail's centre line */
-  .app[data-rail='closed'] .railfootbar {
-    justify-content: center;
-    padding: 10px 0 0;
   }
 
   .app[data-rail='closed'] .nav {
