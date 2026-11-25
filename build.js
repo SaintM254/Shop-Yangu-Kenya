@@ -755,94 +755,164 @@ function writeRoute(route) {
 function loginPage() {
   const demo = content.demo_account;
   const markD = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
-  const logo = `<svg class="auth__mark" viewBox="0 0 636 722" role="img" aria-label="` +
-    escapeHtml(content.brand.name) + `"><path fill="currentColor" d="` + markD + `"/></svg>`;
+  /* The app's own icon, the one the home screen gets. This is the page that
+     installs the app, so it is the one page that should show it. */
+  const appIcon = `<span class="authicon" aria-hidden="true">` +
+    `<svg viewBox="0 0 512 512"><path fill="#1B4A63" d="M0 0h512v512H0z"/>` +
+    `<path fill="#FFF8E1" d="${markD}" transform="translate(102 79) scale(.485)"/></svg></span>`;
+
   const body = `<main id="main" class="auth">
-  <div class="wrap auth__in">
-    <div class="auth__aside">
-      <a class="auth__brand" href="../">${logo}<span>${escapeHtml(content.brand.name)}</span></a>
-      <h1 class="auth__title">Welcome back.</h1>
-      <p class="auth__lede">One login for the whole shop. Sign in to ring up a sale, check the drawer and see what sold today.</p>
-      <ul class="auth__list">
-        <li>${icon('smartphone', 'ic ic--sm')}<span>Sell with cash or M-Pesa, and split a payment across both.</span></li>
-        <li>${icon('receipt', 'ic ic--sm')}<span>Print the receipt as soon as the sale is paid.</span></li>
-        <li>${icon('box', 'ic ic--sm')}<span>Stock comes off the shelf by itself, every sale.</span></li>
-      </ul>
-      <div class="auth__demo">
-        <p class="auth__demo-h">${icon('lock', 'ic ic--sm')} Demo account</p>
-        <dl class="auth__demo-list">
+  <div class="authcard">
+    <header class="authcard__head">
+      ${appIcon}
+      <h1 class="authcard__shop">${escapeHtml(content.brand.name)}</h1>
+    </header>
+
+    <div class="authtabs" role="tablist" aria-label="Log in or sign up">
+      <button class="authtab" id="tabLogin" type="button" role="tab" aria-selected="true"
+              aria-controls="panelLogin" tabindex="0">Log in</button>
+      <button class="authtab" id="tabSignup" type="button" role="tab" aria-selected="false"
+              aria-controls="panelSignup" tabindex="-1">Sign up</button>
+    </div>
+
+    <form class="authtabpanel authform" id="loginForm" role="tabpanel" aria-labelledby="tabLogin" novalidate>
+      <div class="field-group">
+        <label class="label" for="email">Email address</label>
+        <div class="inputwrap">
+          ${icon('mail', 'ic ic--sm')}
+          <input class="field" id="email" name="email" type="email" inputmode="email"
+                 autocomplete="username" autocapitalize="none" spellcheck="false"
+                 placeholder="you@yourshop.co.ke" required />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="label" for="password">Password</label>
+        <div class="inputwrap">
+          ${icon('lock', 'ic ic--sm')}
+          <input class="field" id="password" name="password" type="password"
+                 autocomplete="current-password" placeholder="Your password" required />
+          <button type="button" class="reveal" id="reveal" aria-label="Show password" aria-pressed="false">
+            ${icon('eye', 'ic ic--sm')}
+          </button>
+        </div>
+      </div>
+
+      <label class="check authcheck">
+        <input type="checkbox" id="remember" checked />
+        <span>Keep me signed in</span>
+      </label>
+
+      <p class="autherror" id="loginError" role="alert" hidden></p>
+
+      <button class="btn btn--primary btn--lg btn--block" id="loginBtn" type="submit">
+        Log in${icon('arrow', 'ic ic--sm')}
+      </button>
+
+      <div class="authdemo">
+        <p class="authdemo__h">${icon('lock', 'ic ic--sm')} Demo account</p>
+        <dl class="authdemo__list">
           <div><dt>Email</dt><dd class="mono">${escapeHtml(demo.email)}</dd></div>
           <div><dt>Password</dt><dd class="mono">${escapeHtml(demo.password)}</dd></div>
         </dl>
         <button type="button" class="btn btn--ghost btn--sm" id="fillDemo">Fill these in for me</button>
       </div>
-    </div>
+    </form>
 
-    <div class="auth__card">
-      <div class="auth__cardhead">
-        <h2 class="auth__cardh">Log in</h2>
-        <p class="auth__cardp">This is the demo shop. One account signs the shop in — there are no staff logins to manage. Nothing is charged, and nothing leaves your browser.</p>
+    <form class="authtabpanel authform" id="signupForm" role="tabpanel" aria-labelledby="tabSignup" hidden novalidate>
+      <div class="field-group">
+        <label class="label" for="suShop">Shop name</label>
+        <div class="inputwrap">
+          ${icon('store', 'ic ic--sm')}
+          <input class="field" id="suShop" name="shop" type="text" autocomplete="organization"
+                 placeholder="Wanjiku's Duka" required />
+        </div>
       </div>
-      <form class="auth__form" id="loginForm" novalidate>
-        <div class="field-group">
-          <label class="label" for="email">Email address</label>
-          <div class="inputwrap">
-            ${icon('mail', 'ic ic--sm')}
-            <input class="field" id="email" name="email" type="email" inputmode="email"
-                   autocomplete="username" autocapitalize="none" spellcheck="false"
-                   placeholder="you@yourshop.co.ke" required />
-          </div>
+
+      <div class="field-group">
+        <label class="label" for="suName">Your name</label>
+        <div class="inputwrap">
+          ${icon('user-round', 'ic ic--sm')}
+          <input class="field" id="suName" name="name" type="text" autocomplete="name"
+                 placeholder="Wanjiku Kamau" required />
         </div>
-
-        <div class="field-group">
-          <label class="label" for="password">Password</label>
-          <div class="inputwrap">
-            ${icon('lock', 'ic ic--sm')}
-            <input class="field" id="password" name="password" type="password"
-                   autocomplete="current-password" placeholder="Your password" required />
-            <button type="button" class="reveal" id="reveal" aria-label="Show password" aria-pressed="false">
-              ${icon('eye', 'ic ic--sm')}
-            </button>
-          </div>
-        </div>
-
-        <div class="auth__row">
-          <label class="check">
-            <input type="checkbox" id="remember" checked />
-            <span>Keep me signed in</span>
-          </label>
-          <span class="auth__help">Forgot your password? It is the shop's only login.</span>
-        </div>
-
-        <p class="auth__error" id="loginError" role="alert" hidden></p>
-
-        <button class="btn btn--primary btn--lg btn--block" id="loginBtn" type="submit">
-          Log in${icon('arrow')}
-        </button>
-        <p class="auth__fine">The shop owner keeps this one login. Trouble signing in? The demo details are just above.</p>
-      </form>
-
-      <div class="auth__done" id="loginDone" hidden>
-        <span class="auth__tick" aria-hidden="true">${icon('check')}</span>
-        <h2 class="auth__done-h">You're in, ${escapeHtml(demo.name.split(' ')[0])}.</h2>
-        <p class="auth__done-p" id="loginDoneP">Signed in to ${escapeHtml(demo.shop)}.</p>
-        <a class="btn btn--primary btn--lg btn--block" href="../dashboard/">
-          Open the shop${icon('arrow')}
-        </a>
-        <button class="btn btn--ghost btn--block" type="button" id="signOut">Sign out</button>
       </div>
-    </div>
+
+      <div class="field-group">
+        <label class="label" for="suEmail">Email address</label>
+        <div class="inputwrap">
+          ${icon('mail', 'ic ic--sm')}
+          <input class="field" id="suEmail" name="email" type="email" inputmode="email"
+                 autocomplete="email" autocapitalize="none" spellcheck="false"
+                 placeholder="you@yourshop.co.ke" required />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="label" for="suPassword">Choose a password</label>
+        <div class="inputwrap">
+          ${icon('lock', 'ic ic--sm')}
+          <input class="field" id="suPassword" name="password" type="password"
+                 autocomplete="new-password" placeholder="At least 6 characters" required />
+        </div>
+      </div>
+
+      <p class="autherror" id="signupError" role="alert" hidden></p>
+
+      <button class="btn btn--primary btn--lg btn--block" id="signupBtn" type="submit">
+        Create the shop${icon('arrow', 'ic ic--sm')}
+      </button>
+      <p class="authfine">One login for the whole shop. No card, nothing charged while it is a demo.</p>
+    </form>
   </div>
 </main>
 <script>
 (function () {
+  /* The demo account. In the demo, signing in with it — or with the details a
+     visitor enters on Sign up — opens the shop straight away. */
   var DEMO = ${JSON.stringify({ email: demo.email, password: demo.password, name: demo.name, shop: demo.shop })};
-  var form = document.getElementById('loginForm');
-  var email = document.getElementById('email');
-  var password = document.getElementById('password');
-  var error = document.getElementById('loginError');
-  var done = document.getElementById('loginDone');
-  var btn = document.getElementById('loginBtn');
+  var KEY = 'syk-signed-in';
+
+  var tabs = {
+    login: { tab: document.getElementById('tabLogin'), panel: document.getElementById('loginForm') },
+    signup: { tab: document.getElementById('tabSignup'), panel: document.getElementById('signupForm') }
+  };
+
+  /* Nothing is shown between a correct password and the shop: no "you're in"
+     card, no second button. The form is the last thing seen. */
+  function enter(email, name) {
+    try {
+      sessionStorage.setItem(KEY, JSON.stringify({ email: email, name: name, at: Date.now() }));
+    } catch (_) {}
+    var next = new URLSearchParams(location.search).get('next');
+    /* only a route inside the app, never a link off the site */
+    var safe = next && /^[a-z]{2,12}$/.test(next) ? next : 'dashboard';
+    location.replace('../' + safe + '/');
+  }
+
+  function show(which) {
+    Object.keys(tabs).forEach(function (k) {
+      var on = k === which;
+      tabs[k].tab.setAttribute('aria-selected', String(on));
+      tabs[k].tab.setAttribute('tabindex', on ? '0' : '-1');
+      tabs[k].tab.classList.toggle('is-on', on);
+      tabs[k].panel.hidden = !on;
+    });
+    var first = tabs[which].panel.querySelector('input');
+    if (first) first.focus();
+  }
+
+  tabs.login.tab.onclick = function () { show('login'); };
+  tabs.signup.tab.onclick = function () { show('signup'); };
+
+  /* A tab list, not two links: arrow keys move between the two tabs. */
+  document.querySelector('.authtabs').addEventListener('keydown', function (ev) {
+    if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+    ev.preventDefault();
+    var to = tabs.login.tab.getAttribute('aria-selected') === 'true' ? 'signup' : 'login';
+    show(to);
+    tabs[to].tab.focus();
+  });
 
   /* Plain checks, no regex: three layers of escaping (Python, the template
      literal, the browser) made a backslash class unreadable and wrong. */
@@ -855,61 +925,73 @@ function loginPage() {
            domain.indexOf('.') < domain.length - 1;
   }
 
-  function showError(msg, which) {
-    error.textContent = msg;
-    error.hidden = false;
-    [email, password].forEach(function (f) { f.setAttribute('aria-invalid', 'false'); });
-    if (which) which.setAttribute('aria-invalid', 'true');
-    (which || email).focus();
+  function fail(box, msg, field) {
+    box.textContent = msg;
+    box.hidden = false;
+    if (field) {
+      field.setAttribute('aria-invalid', 'true');
+      field.focus();
+    }
   }
 
-  document.getElementById('fillDemo').onclick = function () {
-    email.value = DEMO.email;
-    password.value = DEMO.password;
-    error.hidden = true;
-    btn.focus();
-  };
+  function clear(box) {
+    box.hidden = true;
+    box.textContent = '';
+  }
+
+  var error = document.getElementById('loginError');
+  var email = document.getElementById('email');
+  var password = document.getElementById('password');
 
   document.getElementById('reveal').onclick = function () {
     var showing = password.type === 'text';
     password.type = showing ? 'password' : 'text';
     this.setAttribute('aria-pressed', String(!showing));
     this.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-    this.innerHTML = showing
-      ? '<svg class="ic ic--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ICONS.eye}</svg>'
-      : '<svg class="ic ic--sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ICONS.eyeOff}</svg>';
     password.focus();
   };
 
-  form.onsubmit = function (ev) {
-    ev.preventDefault();
-    error.hidden = true;
-
-    var e = email.value.trim().toLowerCase();
-    var p = password.value;
-    if (!e) return showError('Enter the email address you use for the shop.', email);
-    if (!looksLikeEmail(e)) return showError('That does not look like an email address.', email);
-    if (!p) return showError('Enter your password.', password);
-
-    if (e !== DEMO.email.toLowerCase() || p !== DEMO.password) {
-      return showError('That email and password do not match. Use the demo details shown on this page.', password);
-    }
-
-    try {
-      sessionStorage.setItem('syk-signed-in', JSON.stringify({ email: DEMO.email, name: DEMO.name, at: Date.now() }));
-    } catch (_) {}
-
-    form.hidden = true;
-    done.hidden = false;
-    document.getElementById('loginDoneP').textContent = 'Signed in to ' + DEMO.shop + '.';
-    done.querySelector('a').focus();
+  document.getElementById('fillDemo').onclick = function () {
+    email.value = DEMO.email;
+    password.value = DEMO.password;
+    clear(error);
+    password.focus();
   };
 
-  document.getElementById('signOut').onclick = function () {
-    try { sessionStorage.removeItem('syk-signed-in'); } catch (_) {}
-    done.hidden = true;
-    form.hidden = false;
-    email.focus();
+  document.getElementById('loginForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    clear(error);
+    var e = email.value.trim().toLowerCase();
+    var p = password.value;
+    [email, password].forEach(function (f) { f.setAttribute('aria-invalid', 'false'); });
+    if (!e) return fail(error, 'Enter the email address you use for the shop.', email);
+    if (!looksLikeEmail(e)) return fail(error, 'That does not look like an email address.', email);
+    if (!p) return fail(error, 'Enter your password.', password);
+    if (e !== DEMO.email.toLowerCase() || p !== DEMO.password) {
+      return fail(error, 'That email and password do not match. Use the demo details below, or sign up.', password);
+    }
+    enter(DEMO.email, DEMO.name);
+  };
+
+  var suError = document.getElementById('signupError');
+  var su = {
+    shop: document.getElementById('suShop'),
+    name: document.getElementById('suName'),
+    email: document.getElementById('suEmail'),
+    password: document.getElementById('suPassword')
+  };
+
+  document.getElementById('signupForm').onsubmit = function (ev) {
+    ev.preventDefault();
+    clear(suError);
+    if (!su.shop.value.trim()) return fail(suError, 'Give the shop a name — it prints on every receipt.', su.shop);
+    if (!su.name.value.trim()) return fail(suError, 'Enter your own name.', su.name);
+    var e = su.email.value.trim().toLowerCase();
+    if (!looksLikeEmail(e)) return fail(suError, 'That does not look like an email address.', su.email);
+    if (su.password.value.length < 6) {
+      return fail(suError, 'Use at least 6 characters for the password.', su.password);
+    }
+    enter(e, su.name.value.trim());
   };
 
   email.focus();
@@ -1189,7 +1271,7 @@ const CSS_BY_PAGE = (page) =>
 /* Classes that carry no rule of their own: behaviour hooks, state toggles, and
    the offline page's inline-styled mark (that page ships its own CSS because
    it must render with no stylesheet cached). */
-const UNSTYLED_BY_DESIGN = new Set(['paygrid', 'is-hidden', 'active', 'offlinemark']);
+const UNSTYLED_BY_DESIGN = new Set(['paygrid', 'is-hidden', 'active', 'offlinemark', 'authtabpanel']);
 
 for (const page of pages) {
   if (page === '404.html') continue;

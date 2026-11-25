@@ -1717,12 +1717,10 @@ img.logo {
   min-height: 44px;
 }
 
-/* The two things you can do from the rail's top: collapse it, or sign out.
-   They sit on one row, centred on the brand, never drifting apart. */
-.railact {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* Sign out is pinned to the top corner of the rail, clear of the collapse
+   button: the two destructive-adjacent controls are never neighbours. */
+.railhead .signoutbtn {
+  margin-left: auto;
   flex: none;
 }
 
@@ -1815,6 +1813,17 @@ img.logo {
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* The strip at the foot of the rail that holds the collapse control. It is
+   pinned: the links scroll above it, and nothing else lives down here. */
+.railfootbar {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 4px 2px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .railtoggle {
   width: 32px;
   height: 32px;
@@ -1903,13 +1912,18 @@ img.logo {
 
   .app[data-rail='closed'] .railhead {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     padding: 2px 0 14px;
   }
 
-  .app[data-rail='closed'] .railact {
-    flex-direction: column;
-    gap: 6px;
+  .app[data-rail='closed'] .railhead .signoutbtn {
+    margin-left: 0;
+  }
+
+  /* the foot toggle is the one control down here, on the rail's centre line */
+  .app[data-rail='closed'] .railfootbar {
+    justify-content: center;
+    padding: 10px 0 0;
   }
 
   .app[data-rail='closed'] .nav {

@@ -168,8 +168,16 @@ whole point: one shop, one password to manage.
 | Email | `owner@shopyangu.co.ke` |
 | Password | `Owner@2026` |
 
-These live in `src/content.json` under `demo_account`, are printed on the login page, and
-can be filled with one tap. The app in this repository runs entirely in the browser, so the
+These live in `src/content.json` under `demo_account`, are printed on the login page under
+the form, and can be filled with one tap.
+
+The login page is one card with two tabs — **Log in** and **Sign up** — and nothing else:
+no marketing column, no bullet list. A correct password goes **straight into the shop**;
+there is no "you're in" card and no second button to press. A signed-out deep link such as
+`/stock/` sends you to `/login/?next=stock` and brings you back to that screen afterwards.
+Sign up takes the shop's name, your name, an email and a password, and enters the shop the
+same way. The demo block is one element (`.authdemo` in `loginPage()`), so deleting it later
+is a one-line change. The app in this repository runs entirely in the browser, so the
 page checks the pair in JavaScript and sets a `sessionStorage` flag — **it is a
 demonstration of the flow, not a security boundary.** A real deployment would post to an
 API that returns a JWT in an httpOnly cookie, as §9 of the spec describes.
