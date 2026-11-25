@@ -21,7 +21,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dir = path.join(root, 'docs');
+
+/* Two folders, one check.
+
+   docs/ is the reference set and docs2/ is the short beginner course. They are
+   checked the same way and separately, because a guide in docs2/ that links to
+   a heading in docs/ has to work just as much as one that links within itself.
+   Each folder is judged on its own index. */
+const FOLDERS = ['docs', 'docs2'];
 
 const slug = (heading) =>
   heading
@@ -42,16 +49,23 @@ const anchorsOf = (file) => {
   return out;
 };
 
+let broken = 0;
+let badAnchors = 0;
+let unreachable = 0;
+let links = 0;
+let totalFiles = 0;
+
+for (const folder of FOLDERS) {
+const dir = path.join(root, folder);
+if (!fs.existsSync(dir)) continue;
+
 const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md')).sort();
+totalFiles += files.length;
 const cache = new Map();
 const anchors = (f) => {
   if (!cache.has(f)) cache.set(f, anchorsOf(path.join(dir, f)));
   return cache.get(f);
 };
-
-let broken = 0;
-let badAnchors = 0;
-let links = 0;
 
 for (const file of files) {
   const text = fs.readFileSync(path.join(dir, file), 'utf8');
@@ -98,14 +112,20 @@ const orphans = files.filter(
     !index.includes(`(${f}#`)
 );
 
-const problems = broken + badAnchors + orphans.length;
+if (orphans.length) {
+  unreachable += orphans.length;
+  console.log(`  \x1b[31m✗ ${folder}/\x1b[0m → ${orphans.join(', ')}  \x1b[90m(not linked from its README.md)\x1b[0m`);
+}
+
+}
+
+const problems = broken + badAnchors + unreachable;
 
 console.log('');
 console.log(
-  `  ${files.length} files · ${links} links · ` +
-    `${problems ? `\x1b[31m${broken} broken, ${badAnchors} bad headings, ${orphans.length} unreachable\x1b[0m` : '\x1b[32mall links resolve\x1b[0m'}`
+  `  ${totalFiles} files · ${links} links · ` +
+    `${problems ? `\x1b[31m${broken} broken, ${badAnchors} bad headings, ${unreachable} unreachable\x1b[0m` : '\x1b[32mall links resolve, every guide reachable\x1b[0m'}`
 );
-if (orphans.length) console.log(`  unreachable from README.md: ${orphans.join(', ')}`);
 console.log('');
 
 process.exit(problems ? 1 : 0);

@@ -57,7 +57,7 @@ begin
 end;
 $$;
 
-  perform create_super_admin('markwanjala159@gmail.com', 'Mark');
+  perform create_super_admin('admin@shopyangu.co.ke', 'Platform admin');
 
   delete from app_schema where file = 'apply-super-admin.sql';
   insert into app_schema (file, checksum, applied_at) values ('apply-super-admin.sql', '7afbc9661fc3f26d', now());

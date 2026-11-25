@@ -831,14 +831,26 @@ function loginPage() {
         </div>
       </div>
 
+      <div class="field-group">
+        <label class="label" for="password">Password</label>
+        <div class="inputwrap">
+          ${icon('lock', 'ic ic--sm')}
+          <input class="field field--password" id="password" name="password" type="password"
+                 autocomplete="current-password" placeholder="Your password" required />
+          <button class="reveal" type="button" id="pwReveal" aria-label="Show the password"
+                  aria-pressed="false" data-reveal="password">Show</button>
+        </div>
+      </div>
+
       <p class="autherror" id="loginError" role="alert" hidden></p>
 
       <button class="btn btn--primary btn--lg btn--block" id="loginBtn" type="submit">
-        Email me a sign-in code${icon('arrow', 'ic ic--sm')}
+        Sign in${icon('arrow', 'ic ic--sm')}
       </button>
 
-      <p class="authfine">No password to remember. We send a six-digit code, and a
-        link you can tap instead if the code is a bother.</p>
+      <p class="authfine">Forgot it? You do not need it —
+        <button class="linkish" type="button" id="useCodeBtn">sign in with a code by email</button>
+        instead. The same link gets you back in and lets you set a new password.</p>
     </form>
 
     <!-- step 1: a new shop ---------------------------------------------- -->
@@ -871,13 +883,38 @@ function loginPage() {
         </div>
       </div>
 
+      <div class="field-group">
+        <label class="label" for="suPassword">Choose a password</label>
+        <div class="inputwrap">
+          ${icon('lock', 'ic ic--sm')}
+          <input class="field field--password" id="suPassword" name="password" type="password"
+                 autocomplete="new-password" placeholder="At least 8 characters" required />
+          <button class="reveal" type="button" id="suReveal" aria-label="Show the password"
+                  aria-pressed="false" data-reveal="suPassword">Show</button>
+        </div>
+        <p class="fieldhint">A phrase you will remember is better than a scramble you
+          will not — <em>chapati-na-ndengu</em> is a fine password.</p>
+      </div>
+
+      <div class="field-group">
+        <label class="label" for="suConfirm">Type it again</label>
+        <div class="inputwrap">
+          ${icon('lock', 'ic ic--sm')}
+          <input class="field field--password" id="suConfirm" name="confirmPassword" type="password"
+                 autocomplete="new-password" placeholder="The same password" required />
+        </div>
+        <p class="fieldhint">Two boxes, because a typo here would lock you out of your
+          own shop.</p>
+      </div>
+
       <p class="autherror" id="signupError" role="alert" hidden></p>
 
       <button class="btn btn--primary btn--lg btn--block" id="signupBtn" type="submit">
         Open my shop${icon('arrow', 'ic ic--sm')}
       </button>
       <p class="authfine">One login for the whole shop, as you asked. The shop name
-        prints on every receipt.</p>
+        prints on every receipt. We email one six-digit code now to prove the address
+        is yours — after that it is just email and password.</p>
     </form>
 
     <!-- step 2: the code ----------------------------------------------- -->
@@ -891,7 +928,7 @@ function loginPage() {
         <label class="label" for="code">Six-digit code</label>
         <div class="inputwrap">
           ${icon('lock', 'ic ic--sm')}
-          <input class="field field--code" id="code" name="code" type="text"
+          <input class="field field--code" id="code" name="code" type="text" size="6"
                  inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*"
                  maxlength="6" placeholder="••••••" required />
         </div>
@@ -1031,6 +1068,19 @@ function loginPage() {
      Plain checks, no regex: three layers of escaping (Python, the template
      literal, the browser) made a backslash class unreadable and wrong.
      ------------------------------------------------------------------- */
+  /* Kept digits only, the long way round. A regex here would have to survive
+     three layers of escaping — Python, the template literal that is this whole
+     page, and the browser — and a backslash-D class has already been
+     flattened to a bare D once
+     by exactly that. A loop cannot lose a backslash it never had. */
+  function digitsOf(v) {
+    var out = '';
+    for (var i = 0; i < v.length; i++) {
+      if (v.charAt(i) >= '0' && v.charAt(i) <= '9') out += v.charAt(i);
+    }
+    return out;
+  }
+
   function looksLikeEmail(v) {
     if (!v || v.indexOf(' ') !== -1) return false;
     var parts = v.split('@');
@@ -1078,30 +1128,61 @@ function loginPage() {
      ------------------------------------------------------------------ */
   var loginError = el('loginError');
   var email = el('email');
+  var password = el('password');
   var loginBtn = el('loginBtn');
 
   el('loginForm').onsubmit = function (ev) {
     ev.preventDefault();
     clear(loginError);
-    [email].forEach(function (f) { f.setAttribute('aria-invalid', 'false'); });
+    [email, password].forEach(function (f) { f.setAttribute('aria-invalid', 'false'); });
 
     var e = email.value.trim().toLowerCase();
     if (!e) return fail(loginError, 'Enter the email address you use for the shop.', email);
     if (!looksLikeEmail(e)) return fail(loginError, 'That does not look like an email address.', email);
+    if (!password.value) return fail(loginError, 'Enter your password. Forgotten it? Use the link below the button.', password);
 
     pendingEmail = e;
     mode = 'signin';
-    busy(loginBtn, true, 'Sending…');
+    busy(loginBtn, true, 'Signing in…');
+
+    /* No email, no code: the password goes to the server, which compares it to
+       a hash it already holds. This is the path that makes signing in every
+       morning quick. */
+    api('/api/auth/signin/password', { email: e, password: password.value })
+      .then(function (data) {
+        busy(loginBtn, false);
+        enter(data.next || 'dashboard');
+      })
+      .catch(function (err) {
+        busy(loginBtn, false);
+        /* A wrong password is worth saying plainly; the server's own wording
+           already avoids telling an attacker whether the address exists. */
+        fail(loginError, err.message, err.status === 429 ? null : password);
+        password.value = '';
+      });
+  };
+
+  /* The spare key. Sends the same code the sign-in screen has always sent,
+     and afterwards the person lands in the shop and can set a new password. */
+  el('useCodeBtn').onclick = function () {
+    clear(loginError);
+    var e = email.value.trim().toLowerCase();
+    if (!looksLikeEmail(e)) return fail(loginError, 'Type your email address above first.', email);
+
+    var btn = this;
+    busy(btn, true, 'Sending a code…');
+    pendingEmail = e;
+    mode = 'signin';
 
     api('/api/auth/signin', { email: e }).then(function (data) {
-      busy(loginBtn, false);
+      busy(btn, false);
       if (data.role === 'super_admin') {
         /* The admin's link goes to /admin/, not /auth/link/. */
         sessionStorage.setItem('syk-admin-pending', e);
       }
       showVerify(e, 'Check your email');
     }).catch(function (err) {
-      busy(loginBtn, false);
+      busy(btn, false);
       fail(loginError, err.message, email);
     });
   };
@@ -1111,38 +1192,98 @@ function loginPage() {
      ------------------------------------------------------------------ */
   var suError = el('signupError');
   var suBtn = el('signupBtn');
-  var su = { shop: el('suShop'), name: el('suName'), email: el('suEmail') };
+  var su = {
+    shop: el('suShop'),
+    name: el('suName'),
+    email: el('suEmail'),
+    password: el('suPassword'),
+    confirm: el('suConfirm')
+  };
+
+  /* What the server will say, said here first. Typing a password twice and
+     waiting for a round trip to hear they differ is a bad first minute with a
+     new shop, and the rule is easier to fix while the field is still on screen.
+     This is a courtesy, not the check: the server applies the same rules again
+     and its answer is the one that counts. */
+  function passwordProblem(pw, confirm, e) {
+    if (pw.length < 8) return 'Use at least 8 characters. A short phrase you will remember beats a scramble you will not.';
+    var digitsOnly = pw.length > 0;
+    for (var i = 0; i < pw.length; i++) {
+      if (pw.charAt(i) < '0' || pw.charAt(i) > '9') { digitsOnly = false; break; }
+    }
+    if (digitsOnly) return 'Use more than just numbers.';
+    if (pw !== confirm) return 'The two passwords are not the same. Type them again.';
+    var local = e.split('@')[0];
+    if (local.length >= 4 && pw.toLowerCase().indexOf(local) !== -1) {
+      return 'Do not use your email address as your password.';
+    }
+    return null;
+  }
 
   el('signupForm').onsubmit = function (ev) {
     ev.preventDefault();
     clear(suError);
+    [su.shop, su.name, su.email, su.password, su.confirm].forEach(function (f) {
+      f.setAttribute('aria-invalid', 'false');
+    });
 
     if (!su.shop.value.trim()) return fail(suError, 'Give the shop a name — it prints on every receipt.', su.shop);
     if (!su.name.value.trim()) return fail(suError, 'Enter your own name.', su.name);
     var e = su.email.value.trim().toLowerCase();
     if (!looksLikeEmail(e)) return fail(suError, 'That does not look like an email address.', su.email);
 
+    var problem = passwordProblem(su.password.value, su.confirm.value, e);
+    if (problem) {
+      var which = problem.indexOf('two passwords') !== -1 ? su.confirm : su.password;
+      return fail(suError, problem, which);
+    }
+
     pendingEmail = e;
     mode = 'signup';
-    busy(suBtn, true, 'Sending…');
+    busy(suBtn, true, 'Opening your shop…');
 
-    api('/api/auth/signup', { shop: su.shop.value.trim(), name: su.name.value.trim(), email: e })
+    api('/api/auth/signup', {
+      shop: su.shop.value.trim(),
+      name: su.name.value.trim(),
+      email: e,
+      password: su.password.value,
+      confirmPassword: su.confirm.value
+    })
       .then(function (data) {
         busy(suBtn, false);
+        /* The password has been handed over; it does not need to sit in the
+           page any longer. */
+        su.password.value = '';
+        su.confirm.value = '';
+
         if (data.existing) {
           /* The address already has a shop: the email that just went out is a
              sign-in, not a sign-up. Say so rather than pretending. */
           mode = 'signin';
           showVerify(e, 'You already have a shop');
         } else {
-          showVerify(e, 'Check your email');
+          showVerify(e, 'One last step');
         }
       })
       .catch(function (err) {
         busy(suBtn, false);
-        fail(suError, err.message, su.email);
+        fail(suError, err.message, su.password);
       });
   };
+
+  /* ------------------------------------------------------------- reveal */
+  var reveals = document.querySelectorAll('[data-reveal]');
+  for (var r = 0; r < reveals.length; r++) {
+    reveals[r].onclick = function () {
+      var field = el(this.getAttribute('data-reveal'));
+      var show = field.type === 'password';
+      field.type = show ? 'text' : 'password';
+      this.textContent = show ? 'Hide' : 'Show';
+      this.setAttribute('aria-pressed', String(show));
+      this.setAttribute('aria-label', (show ? 'Hide' : 'Show') + ' the password');
+      field.focus();
+    };
+  }
 
   /* --------------------------------------------------------------------
      Step 2 — the code
@@ -1154,7 +1295,7 @@ function loginPage() {
   /* Six digits is not a number to be formatted, it is a code. Strip anything
      else as it is typed, and submit on the sixth digit: fewer taps. */
   code.oninput = function () {
-    var digits = code.value.replace(/\D/g, '').slice(0, 6);
+    var digits = digitsOf(code.value).slice(0, 6);
     if (code.value !== digits) code.value = digits;
     code.removeAttribute('aria-invalid');
     if (digits.length === 6) el('verifyForm').requestSubmit();
@@ -1164,7 +1305,7 @@ function loginPage() {
     ev.preventDefault();
     clear(verifyError);
 
-    var digits = code.value.replace(/\D/g, '');
+    var digits = digitsOf(code.value);
     if (digits.length !== 6) return fail(verifyError, 'The code is six digits.', code);
 
     busy(verifyBtn, true, 'Checking…');
@@ -1185,8 +1326,25 @@ function loginPage() {
     var btn = this;
     busy(btn, true, 'Sending…');
     var path = mode === 'signup' ? '/api/auth/signup' : '/api/auth/signin';
+    /* A resend of a sign-up re-sends the same sign-up, and the password fields
+       were cleared when the form was submitted. Re-posting without them would
+       quietly wipe the password that person chose, leaving an account that
+       cannot be signed into with a password at all. So they are asked for
+       again rather than dropped. */
+    if (mode === 'signup' && !su.password.value) {
+      busy(btn, false);
+      fail(verifyError, 'Type your password again on the shop form, then press Open my shop again.', su.password);
+      return show('signup');
+    }
+
     var payload = mode === 'signup'
-      ? { shop: su.shop.value.trim(), name: su.name.value.trim(), email: pendingEmail }
+      ? {
+          shop: su.shop.value.trim(),
+          name: su.name.value.trim(),
+          email: pendingEmail,
+          password: su.password.value,
+          confirmPassword: su.confirm.value
+        }
       : { email: pendingEmail };
 
     api(path, payload).then(function () {
@@ -1224,7 +1382,7 @@ function loginPage() {
   return document({
     title: `Log in — ${content.brand.name}`,
     description:
-      'Sign in to Shop Yangu Kenya to take sales, send M-Pesa prompts, print receipts and see your stock and daily reports. A six-digit code by email, no password.',
+      'Sign in to Shop Yangu Kenya to take sales, send M-Pesa prompts, print receipts and see your stock and daily reports. Your email and password, with a code by email if you ever forget it.',
     page: 'login',
     body,
     bodyClass: 'page-auth',
@@ -1607,14 +1765,14 @@ function adminPage() {
   };
 
   el('adminCode').oninput = function () {
-    var digits = this.value.replace(/\D/g, '').slice(0, 6);
+    var digits = digitsOf(this.value).slice(0, 6);
     if (this.value !== digits) this.value = digits;
   };
 
   el('adminCodeForm').onsubmit = function (ev) {
     ev.preventDefault();
     clear(codeBox);
-    var digits = el('adminCode').value.replace(/\D/g, '');
+    var digits = digitsOf(el('adminCode').value);
     if (digits.length !== 6) return fail(codeBox, 'The code is six digits.', el('adminCode'));
 
     el('adminCodeBtn').disabled = true;
@@ -2136,6 +2294,38 @@ for (const page of pages) {
     } catch (err) {
       const line = src.slice(0, err.message.length ? undefined : undefined);
       check(false, `${page}: inline script ${i + 1} is not valid JavaScript — ${err.message}`);
+    }
+  }
+}
+
+/* A regex that lost its backslash.
+
+   The page scripts live inside a template literal, so \\d has to be written
+   \\\\d to survive. Getting it wrong does not fail the build: it ships
+   a bare D, which matches the letter D, and the code looks correct to
+   everybody reading it. It happened twice before this check existed —
+   reading it. It happened twice before this check existed — /\\D/g in the
+   code field, and the same in the admin code field.
+
+   A character class a browser would only write by accident is the signature:
+   \\D, \\d, \\s, \\w, \\b, \\n, \\t on their own, immediately after a
+   slash. Checked on the BUILT page, because that is what the browser gets. */
+for (const page of pages) {
+  const html = fs.readFileSync(path.join(dist, page), 'utf8');
+  const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  for (const [i, src] of scripts.entries()) {
+    /* A one-letter class, not escaped, closed by a slash and followed by
+       something that can only be a regex flag or the end of an expression —
+       so a URL such as href="/d/" is not mistaken for one. */
+    const suspicious = [...src.matchAll(/(?<![\\])[/][A-Za-z][*/]?[/][gimuys,)]/g)].map((m) => m[0]);
+    const bad = suspicious
+      .map((s) => s.slice(0, s.lastIndexOf('/')))
+      .filter((s) => /^[/][DdSsWwBbNnTt]$/.test(s));
+    if (bad.length) {
+      check(
+        false,
+        `${page}: inline script ${i + 1} has a regex that lost its backslash — ${[...new Set(bad)].join(', ')}`
+      );
     }
   }
 }

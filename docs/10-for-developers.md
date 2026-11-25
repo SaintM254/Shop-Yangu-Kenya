@@ -223,19 +223,23 @@ src/                     content.json, styles.css, app/*.js — the sources
 dist/                    built output, gitignored, Vercel's output directory
 api/index.js             the single Vercel function + Node/Vercel adapter
 api/server.js            the router; exports handleRequest(server, res)
-api/_lib/                config, db, http, auth, mail, emails, shape, sql-split
+api/_lib/                config, db, http, auth, password, neon-auth,
+                         mail, emails, shape, sql-split
 api/_routes/             auth, shop, bootstrap, mpesa, admin
-api/_test/               run.js (109), vercel.js (7)
+api/_test/               run.js (144), vercel.js (15)
 db/001…004               schema, functions, RLS, demo seed
 db/apply-*.sql           generated; the files people paste into Neon
-scripts/                 build-sql, sql-check, db-migrate, db-seed, make-super-admin
+scripts/                 build-sql, sql-check, db-migrate, db-seed,
+                         make-super-admin, check-docs, check-auth-layout
 vercel.json              rewrites, redirects, headers, function settings
 ```
 
 ## Things that are easy to get wrong
 
 - **Template literals in `build.js` eat `\` and `\n`** — escape as `\\\\` and
-  `\\\\n`.
+  `\\\\n`. This silently turned a `/\D/` into `/D/` twice, so the build now
+  refuses to publish a one-letter regex class that lost its backslash. Prefer a
+  loop over a regex in page scripts.
 - **`all checks passed` does not prove an asset was written.** Diff the output
   file list against a known-good build after touching `build.js`.
 - **`settings` and `shop` endpoints are PATCH-only.** A POST 404s silently.

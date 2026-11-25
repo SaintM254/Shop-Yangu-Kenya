@@ -110,8 +110,8 @@ look fussier than they need to.
 
 These are for reference once you are running, not for setup:
 
-- [Email and sign-in](04-email.md) — how the code reaches a person, and why
-  there are no passwords
+- [Email and sign-in](04-email.md) — how the code reaches a person, and how the
+  password fits beside it
 - [M-Pesa](05-mpesa.md) — each shop's own till, and why the money never
   touches the platform
 - [The platform console](06-admin.md) — the different sign-in at `/admin/`
@@ -120,8 +120,8 @@ These are for reference once you are running, not for setup:
 - [Troubleshooting](09-troubleshooting.md) — message → fix
 - [The settings](03b-vercel-settings.md) — what each one does, and which you can
   ignore
-- [Neon Auth](03c-neon-auth.md) — the Auth button next to your database: leave
-  it alone, and here is why
+- [Neon Auth](03c-neon-auth.md) — the Auth button next to your database, and
+  the one job this shop gives it
 - [For developers](10-for-developers.md) — the technical version, if you are
   handing this to someone who codes
 

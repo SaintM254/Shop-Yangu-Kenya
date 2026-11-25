@@ -121,6 +121,12 @@ export const env = {
   MPESA_CALLBACK_BASE: raw.MPESA_CALLBACK_BASE || vercelUrl || '',
   MPESA_TIMEOUT_SECONDS: Number(raw.MPESA_TIMEOUT_SECONDS || 60),
 
+  /* Neon Auth. Optional: when NEON_AUTH_BASE_URL is set, the sign-up code is
+     sent by Neon instead of by our own SMTP, which saves a shop having to
+     connect an email provider just to create an account. When it is not set,
+     nothing else changes — the server sends the code itself. */
+  NEON_AUTH_BASE_URL: raw.NEON_AUTH_BASE_URL || '',
+
   /* Set to a real value in production. Used to sign nothing (JWTs are not
      used) but to derive the hash key for session tokens.
 

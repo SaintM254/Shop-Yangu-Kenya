@@ -3,8 +3,13 @@
 Written for someone who has never deployed anything. No jargon without a
 translation, no step that needs you to read code.
 
-**Start at [00-start-here.md](00-start-here.md).** It is a one-page map of the
-whole setup, and it tells you which guide to open next.
+> **Setting the shop up for the first time? Start in
+> [`docs2/`](../docs2/README.md) instead.** It is six short guides in the order
+> you do them, and it is the shortest path to a working shop. This folder is the
+> reference set: deeper, longer, and organised by subject rather than by step.
+
+**Or start at [00-start-here.md](00-start-here.md)** for the one-page map of the
+whole setup.
 
 ---
 

@@ -159,6 +159,11 @@ group('health');
   ok('GET /api/health answers', r.status === 200, `status ${r.status}`);
   ok('database is reachable', r.body.database?.ok === true);
   ok('no secrets leak from health', !JSON.stringify(r.body).includes('test-pepper'));
+  ok(
+    'health says who sends the sign-up code, so "no email arrived" has an answer',
+    r.body.auth && r.body.auth.driver === 'none',
+    JSON.stringify(r.body.auth)
+  );
 }
 
 group('sign-up: a new shop, by email code');
@@ -168,9 +173,12 @@ let ownerCookie;
     shop: 'Bahari Duka',
     name: 'Amina Hassan',
     email: 'amina@bahariduka.co.ke',
+    password: 'bahari-dhow-2026',
+    confirmPassword: 'bahari-dhow-2026',
   });
   ok('POST /api/auth/signup accepts a new shop', r.status === 200, `status ${r.status}`);
   ok('it is a new sign-up, not an existing account', r.body.existing === false);
+  ok('with no Neon Auth configured, our own mailer sends the code', r.body.sentBy === 'ours', r.body.sentBy);
   ok('no session yet — the email has not been checked', Object.keys(jar).length === 0);
 
   const code = lastCode();
@@ -191,6 +199,219 @@ let ownerCookie;
   ok('the shop is landed on the dashboard', v.body.next === 'dashboard');
   ok('the email is now verified', (await call('GET', '/api/session')).body.signedIn === true);
   ownerCookie = { ...jar };
+}
+
+group('passwords: chosen at sign-up, used every day after');
+{
+  /* The shop made above chose a password. The FIRST sign-in of that shop was
+     the emailed code — that is how the inbox was proved. Now the password is
+     the door, and no email is sent. */
+  jar = {};
+
+  const wrong = await call('POST', '/api/auth/signin/password', {
+    email: 'amina@bahariduka.co.ke',
+    password: 'not-the-password',
+  });
+  ok('a wrong password is refused', wrong.status === 400, `status ${wrong.status}`);
+  ok('and no session cookie is set', !jar.syk_session);
+  ok(
+    'the message does not reveal whether the address exists',
+    wrong.body.error === 'That email and password do not match.',
+    wrong.body.error
+  );
+
+  const unknown = await call('POST', '/api/auth/signin/password', {
+    email: 'nobody@nowhere.co.ke',
+    password: 'not-the-password',
+  });
+  ok(
+    'an unknown address gets the same answer as a wrong password',
+    unknown.status === wrong.status && unknown.body.error === wrong.body.error
+  );
+
+  const before = lastCode();
+  const good = await call('POST', '/api/auth/signin/password', {
+    email: 'Amina@Bahariduka.co.ke',
+    password: 'bahari-dhow-2026',
+  });
+  ok('the right password signs in', good.status === 200 && Boolean(jar.syk_session), `status ${good.status}`);
+  ok('it lands on the dashboard, not on a code screen', good.body.next === 'dashboard');
+  ok('the email address is matched whatever its capitals', good.body.user?.email === 'amina@bahariduka.co.ke');
+  ok('no email was sent — that is the point of a password', lastCode() === before);
+
+  const me = await call('GET', '/api/session');
+  ok('the session is real', me.body.signedIn === true && me.body.user.role === 'owner');
+
+  /* Exactly what is stored, and it is not the password. */
+  const row = await pg.query(
+    `select password_hash, password_salt, password_params, password_set_at
+       from logins where email = 'amina@bahariduka.co.ke'`
+  );
+  const stored = row.rows[0];
+  ok('a hash is stored, not the password', Boolean(stored.password_hash) && stored.password_hash !== 'bahari-dhow-2026');
+  ok('with a salt of its own', Boolean(stored.password_salt));
+  ok('and the cost recorded, so it can be raised later', /^scrypt\$\d+\$\d+\$\d+\$\d+$/.test(stored.password_params || ''), stored.password_params);
+  ok('and the date it was set', Boolean(stored.password_set_at));
+  ok('the plain password appears nowhere in the database', !JSON.stringify(row.rows).includes('bahari-dhow-2026'));
+
+  /* Two different people with the same password must not look the same. */
+  const salt1 = stored.password_salt;
+  const other = await pg.query(
+    `select password_salt from logins where email = 'juma@pwani.co.ke'`
+  );
+  ok('a second shop with the same password gets a different salt', !other.rows[0] || other.rows[0].password_salt !== salt1);
+
+  jar = { ...ownerCookie };
+}
+
+group('passwords: what the form refuses, and why');
+{
+  const attempt = async (password) => {
+    jar = {};
+    return call('POST', '/api/auth/signup', {
+      shop: 'Kibanda Tests',
+      name: 'Test Person',
+      email: 'kibanda@tests.co.ke',
+      password,
+      confirmPassword: password,
+    });
+  };
+
+  jar = {};
+  const mismatch = await call('POST', '/api/auth/signup', {
+    shop: 'Kibanda Tests',
+    name: 'Test Person',
+    email: 'kibanda@tests.co.ke',
+    password: 'long-enough-1',
+    confirmPassword: 'long-enough-2',
+  });
+  ok('two different passwords are refused before anything is written', mismatch.status === 400, `status ${mismatch.status}`);
+  const none = await pg.query(`select count(*)::int n from pending_signups where email = 'kibanda@tests.co.ke'`);
+  ok('and no sign-up was created', none.rows[0].n === 0);
+
+  const short = await attempt('abc123');
+  ok('a short password is refused, with a reason', short.status === 400 && /8 characters/.test(short.body.error), short.body.error);
+
+  const digits = await attempt('48291047');
+  ok('an all-number password is refused', digits.status === 400 && /numbers/.test(digits.body.error), digits.body.error);
+
+  const common = await attempt('password123');
+  ok('a common password is refused', common.status === 400, common.body.error);
+
+  const withEmail = await attempt('kibanda-is-my-password');
+  ok('a password containing the email name is refused', withEmail.status === 400, withEmail.body.error);
+
+  /* The shop name is on every receipt, so it is not a secret either. Checked
+     with an address whose own name is not inside the password. */
+  jar = {};
+  const withShop = await call('POST', '/api/auth/signup', {
+    shop: 'Kibanda Tests',
+    name: 'Test Person',
+    email: 'zawadi@tests.co.ke',
+    /* Written without the space, the way somebody actually types it. */
+    password: 'kibandatests99',
+    confirmPassword: 'kibandatests99',
+  });
+  ok(
+    'a password containing the shop name is refused, and says why',
+    withShop.status === 400 && /shop name/.test(withShop.body.error || ''),
+    withShop.body.error
+  );
+
+  jar = {};
+  const fine = await attempt('chapati-na-ndengu');
+  ok('a good passphrase is accepted', fine.status === 200, `status ${fine.status}`);
+  jar = { ...ownerCookie };
+}
+
+group('passwords: the way back in when one is lost');
+{
+  /* The code path has not gone away. It is the spare key: forget the password,
+     ask for a code, get back in — and then set a new one. */
+  jar = {};
+  const r = await call('POST', '/api/auth/signin', { email: 'amina@bahariduka.co.ke' });
+  ok('asking for a code still works when a password exists', r.status === 200 && r.body.next === 'verify');
+
+  const v = await call('POST', '/api/auth/signin/verify', {
+    email: 'amina@bahariduka.co.ke',
+    code: lastCode(),
+  });
+  ok('the code signs in, without the password', v.status === 200 && Boolean(jar.syk_session));
+
+  jar = { ...jar };
+  const changed = await call('POST', '/api/auth/password', {
+    currentPassword: 'bahari-dhow-2026',
+    newPassword: 'pwani-mango-2027',
+    confirmPassword: 'pwani-mango-2027',
+  });
+  ok('a signed-in person can change the password', changed.status === 200, `status ${changed.status}`);
+
+  jar = {};
+  const old = await call('POST', '/api/auth/signin/password', {
+    email: 'amina@bahariduka.co.ke',
+    password: 'bahari-dhow-2026',
+  });
+  ok('the old password no longer works', old.status === 400, `status ${old.status}`);
+
+  const fresh = await call('POST', '/api/auth/signin/password', {
+    email: 'amina@bahariduka.co.ke',
+    password: 'pwani-mango-2027',
+  });
+  ok('the new one does', fresh.status === 200 && Boolean(jar.syk_session), `status ${fresh.status}`);
+
+  const back = await call('POST', '/api/auth/password', {
+    currentPassword: 'pwani-mango-2027',
+    newPassword: 'bahari-dhow-2026',
+    confirmPassword: 'bahari-dhow-2026',
+  });
+  ok('and it can be changed back', back.status === 200, `status ${back.status}`);
+
+  const anon = await call('POST', '/api/auth/password', {
+    newPassword: 'somebody-elses-shop',
+    confirmPassword: 'somebody-elses-shop',
+  }, { withCookies: false });
+  ok('setting a password needs a session', anon.status === 401, `status ${anon.status}`);
+
+  jar = { ...ownerCookie };
+}
+
+group('passwords: guessing is slowed down');
+{
+  jar = {};
+  const email = 'kibanda-tests-lock@tests.co.ke';
+  /* A real account to guess at, made through SQL so no email is sent. */
+  const shop = await pg.query(
+    `insert into shops (name, phone) values ('Lock Test Shop', '0700000000') returning id`
+  );
+  const { hashPassword } = await import('../_lib/password.js');
+  const h = await hashPassword('correct-horse-battery');
+  await pg.query(
+    `insert into logins (shop_id, email, name, role, email_verified_at,
+                         password_hash, password_salt, password_params, password_set_at)
+     values ($1, $2, 'Lock Test', 'owner', now(), $3, $4, $5, now())`,
+    [shop.rows[0].id, email, h.hash, h.salt, h.params]
+  );
+
+  let lastStatus = 0;
+  for (let i = 0; i < 9; i++) {
+    const r = await call('POST', '/api/auth/signin/password', { email, password: 'wrong-' + i });
+    lastStatus = r.status;
+  }
+  ok('the eighth wrong password starts refusing', lastStatus === 429, `status ${lastStatus}`);
+
+  const locked = await call('POST', '/api/auth/signin/password', {
+    email,
+    password: 'correct-horse-battery',
+  });
+  ok('even the right password waits once the limit is hit', locked.status === 429, `status ${locked.status}`);
+  ok('and the message says how long, and what to do', /minutes/.test(locked.body.error || ''), locked.body.error);
+
+  /* The code path is not affected by a password lockout — otherwise a guesser
+     could lock an owner out of their own shop. */
+  const byCode = await call('POST', '/api/auth/signin', { email });
+  ok('signing in by code is still possible during a password lockout', byCode.status === 200);
+
+  jar = { ...ownerCookie };
 }
 
 group('sign-in: an existing shop');
@@ -638,6 +859,113 @@ group('sessions: signing out');
   ok('POST /api/auth/signout answers', out.status === 200);
   const after = await call('GET', '/api/bootstrap');
   ok('and the cookie no longer works', after.status === 401, `status ${after.status}`);
+}
+
+group('Neon Auth: the first code, sent and checked by Neon');
+{
+  /* A stub standing in for the Neon Auth service, on this machine. The point is
+     not to test Neon — it is to test OUR client and OUR routes against a live
+     HTTP endpoint, including the two things that are easy to get wrong: that a
+     code Neon sent is the code Neon is asked about, and that a dead Neon does
+     not stop a shop being created. */
+  const http = await import('node:http');
+  const seen = { send: [], verify: [], behaviour: 'ok' };
+
+  const stub = http.createServer((req, res) => {
+    let raw = '';
+    req.on('data', (c) => (raw += c));
+    req.on('end', () => {
+      if (seen.behaviour === 'down') {
+        res.writeHead(503, { 'content-type': 'application/json' });
+        return res.end('{"error":"unavailable"}');
+      }
+      const body = raw ? JSON.parse(raw) : {};
+      if (req.url.endsWith('/email-otp/send-verification-otp')) {
+        seen.send.push(body);
+        res.writeHead(200, { 'content-type': 'application/json' });
+        return res.end('{"ok":true}');
+      }
+      if (req.url.endsWith('/email-otp/verify-email')) {
+        seen.verify.push(body);
+        const good = body.otp === NEON_CODE;
+        res.writeHead(good ? 200 : 401, { 'content-type': 'application/json' });
+        return res.end(good ? '{"ok":true}' : '{"error":"invalid"}');
+      }
+      res.writeHead(404);
+      res.end('{}');
+    });
+  });
+  await new Promise((r) => stub.listen(0, '127.0.0.1', r));
+  const NEON_CODE = '424242';
+
+  const neon = await import('../_lib/neon-auth.js');
+  const { env } = await import('../_lib/config.js');
+  env.NEON_AUTH_BASE_URL = `http://127.0.0.1:${stub.address().port}/neondb/auth`;
+
+  const email = 'neon-shop@jaribu.co.ke';
+  const sentBefore = seen.send.length;
+
+  jar = {};
+  const r = await call('POST', '/api/auth/signup', {
+    shop: 'Jaribu Duka',
+    name: 'Neema Otieno',
+    email,
+    password: 'bahari-ndege-2026',
+    confirmPassword: 'bahari-ndege-2026',
+  });
+  ok('sign-up still answers when Neon is the sender', r.status === 200, `status ${r.status}`);
+  ok('and says who sent the code', r.body.sentBy === 'neon-auth', r.body.sentBy);
+  ok('Neon was actually called', seen.send.length === sentBefore + 1);
+  ok('with the sign-up verification type', seen.send[seen.send.length - 1]?.type === 'email-verification');
+  ok('and the right address', seen.send[seen.send.length - 1]?.email === email);
+
+  /* The email we sent must not carry a code we cannot honour. */
+  const afterSignup = captured.slice(-12).join('\n');
+  ok(
+    'our own email carries no code that Neon would reject',
+    !/is your Shop Yangu Kenya code/.test(afterSignup),
+    afterSignup.slice(0, 80)
+  );
+  ok('but it does carry the link', /\/auth\/link\/\?token=/.test(afterSignup));
+
+  const wrong = await call('POST', '/api/auth/signup/verify', { email, code: '000000' });
+  ok('a code Neon rejects is refused here too', wrong.status === 400, `status ${wrong.status}`);
+
+  const right = await call('POST', '/api/auth/signup/verify', { email, code: NEON_CODE });
+  ok('the code Neon accepted creates the shop', right.status === 200 && right.body.user?.role === 'owner', `status ${right.status}`);
+  ok('and the person is signed in', Boolean(jar.syk_session));
+
+  /* The password chosen at sign-up survived a Neon-sent code. */
+  jar = {};
+  const byPassword = await call('POST', '/api/auth/signin/password', {
+    email,
+    password: 'bahari-ndege-2026',
+  });
+  ok('the password from that sign-up works afterwards', byPassword.status === 200, `status ${byPassword.status}`);
+  jar = { ...ownerCookie };
+
+  /* A dead Neon must not stop a shop being created. */
+  seen.behaviour = 'down';
+  const email2 = 'neon-down@jaribu.co.ke';
+  jar = {};
+  const fallback = await call('POST', '/api/auth/signup', {
+    shop: 'Jaribu Pili',
+    name: 'Neema Again',
+    email: email2,
+    password: 'bahari-ndege-2026',
+    confirmPassword: 'bahari-ndege-2026',
+  });
+  ok('a 503 from Neon does not stop the sign-up', fallback.status === 200, `status ${fallback.status}`);
+  ok('it falls back to our own mailer, and says so', fallback.body.sentBy === 'ours', fallback.body.sentBy);
+
+  const ourCode = lastCode();
+  ok('and our own code was emailed', /^\d{6}$/.test(ourCode || ''), ourCode);
+  const madeIt = await call('POST', '/api/auth/signup/verify', { email: email2, code: ourCode });
+  ok('which completes a real shop', madeIt.status === 200, `status ${madeIt.status}`);
+
+  env.NEON_AUTH_BASE_URL = '';
+  await new Promise((r) => stub.close(r));
+  jar = { ...ownerCookie };
 }
 
 group('rate limiting');

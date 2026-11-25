@@ -192,6 +192,37 @@ document.addEventListener('click', e => {
     persist('settings', { [k]: S.settings[k] });
     toast(k === 'allowCredit' && !S.settings[k] ? 'Credit sales are off — the till will refuse a shortfall.' : 'Saved');
   }
+  if (e.target.closest('[data-save-password]')) {
+    const current = $('#pwNow').value;
+    const next = $('#pwNew').value;
+    const again = $('#pwAgain').value;
+    const note = $('#pwNote');
+
+    const say = (msg, good) => {
+      note.hidden = false;
+      note.textContent = msg;
+      note.style.color = good ? 'var(--syk-dark)' : 'var(--danger)';
+    };
+
+    if (next.length < 8) return say('Use at least 8 characters.', false);
+    if (next !== again) return say('The two new passwords are not the same.', false);
+
+    /* The API compares the current password to the stored hash and writes the
+       new one. It is deliberately the only place that knows how a password is
+       stored: nothing here sees a hash. */
+    BACKEND.request('/api/auth/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword: current, newPassword: next, confirmPassword: again }),
+    })
+      .then(() => {
+        $('#pwNow').value = '';
+        $('#pwNew').value = '';
+        $('#pwAgain').value = '';
+        say('Saved. Use the new password the next time you sign in.', true);
+        toast('Password saved.', 'good');
+      })
+      .catch((err) => say(err.message || 'The password was not saved.', false));
+  }
   if (e.target.closest('[data-save-settings]')) {
     S.shop.name = $('#setShop').value.trim() || 'Shop Yangu Kenya';
     S.shop.branch = $('#setBranch').value.trim();
