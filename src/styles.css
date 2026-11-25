@@ -35,27 +35,86 @@
 }
 
 :root {
-  --cream: #fff8e1;
-  --paper: #ffffff;
-  --cream-deep: #f5ebc8;
-  --sand: #e7ddb5;
-  --sand-soft: #efe7c8;
+  /* ============================================================ colour
 
-  --syk: #287094;
-  --syk-dark: #023246;
-  --syk-deep: #16233a;
-  --syk-tint: #e7f0f5;
-  --syk-line: #d4d4ce;
+     The palette is Images/color-sytem.html ("Savanna sand"), verbatim. Read
+     that file before changing a value here: it is the brief, and its contrast
+     table is the acceptance test.
 
-  --ink: #1e2a22;
-  --ink-muted: #596658;
-  --forest: #1f4d2e;
-  --forest-tint: #e3efdf;
-  --warning: #8f5200;
-  --warning-tint: #fbe8c2;
-  --danger: #a8321f;
-  --danger-tint: #f8dfd9;
-  --gold: #b7892b;
+     Three rules from it shape the whole system:
+       1. Buttons are either fully solid with no outline, or white with a soft
+          shadow. Never a see-through fill with an outline.
+       2. Shadows separate white cards and white buttons from the sand page.
+          There are no 1px outlines left to do that job.
+       3. Green means money was received, and nothing else. It is not a
+          decoration, not an "add" button, not a chart colour.
+     ==================================================================== */
+
+  /* page and paper */
+  --bg: #f5efe6;
+  --surface: #ffffff;
+  --ink: #1f1b16;
+  --muted: #6a6054;
+  --line: #e2d8c8;
+
+  /* primary */
+  --primary: #287094;
+  --primary-dark: #1b5270;
+  --link: #1b5270;
+  --primary-tint: #eef4f6;
+  --primary-50: #eef4f6;
+  --primary-100: #d8e5ec;
+  --primary-200: #b4cdda;
+  --primary-300: #89b0c4;
+  --primary-400: #578fac;
+  --primary-500: #287094;
+  --primary-600: #225f7e;
+  --primary-700: #1c4e68;
+  --primary-800: #14384a;
+  --primary-900: #0d242f;
+
+  /* the sidebar is darker and bluer than the pressed button */
+  --sidebar: #1b4a63;
+  --sidebar-ink: #ffffff;
+
+  /* status */
+  --accent: #d9622b;
+  --accent-ink: #1f1b16;   /* white on terracotta fails contrast */
+  --success: #167a45;
+  --warning: #b45309;
+  --danger: #c62f3a;
+  --disabled-bg: #d9cfbf;
+  --disabled-ink: #5a5046;
+
+  /* soft fills, derived so they never drift from their parent colour */
+  --success-tint: #e6f2ec;
+  --warning-tint: #f9e9d8;
+  --danger-tint: #fbe6e7;
+  --accent-tint: #fbeae1;
+
+  /* depth: shadows, not outlines */
+  --shadow-1: 0 1px 2px rgba(31, 27, 22, 0.1), 0 1px 3px rgba(31, 27, 22, 0.06);
+  --shadow-2: 0 2px 4px rgba(31, 27, 22, 0.08), 0 6px 16px rgba(31, 27, 22, 0.08);
+
+  /* ============================================================ aliases
+
+     The old token names stay as aliases while the pages migrate to the names
+     above. Every alias points at the new palette, so nothing can fall back to
+     a colour the brief dropped. New work uses the names above only.
+     ==================================================================== */
+  --cream: var(--bg);
+  --paper: var(--surface);
+  --cream-deep: #ece2d2;
+  --sand: var(--line);
+  --sand-soft: #ece2d2;
+  --syk: var(--primary);
+  --syk-dark: var(--primary-dark);
+  --syk-deep: var(--primary-900);
+  --syk-tint: var(--primary-100);
+  --syk-line: var(--line);
+  --forest: var(--success);
+  --forest-tint: var(--success-tint);
+  --gold: var(--accent);
 
   --r-input: 10px;
   --r-panel: 16px;
@@ -145,7 +204,7 @@ a:hover {
   left: -9999px;
   top: 0;
   z-index: 100;
-  background: var(--syk-dark);
+  background: var(--primary-dark);
   color: #fff;
   padding: 10px 16px;
   border-radius: 0 0 var(--r-input) 0;
@@ -302,7 +361,7 @@ a:hover {
   gap: 9px;
   padding: 13px 22px;
   border-radius: var(--r-pill);
-  border: 1px solid transparent;
+  border: none;
   font-family: inherit;
   font-size: 15px;
   font-weight: 600;
@@ -312,7 +371,7 @@ a:hover {
   text-align: center;
   cursor: pointer;
   white-space: normal;
-  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .btn .ic {
@@ -324,26 +383,26 @@ a:hover {
 }
 
 .btn--primary {
-  background: var(--syk);
+  background: var(--primary);
   color: #fff;
-  border-color: var(--syk);
 }
 
 .btn--primary:hover {
-  background: var(--syk-dark);
-  border-color: var(--syk-dark);
+  background: var(--primary-dark);
   color: #fff;
 }
 
+/* white with a soft shadow — never a see-through fill with an outline */
 .btn--ghost {
-  background: transparent;
+  background: var(--surface);
   color: var(--ink);
-  border-color: var(--sand);
+  box-shadow: var(--shadow-1);
 }
 
 .btn--ghost:hover {
-  background: var(--cream-deep);
+  background: var(--surface);
   color: var(--ink);
+  box-shadow: var(--shadow-2);
 }
 
 .btn--sm {
@@ -579,8 +638,8 @@ a:hover {
 }
 
 .delta--up {
-  color: var(--forest);
-  background: var(--forest-tint);
+  color: var(--success);
+  background: var(--success-tint);
 }
 
 .delta--down {
@@ -613,7 +672,7 @@ a:hover {
 }
 
 .tag--ok {
-  color: var(--forest);
+  color: var(--success);
 }
 
 .tag--owner {
@@ -709,9 +768,9 @@ a:hover {
    the band is a card: the heading and the lede sit straight on the blue. */
 
 .sec--services {
-  background: var(--syk);
+  background: var(--primary);
   border-bottom: none;
-  color: var(--cream);
+  color: #fff;
   padding: clamp(40px, 5.4vw, 66px) 0;
 }
 
@@ -722,7 +781,7 @@ a:hover {
 
 .sec--services .sec__title {
   margin-top: 0;
-  color: var(--cream);
+  color: #fff;
 }
 
 /* the one place a heading is set nearly as large as the hero's own */
@@ -736,7 +795,7 @@ a:hover {
   margin-top: 14px;
   max-width: 56ch;
   font-size: clamp(14.5px, 1.4vw, 16px);
-  color: rgba(255, 248, 225, 0.88);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .features {
@@ -1251,9 +1310,10 @@ a:hover {
 
 .tablewrap {
   overflow-x: auto;
-  border: 1px solid var(--sand);
+  border: 0;
   border-radius: var(--r-panel);
-  background: var(--paper);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   margin-top: 18px;
 }
 
@@ -1307,7 +1367,7 @@ a:hover {
 }
 
 .tick--yes {
-  color: var(--forest);
+  color: var(--success);
 }
 
 .tick--no {
@@ -1492,9 +1552,10 @@ a:hover {
 .auth__demo {
   margin-top: 26px;
   padding: 18px;
-  border: 1px solid var(--sand);
+  border: 0;
   border-radius: var(--r-panel);
-  background: var(--paper);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
 }
 
 .auth__demo-h {
@@ -1545,10 +1606,11 @@ a:hover {
 }
 
 .auth__card {
-  border: 1px solid var(--sand);
+  border: 0;
   border-radius: var(--r-panel);
-  background: var(--paper);
+  background: var(--surface);
   padding: clamp(18px, 3vw, 28px);
+  box-shadow: var(--shadow-2);
 }
 
 @media (min-width: 900px) {
@@ -1722,9 +1784,10 @@ a:hover {
   justify-content: center;
   width: 46px;
   height: 46px;
-  border: 1px solid var(--forest);
+  border: 0;
   border-radius: var(--r-pill);
-  color: var(--forest);
+  background: var(--primary-tint);
+  color: var(--primary);
 }
 
 .auth__done-h {

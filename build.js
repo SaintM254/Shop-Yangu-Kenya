@@ -1143,6 +1143,72 @@ for (const page of pages) {
   }
 }
 
+/* ============================================================== the palette
+
+   Images/color-sytem.html is the brief for colour, and it publishes its own
+   contrast table. The stylesheet must carry the same values, and every pair
+   the brief calls a check must still clear the ratio it needs. Without this,
+   a colour drifts, the page still builds, and nobody notices until a customer
+   reads a receipt in the sun. */
+const PALETTE = {
+  bg: '#F5EFE6', surface: '#FFFFFF', ink: '#1F1B16', muted: '#6A6054', line: '#E2D8C8',
+  primary: '#287094', primaryDark: '#1B5270', link: '#1B5270',
+  sidebar: '#1B4A63', sidebarInk: '#FFFFFF',
+  accent: '#D9622B', accentInk: '#1F1B16',
+  success: '#167A45', warning: '#B45309', danger: '#C62F3A',
+  disabledBg: '#D9CFBF', disabledInk: '#5A5046',
+};
+const THEME = read('src/styles.css');
+const cssVar = (name) => {
+  const m = new RegExp('--' + name + '\\s*:\\s*(#[0-9a-fA-F]{6})', 'i').exec(THEME);
+  return m ? m[1].toUpperCase() : null;
+};
+/* the brief names them camelCase (its CSS export); the stylesheet uses the
+   kebab-case form */
+const kebab = (n) => n.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+for (const [name, want] of Object.entries(PALETTE)) {
+  const key = kebab(name);
+  const got = cssVar(key);
+  if (got !== want.toUpperCase()) {
+    check(false, `palette: --${key} is ${got || 'missing'}, the colour system says ${want}`);
+  }
+}
+const hexRgb = (h) => [0, 2, 4].map((i) => parseInt(h.replace('#', '').substr(i, 2), 16));
+const lum = (h) => {
+  const k = hexRgb(h).map((v) => {
+    const x = v / 255;
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * k[0] + 0.7152 * k[1] + 0.0722 * k[2];
+};
+const ratio = (a, b) => {
+  const x = lum(a), y = lum(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+};
+const PAIRS = [
+  ['body text on the page', PALETTE.ink, PALETTE.bg, 4.5],
+  ['body text on a card', PALETTE.ink, PALETTE.surface, 4.5],
+  ['muted text on the page', PALETTE.muted, PALETTE.bg, 4.5],
+  ['muted text on a card', PALETTE.muted, PALETTE.surface, 4.5],
+  ['links on the page', PALETTE.link, PALETTE.bg, 4.5],
+  ['primary button text', '#FFFFFF', PALETTE.primary, 4.5],
+  ['paid message', '#FFFFFF', PALETTE.success, 4.5],
+  ['warning tag', '#FFFFFF', PALETTE.warning, 4.5],
+  ['danger tag', '#FFFFFF', PALETTE.danger, 4.5],
+  ['accent tag text', PALETTE.accentInk, PALETTE.accent, 4.5],
+  ['disabled button text', PALETTE.disabledInk, PALETTE.disabledBg, 4.5],
+  ['sidebar menu text', PALETTE.sidebarInk, PALETTE.sidebar, 4.5],
+  ['selected sidebar item', PALETTE.sidebar, '#FFFFFF', 4.5],
+  ['primary button against the page', PALETTE.primary, PALETTE.bg, 3],
+  ['primary against a card', PALETTE.primary, PALETTE.surface, 3],
+];
+for (const [what, fg, bg, need] of PAIRS) {
+  const r = ratio(fg, bg);
+  if (r < need) {
+    check(false, `contrast: ${what} is ${r.toFixed(2)}:1, needs ${need}:1 (${fg} on ${bg})`);
+  }
+}
+
 const bytes = fs
   .readdirSync(dist, { recursive: true })
   .map((f) => path.join(dist, f))
