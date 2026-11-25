@@ -327,7 +327,7 @@ const EXPORT_DEFS = {
         ['Sales', S.sales.length, 'Every receipt and how it was paid'],
         ['Purchase orders', S.pos.length, 'Supplier orders and their status'],
         ['Suppliers', S.suppliers.length, 'Who the shop buys from'],
-        ['Audit log', S.audit.length, 'Who did what, and when'],
+        ['Audit log', S.audit.length, 'What happened, and when'],
       ];
     },
     totals() {
