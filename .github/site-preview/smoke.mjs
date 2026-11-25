@@ -77,6 +77,40 @@ try {
   process.exit(1);
 }
 
+/* ------------------------------------------------------------------ doors
+
+   Signing in needs an emailed code, and the published site has no API to ask
+   for one. So the page paths below are checked for what they can be checked
+   for without a session:
+
+     · the door still works — the advert leads to it, the form takes an
+       address, and submitting either asks for a code or explains that this
+       copy of the site has no server behind it;
+     · everything past the door is exercised by the API suite and by the jsdom
+       harness in docs/ (real pages, real API), not here.
+
+   What must never happen is a page that throws, or a form that does nothing. */
+async function submitDoor(tab) {
+  await tab.fill('#email', 'owner@shopyangu.co.ke');
+  await tab.click('#loginBtn');
+  await tab.waitForTimeout(1500);
+
+  /* Either the code step, or a readable reason there is no server. A blank
+     response is the failure this is here to catch. */
+  const asked = await tab.locator('#verifyForm').isVisible().catch(() => false);
+  const refused = await tab.locator('#loginError').isVisible().catch(() => false);
+  if (!asked && !refused) throw new Error('submitting the form did nothing');
+
+  const reachable = asked;
+  if (!reachable) {
+    const why = await tab.locator('#loginError').innerText().catch(() => '');
+    if (!/server|connect|API_URL|connection/i.test(why)) {
+      throw new Error(`the error does not say what to do — "${why}"`);
+    }
+  }
+  return reachable;
+}
+
 for (const page of PAGES) {
   for (const width of WIDTHS) {
     try {
@@ -112,40 +146,6 @@ for (const page of PAGES) {
       /* A 405 to /api/ is the static host speaking, and the page has to cope. */
       if (res.status() === 405 && isApiRefusal(res.url())) expectedApiRefusal.push(res.url());
     });
-
-/* ------------------------------------------------------------------ doors
-
-   Signing in needs an emailed code, and the published site has no API to ask
-   for one. So the page paths below are checked for what they can be checked
-   for without a session:
-
-     · the door still works — the advert leads to it, the form takes an
-       address, and submitting either asks for a code or explains that this
-       copy of the site has no server behind it;
-     · everything past the door is exercised by the API suite and by the jsdom
-       harness in docs/ (real pages, real API), not here.
-
-   What must never happen is a page that throws, or a form that does nothing. */
-async function submitDoor(tab) {
-  await tab.fill('#email', 'owner@shopyangu.co.ke');
-  await tab.click('#loginBtn');
-  await tab.waitForTimeout(1500);
-
-  /* Either the code step, or a readable reason there is no server. A blank
-     response is the failure this is here to catch. */
-  const asked = await tab.locator('#verifyForm').isVisible().catch(() => false);
-  const refused = await tab.locator('#loginError').isVisible().catch(() => false);
-  if (!asked && !refused) throw new Error('submitting the form did nothing');
-
-  const reachable = asked;
-  if (!reachable) {
-    const why = await tab.locator('#loginError').innerText().catch(() => '');
-    if (!/server|connect|API_URL|connection/i.test(why)) {
-      throw new Error(`the error does not say what to do — "${why}"`);
-    }
-  }
-  return reachable;
-}
 
     /* The app needs a real session, and a session comes from an emailed code.
        A published site has no API behind it, so this cannot sign in — and it
