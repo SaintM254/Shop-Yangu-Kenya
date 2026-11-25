@@ -56,50 +56,126 @@ email can be the one thing standing between a shopkeeper and their till.
 
 There are two ways, and you only need to set up **one** for the first sign-in.
 
-### Way A — let Neon Auth send the first code (least setup)
+### Way A — let Neon Auth hold the account and send the first code
 
-Neon, the database from Step 2, also offers a sign-in service. If it is switched
-on for your project, this shop uses it for **one job only**: emailing and
-checking the six-digit code that creates a shop.
+Neon, the database from Step 2, also runs a sign-in service called **Managed
+Better Auth**. This shop uses it for two things: your email-and-password
+account, and the six-digit code that confirms your address the first time.
 
 Why bother: it means you can open your shop today **without connecting an email
 provider at all**. Neon holds the mail connection for you.
 
-**How to turn it on**
+> **There is no "Auth URL" box in the console, and looking for one is where most
+> people lose an afternoon.** The URL is *generated* when Auth is turned on, and
+> the supported way to turn it on is the Neon CLI reading a file that is already
+> in this repository (`neon.ts`, with `auth: true`). That is what the steps below
+> do.
 
-1. Go to <https://console.neon.tech> and open your `shop-yangu` project.
-2. In the left sidebar click **Auth** (some versions say **Neon Auth**).
-3. Press **Enable**, or **Set up Auth**, and accept the defaults.
-4. When it is ready, the page shows a **Base URL**. It looks like
-   `https://ep-something-....neon.tech/neondb/auth`.
-5. Copy it, and add it in **Vercel → your project → Settings → Environment
-   Variables** as:
+**What you need for this:** Node 22.20 or newer (`node -v`), a Neon project on
+AWS, and — importantly — **no IP Allow or Private Networking** on that project.
+Managed Auth cannot be enabled with either.
 
-   | Key | Value |
-   |---|---|
-   | `NEON_AUTH_BASE_URL` | the URL you just copied |
+**Step 1 — install the Neon CLI**
 
-6. Press **Redeploy** on the newest deployment.
-
-Neon's sign-in service sends the verification emails with **its own sender**
-unless you connect a custom SMTP server in the neon console (Auth → Email
-provider). For testing with your own address that is fine. For a real shop,
-connect your own sender — or use Way B instead, which you need anyway.
-
-> **What if it fails?** Nothing breaks. If Neon Auth is not switched on, is
-> unreachable, is slow, or refuses, this shop sends the code itself with the
-> settings below. The worst case is that the email arrives from a different
-> address than expected.
-
-**How to check it took:** open `/api/health` on your site. Look for the `auth`
-section:
-
-```json
-"auth":{"driver":"neon-auth","ok":true,"host":"ep-something.neon.tech"}
+```bash
+npm install -g neon@latest
+neon --version
 ```
 
-`"driver":"none"` means `NEON_AUTH_BASE_URL` is not set, and codes are being
-sent by the mailer instead.
+**Step 2 — sign in**
+
+```bash
+neon login
+```
+
+A browser opens. Sign in to the Neon account that owns `shop-yangu`.
+
+> No browser on that machine? Make an API key in Neon → **Account settings →
+> API keys**, then `echo "KEY" | neon profile create DEFAULT --api-key -`.
+> Never commit a key or paste one into a chat.
+
+**Step 3 — link the project**
+
+```bash
+neon link
+```
+
+Choose your organisation and `shop-yangu`. It writes a `.neon` file, which is
+git-ignored.
+
+**Step 4 — turn Auth on**
+
+`neon.ts` in this repository already says `auth: true`. Apply it:
+
+```bash
+neon deploy
+neon neon-auth status
+```
+
+`neon deploy` provisions Managed Better Auth and writes `NEON_AUTH_BASE_URL` for
+you. That is the URL that does not exist until you run this. It ends in
+`/neondb/auth`.
+
+**Step 5 — give the settings to Vercel**
+
+```bash
+neon env pull
+```
+
+That puts `DATABASE_URL` and `NEON_AUTH_BASE_URL` in `.env.local`. Copy both into
+**Vercel → your project → Settings → Environment Variables**, alongside the
+`TOKEN_PEPPER` you made in Step 3.
+
+**Step 6 — the setting that silently breaks sign-in**
+
+Better Auth refuses any request whose `Origin` is not on the branch's **trusted
+domains**, answering `403 Invalid origin`. This shop sends `SITE_URL` as its
+origin, so:
+
+1. In Neon, open your project → **Auth** → **Trusted domains**.
+2. Add your site address exactly, with `https://` and no trailing slash:
+   `https://your-address.vercel.app`
+3. Save.
+
+And make sure Vercel has `SITE_URL` set to that same address. If those two
+disagree, every sign-in fails and the message does not obviously say why.
+
+**Step 7 — prove it**
+
+Do not take this on trust:
+
+```bash
+cd api
+NEON_AUTH_BASE_URL="https://ep-....neon.tech/neondb/auth" \
+SITE_URL="https://your-address.vercel.app" \
+node scripts/prove-neon-auth.mjs your@email.co.ke
+```
+
+It creates a real user, asks for a real code, checks that a **wrong** code is
+refused, asks you to type the code from your inbox, then reads the user back and
+signs in with the password. No secrets are printed.
+
+**Where the emails go — the other thing that looks like a bug**
+
+Neon's shared sender, `auth@mail.myneon.app`, **only delivers to the address on
+your Neon account.** Any other address goes nowhere, silently, while the API
+still reports success. So while testing, use the address your Neon account is
+registered to. For a real shop, connect your own sender in Neon under **Auth →
+Email provider** — and do Way B anyway, because this shop's own mailer sends the
+welcome email and every later sign-in code.
+
+> **What if any of it fails?** Nothing breaks. If Neon Auth is not configured,
+> unreachable, slow, or refuses, this shop sends the code itself with Way B. The
+> worst case is that the email arrives from a different address than expected.
+
+**How to check it took:** open `/api/health` on your site and look at `auth`:
+
+```json
+"auth":{"driver":"neon-auth","ok":true,"host":"ep-something.neon.tech","trustedOrigin":"https://your-address.vercel.app"}
+```
+
+`"driver":"none"` means the setting is not visible to the deployment, and your own
+mailer is sending instead — which still works.
 
 ### Way B — connect your own mailer
 

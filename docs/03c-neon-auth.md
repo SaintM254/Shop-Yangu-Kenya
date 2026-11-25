@@ -1,149 +1,288 @@
-# Neon Auth — the one job this shop gives it
+# Neon Auth — set it up properly, with the CLI
 
-**Short answer: it is optional, it is safe, and it does exactly one thing —
-it sends and checks the six-digit code that creates a shop.** If you would
-rather not use it, do nothing: the shop sends that code itself.
+This replaces the earlier version of this page, which described a `NEON_AUTH_BASE_URL`
+setting you could not find anywhere in the Neon console. That was the whole
+problem: **there is no "Auth URL" field to paste into.** With Managed Better Auth
+the URL is *produced* when Auth is turned on for a project, and the supported way
+to turn it on is the Neon CLI reading a `neon.ts` file. This page does that.
 
-This page exists because the Neon console offers an **Auth** button right next
-to the database, and it is worth knowing what it is for before you decide.
-
----
-
-## What Neon Auth is
-
-Neon Auth is a real product. Neon runs a copy of a sign-in service (Better Auth)
-inside your Neon project and gives you:
-
-- sign-up and sign-in screens
-- emailed one-time codes and verified email addresses
-- session handling
-- the users themselves, in a `neon_auth` schema **inside your database**
-
-If you were building an app from nothing, it would save you a week.
+The repository already contains `neon.ts` with `auth: true`, and the API already
+uses Neon Auth. What is left is the part only you can do: link the project to
+your Neon account.
 
 ---
 
-## What this shop does with it, and nothing more
+## What Neon Auth does here, and what it does not
 
-**It sends the first code, and it checks that the code came back.**
+**It does:** hold your email-and-password account, and send and check the
+six-digit code that confirms your address on the first sign-in.
 
-That is the whole of it. Concretely, when somebody fills in the sign-up form:
+**It does not:** decide which shop you belong to. That is still the `logins` row
+and the eleven row-level-security rules in the database. A Neon code proves you
+can read an inbox; this server decides what that gets you into.
 
-1. This server creates the shop's pending sign-up, with the password already
-   hashed, and its own code and link in reserve.
-2. If `NEON_AUTH_BASE_URL` is set, the server asks **Neon Auth** to email a
-   verification code to that address, and waits for the answer.
-3. If Neon says yes, the person's email comes from Neon. When they type it, the
-   server asks **Neon Auth** whether it is right.
-4. If Neon says no — not configured, unreachable, slow, or refusing — the server
-   does what it did before: emails **its own** six-digit code, and checks that.
+Two consequences worth knowing:
 
-Either way the result is the same: a real shop, a real login row, and a person
-signed in. **The safety rules are unchanged**, because Neon Auth only ever
-answers the question "is this code right?". It cannot create a session, and it
-never touches a shop's data.
-
-### Why bother at all
-
-Because it removes the one thing that used to block a brand-new shop: **you had
-to connect an email provider before you could create an account.** Neon Auth
-holds a sender for you, so day one works with two settings instead of nine.
-
-### Why the rest of the shop does not use it
-
-Every screen in the till asks one question before it shows anything: *which shop
-is this?* The database answers from a session cookie **this** server issued, and
-then eleven rules let that shop see only its own products, sales, customers and
-credit. Those rules read the `logins` table — a login row *is* the link between a
-person and a shop.
-
-Neon Auth's users live in a different table, in a different schema, and know
-nothing about shops. A person signed in by Neon Auth alone would be signed in to
-*nothing*, because no rule would match them. So Neon Auth is not the front door;
-it is a helper who confirms a code at the door.
-
-> **The arrangement to avoid** is the tempting one: wiring `neon_auth.users` to
-> this app's tables so a Neon session counts as a shop session. That is how a
-> person could reach shop data without the shop id the rules check for — which
-> is exactly the leak the rules exist to prevent. This shop does not do it, and
-> does not need to.
+- Turning Neon Auth off never loses a shop. Every shop is a row in `logins`.
+- Neon Auth cannot be the whole sign-in system, because it knows nothing about
+  shops. It is the account and the door code; the shop is behind it.
 
 ---
 
-## Turning it on
+## Before you start
 
-Only if you want day-one sign-up without a mailer of your own.
+You need:
 
-1. Neon console → your `shop-yangu` project → **Auth** in the left sidebar.
-2. Press **Enable** / **Set up Auth** and accept the defaults.
-3. When it is ready, the page shows a **Base URL** like
-   `https://ep-something-….neon.tech/neondb/auth`.
-4. Vercel → your project → **Settings** → **Environment Variables** → add:
+1. **A Neon project with a database in it** — [Step 2 of the short course](../docs2/02-database.md).
+2. **Node 22.20 or newer** on the machine you run this on. Check with
+   `node -v`.
+3. **The project must be on AWS**, and must **not** use IP Allow or Private
+   Networking. Managed Auth cannot be enabled with either. Leave those
+   protections off for this project, or use a different project.
+4. **A region that Hosted Auth supports.** `aws-eu-central-1` (Frankfurt), which
+   the short course recommends, is fine.
 
-   | Key | Value |
-   |---|---|
-   | `NEON_AUTH_BASE_URL` | that Base URL |
+---
 
-5. **Redeploy.**
+## Step 1 — Install the Neon CLI
 
-To check it took, open `/api/health` and look for `auth`:
-
-```json
-"auth":{"driver":"neon-auth","ok":true,"host":"ep-…neon.tech"}
+```bash
+npm install -g neon@latest
+neon --version
 ```
 
-`"driver":"none"` means the setting is not there, and codes come from your own
-mailer instead — which is a perfectly good setup.
+You want `9.x` or newer. If `neon --version` prints nothing, the global npm
+directory is not on your `PATH`; `npx neon@latest --version` works instead,
+substituting `npx neon@latest` for `neon` in the commands below.
+
+---
+
+## Step 2 — Sign in
+
+```bash
+neon login
+```
+
+A browser opens. Sign in to the Neon account that owns your `shop-yangu`
+project. Come back to the terminal when it says you are signed in.
+
+> **No browser on this machine?** Make an API key in the Neon console under
+> **Account settings → API keys**, then:
+>
+> ```bash
+> echo "YOUR_KEY" | neon profile create DEFAULT --api-key -
+> ```
+>
+> That writes the key to `~/.config/neon/credentials.json`, outside the repo.
+> Never commit a Neon API key, and never paste one into a chat.
+
+---
+
+## Step 3 — Link the project
+
+```bash
+neon link
+```
+
+It asks which organisation and project. Pick `shop-yangu`. It writes a
+`.neon` file in the repository — that file is git-ignored, and it is what makes
+every later command know which project you mean.
+
+To do it without prompts:
+
+```bash
+neon projects list          # find your project id
+neon link --project-id <id> -y
+```
+
+---
+
+## Step 4 — Turn on Auth
+
+The repository's `neon.ts` already declares it:
+
+```ts
+export default defineConfig({
+  auth: true,
+  // ...
+});
+```
+
+Now apply it:
+
+```bash
+neon deploy
+neon neon-auth status
+```
+
+`neon deploy` provisions Managed Better Auth on the branch and writes the
+environment variables for you, including **`NEON_AUTH_BASE_URL`**. That is the
+URL you could not find: it is generated here, not copied from a console page.
+
+`neon neon-auth status` should say the service is enabled and give you that base
+URL. It ends in `/neondb/auth`.
+
+> **If `neon deploy` says Auth cannot be enabled**, it is almost always IP Allow
+> or Private Networking on the project. Turn that off in Neon → **Settings →
+> Network**, then run it again.
+
+---
+
+## Step 5 — Put the settings where Vercel can see them
+
+The API needs three things. `neon env pull` fetches the first:
+
+```bash
+neon env pull
+```
+
+That writes `DATABASE_URL` and `NEON_AUTH_BASE_URL` into `.env.local`. Open it,
+and copy those two values into:
+
+**Vercel → your project → Settings → Environment Variables**
+
+Add a third yourself:
+
+| Variable | Value | Why |
+|---|---|---|
+| `DATABASE_URL` | from `.env.local` — the **pooled** one | the shop's data |
+| `NEON_AUTH_BASE_URL` | from `.env.local`, ends `/neondb/auth` | Neon's auth server |
+| `TOKEN_PEPPER` | 32+ random characters, yours | session tokens; you already have one from the deploy step |
+| `SITE_URL` | `https://your-address.vercel.app` | **the one people miss — see below** |
+
+> **`NEON_AUTH_COOKIE_SECRET` is optional.** Neon's SDK signs its own cookie with
+> it. If you leave it out, this shop derives one from `TOKEN_PEPPER`, which works
+> and needs nothing extra. To keep them separate: `openssl rand -base64 32`.
+
+Then **Redeploy** the newest deployment. Settings do not apply to a deployment
+that already exists.
+
+---
+
+## Step 6 — The setting that silently breaks sign-in
+
+Better Auth rejects any POST whose `Origin` is not on the branch's **trusted
+domains**, with `403 Invalid origin`. This shop sends `SITE_URL` as its origin,
+which is why `SITE_URL` in the table above is not optional.
+
+In the Neon console:
+
+1. Open your project → **Auth**.
+2. Find **Trusted domains** (sometimes under **Settings** inside Auth).
+3. Add your site address exactly, with `https://` and no trailing slash:
+
+   ```
+   https://your-address.vercel.app
+   ```
+
+4. Save.
+
+If you later add a custom domain, or use Vercel preview deployments, add those
+too. A preview URL that is not listed gets `403 Invalid origin` and nothing else
+— it looks like the app is broken and it is one setting.
+
+---
+
+## Step 7 — Prove it works
+
+Do not take any of this on trust. There is a script that runs the real flow and
+prints no secrets:
+
+```bash
+cd api
+NEON_AUTH_BASE_URL="https://ep-....neon.tech/neondb/auth" \
+SITE_URL="https://your-address.vercel.app" \
+node scripts/prove-neon-auth.mjs you@yourdomain.co.ke
+```
+
+Use an address you can open right now. It will:
+
+1. create a user with email and password at Neon Auth
+2. ask Neon to email a verification code
+3. check a wrong code, which **must** be refused
+4. ask you to type the code from your inbox
+5. read the current user back, and sign in with the password
+
+You want every line ticked and `Neon Auth is working` at the end. The password
+it generates is random and used once; it is never printed.
+
+---
+
+## Where emails actually go
+
+This is the other thing that made the first attempt look broken.
+
+Managed Auth sends verification, OTP and password-reset mail itself — you do not
+need Resend, SendGrid or any mailer in your own app for this. Getting started
+uses Neon's **shared sender**, `auth@mail.myneon.app`.
+
+**The shared sender only delivers to the address on your Neon account.** Any
+other address goes nowhere, silently, and the API still answers `{"success":
+true}`. That is why a code "sent" to a shopkeeper never arrives.
+
+Two fixes:
+
+- **Testing, one address:** use the address your Neon account is registered to.
+- **Real shops:** connect custom SMTP in the console — **Auth → Email
+  provider** — with the Resend values from
+  [Step 4 of the short course](../docs2/04-email-and-sign-in.md). Verification
+  *codes* work on the shared sender; verification *links* need custom SMTP.
+
+---
+
+## The other trap, if you are reading the code
+
+Better Auth's `send-verification-otp` answers `{"success": true}` for an email
+that has **no user yet**, and sends nothing. Asking for a code before creating
+the account therefore looks like success and delivers zero emails.
+
+`api/_lib/neon-auth.js` calls `signUpWithPassword()` **before**
+`sendSignupCode()` for exactly this reason. If you reorder those two calls,
+sign-up will silently stop sending codes.
+
+---
+
+## The order sign-in happens in, now
+
+| Moment | Who decides |
+|---|---|
+| Sign-up form submitted | this server hashes the password (scrypt), then creates the Neon account, then asks Neon for a code |
+| First sign-in | the six-digit code, checked by Neon |
+| Every day after | email + password, checked by **Neon first**, this server's hash if Neon is unreachable |
+| Forgotten password | a code by email — this server's own, tied to the login row, so it always works |
+| Changing the password | written here **and** at Neon, or the change is refused rather than half-applied |
+
+The fallback matters: a definite "no" from Neon is respected, but an *outage*
+falls through to the local hash. A shop must not lose its till because a third
+party is down.
 
 ---
 
 ## Turning it off
 
-Remove `NEON_AUTH_BASE_URL` from Vercel and redeploy. That is the whole
-procedure.
+Remove `NEON_AUTH_BASE_URL` from Vercel and redeploy. Nothing is lost: sign-up
+falls back to this server's own code and mailer, and every existing account
+keeps working, because every account is a row in `logins`.
 
-Nothing is lost: the shop falls back to sending its own codes, and every account
-created while Neon Auth was on keeps working, because every account that exists
-is a row in `logins`, not a row in `neon_auth`.
-
----
-
-## The things people worry about
-
-**"Won't there be two sets of users?"**
-There is one set — `logins`. Neon Auth holds a copy of an email address and
-whether it received a code. It has no idea which shop anything belongs to.
-
-**"Does this weaken the shop's security?"**
-No. The rules that separate shops are in the database, not in the sign-in
-service. Neon Auth can only say yes or no about a six-digit code.
-
-**"What if Neon Auth is down when somebody signs up?"**
-The server notices within eight seconds and sends its own code instead. A shop
-can never be blocked from being created by a third party's outage.
-
-**"Two emails arrived for one sign-up."**
-Expected. Neon sends the code; this shop sends the one-click link. Tap either.
-
-**"Can I use Neon Auth passwords instead?"**
-No need. The shop has its own passwords: chosen at sign-up, stored as scrypt
-hashes in `logins`, and checked by this server. They work with no third party
-involved.
+To remove the service itself, set `auth: false` in `neon.ts` and run
+`neon deploy` again.
 
 ---
 
-## Summary
+## Checking from the outside
 
-| | Neon Auth | This shop |
-|---|---|---|
-| Emails and checks the first sign-up code | **yes — when configured** | yes, as the fallback |
-| Day-to-day sign-in | no | email + password |
-| Sign-in by emailed code, any time | no | yes — the way back in |
-| Knows which shop a person belongs to | **no** | yes — this is the point |
-| Enforces the eleven "only your own shop" rules | **no** | yes, in the database |
-| Required for the shop to work | **no** | — |
+Open `/api/health` on your site:
 
-Optional, useful, and easy to undo. That is the whole verdict.
+```json
+"auth":{"driver":"neon-auth","ok":true,"host":"ep-…neon.tech","trustedOrigin":"https://your-address.vercel.app"}
+```
+
+- `"driver":"none"` — `NEON_AUTH_BASE_URL` is not set anywhere the deployment can
+  see it. Codes come from your own mailer instead, which still works.
+- `"ok":false` — the `error` names the setting. A base URL missing
+  `/neondb/auth`, or a missing cookie secret, are the two it catches.
+- `"trustedOrigin"` — what this server will send as its Origin. **It must match
+  a trusted domain at Neon**, or every call is `403 Invalid origin`.
 
 ---
 

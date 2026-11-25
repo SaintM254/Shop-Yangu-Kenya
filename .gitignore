@@ -11,3 +11,9 @@ api/.env
 
 # local database files (pglite)
 .pgdata/
+
+# Neon CLI: links this directory to a Neon project. Machine-specific.
+.neon
+
+# Neon CLI's `env pull` writes here. Contains connection strings.
+.env.local
