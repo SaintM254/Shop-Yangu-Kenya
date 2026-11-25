@@ -1,201 +1,112 @@
-# Step 4 — Email, and how signing in works
+# Step 4 — Email and how signing in works
 
 *20 minutes. Free on most providers.*
 
-This is the guide that explains the shop's front door. Read the first half even
-if you never touch a setting: it explains what people will see, and why the
-first sign-in is not like the tenth.
+This page is written for someone working **in the GitHub website**, with no
+terminal. Every step has a "do this if you have no terminal" line. If you do have
+one, the terminal is faster, but nothing here requires it.
 
-At the end of this page you can create a shop and sign back into it.
+At the end you can create a shop and sign back into it.
 
 ---
 
-## How signing in works now
+## How signing in works
 
 Two things, used at different times.
 
-### The first time — a code by email
+**The first time — a code by email.** Somebody types the shop name, their name,
+an email address, and a password twice. A six-digit code arrives. They type it.
+The shop is created.
 
-When somebody opens a shop for the first time they type:
+Why the code on day one? Because it is the only proof the email address is really
+theirs. A password proves what somebody knows; a code in the inbox proves what
+somebody can open. On day one you want both.
 
-- the **shop's name**
-- their **own name**
-- an **email address**
-- a **password** they choose, twice
+**Every time after — email and password.** No email, no waiting.
 
-Then a **six-digit code** arrives by email. They type it in. The shop is created
-and they are signed in.
+**If the password is forgotten — the code again.** Under the sign-in button there
+is **"sign in with a code by email"**, which sends the same six digits. It gets
+the person in, and **Settings → Password** sets a new one there and then. Nobody
+can be locked out of their own shop.
 
-Why the code on the first day? Because it is the only proof that the email
-address is really theirs. A password proves what somebody knows; a code in the
-inbox proves what somebody can open. On day one you want both.
-
-### Every time after — email and password
-
-From then on it is just **email and password**. No email, no waiting, no code
-to read in a hurry at the counter with a customer watching.
-
-### If the password is forgotten — the code again
-
-There is no "reset password" link that expires and lands in spam. Under the
-sign-in button there is **"sign in with a code by email"**, which sends the same
-six-digit code. It gets the person in, and on the Settings screen they can set a
-new password there and then.
-
-That is the whole design: **the code is the spare key, kept permanently under
-the mat.** Nobody can be locked out of their own shop, and no password reset
-email can be the one thing standing between a shopkeeper and their till.
-
-> **Word to know — OTP.** One-Time Password: a code that works once and then
-> dies. Six digits, ten minutes, one use. When you see "OTP" in these docs, it
-> means that.
+> **Word to know — OTP.** One-Time Password: a code that works once, then dies.
+> Six digits, ten minutes, one use.
 
 ---
 
-## Who sends the emails
+## What you actually have to set up
 
-There are two ways, and you only need to set up **one** for the first sign-in.
+Only two things, and one of them may already be done.
 
-### Way A — let Neon Auth hold the account and send the first code
+| What | Where | Why |
+|---|---|---|
+| `NEON_AUTH_BASE_URL` | Vercel → Settings → Environment Variables | Neon holds the account and sends the first code |
+| Your own mailer (Way B below) | Vercel, same place | welcome email, and every later sign-in code |
 
-Neon, the database from Step 2, also runs a sign-in service called **Managed
-Better Auth**. This shop uses it for two things: your email-and-password
-account, and the six-digit code that confirms your address the first time.
+> **A note on trusted domains.** Earlier versions of this page told you to add
+> your site address in Neon under **Auth → Trusted domains**. If you connected
+> Neon and Vercel with the Neon integration, **your `.vercel.app` domain is
+> already trusted and you can skip that entirely.** Only add a domain if you get
+> a `403 Invalid origin` error, or if you are using a custom domain and preview
+> URLs. See [Step 6 →](06-troubleshooting.md#403-invalid-origin--every-sign-in-fails).
 
-Why bother: it means you can open your shop today **without connecting an email
-provider at all**. Neon holds the mail connection for you.
+---
 
-> **There is no "Auth URL" box in the console, and looking for one is where most
-> people lose an afternoon.** The URL is *generated* when Auth is turned on, and
-> the supported way to turn it on is the Neon CLI reading a file that is already
-> in this repository (`neon.ts`, with `auth: true`). That is what the steps below
-> do.
+## Where `NEON_AUTH_BASE_URL` comes from
 
-**What you need for this:** Node 22.20 or newer (`node -v`), a Neon project on
-AWS, and — importantly — **no IP Allow or Private Networking** on that project.
-Managed Auth cannot be enabled with either.
+**There is no Auth URL box in the Neon console to copy it from.** That is not you
+missing it. It is *generated* when Managed Better Auth is turned on, and the
+supported way to turn it on is the Neon CLI reading `neon.ts`, which is already in
+this repository with `auth: true`.
 
-**Step 1 — install the Neon CLI**
+**If you have no terminal**, use GitHub Codespaces — a full terminal in your
+browser, free, nothing to install:
 
-```bash
-npm install -g neon@latest
-neon --version
-```
+1. On your repository page, click the green **Code** button → **Codespaces** tab
+   → **Create codespace on main**.
+2. Wait for it to open. You get a VS Code window with a terminal at the bottom.
+3. Type these, one at a time:
 
-**Step 2 — sign in**
+   ```bash
+   npm install -g neon@latest
+   neon login          # a browser tab opens; sign in to Neon
+   neon link           # choose your organisation, then shop-yangu
+   neon deploy         # this is what creates NEON_AUTH_BASE_URL
+   neon neon-auth status
+   neon env pull
+   cat .env.local
+   ```
 
-```bash
-neon login
-```
+4. The last command prints your settings. Copy the value of
+   `NEON_AUTH_BASE_URL` — it ends in `/neondb/auth` — into Vercel.
 
-A browser opens. Sign in to the Neon account that owns `shop-yangu`.
+> **`neon deploy` says Auth cannot be enabled.** The project has IP Allow or
+> Private Networking on. Neon → **Settings → Network** → turn it off, then run it
+> again. Managed Auth cannot run with either.
 
-> No browser on that machine? Make an API key in Neon → **Account settings →
-> API keys**, then `echo "KEY" | neon profile create DEFAULT --api-key -`.
-> Never commit a key or paste one into a chat.
+> **Codespaces is a borrowed computer.** Close it when you are done; it stops
+> billing free minutes when idle. Do not leave secrets in its files.
 
-**Step 3 — link the project**
+---
 
-```bash
-neon link
-```
+## Way B — connect your own mailer
 
-Choose your organisation and `shop-yangu`. It writes a `.neon` file, which is
-git-ignored.
+You need this for a real shop either way. Neon Auth's shared sender only reaches
+the address on your Neon account; every later email from this shop — welcome,
+sign-in codes, receipts' links — comes from **your** mailer.
 
-**Step 4 — turn Auth on**
-
-`neon.ts` in this repository already says `auth: true`. Apply it:
-
-```bash
-neon deploy
-neon neon-auth status
-```
-
-`neon deploy` provisions Managed Better Auth and writes `NEON_AUTH_BASE_URL` for
-you. That is the URL that does not exist until you run this. It ends in
-`/neondb/auth`.
-
-**Step 5 — give the settings to Vercel**
-
-```bash
-neon env pull
-```
-
-That puts `DATABASE_URL` and `NEON_AUTH_BASE_URL` in `.env.local`. Copy both into
-**Vercel → your project → Settings → Environment Variables**, alongside the
-`TOKEN_PEPPER` you made in Step 3.
-
-**Step 6 — the setting that silently breaks sign-in**
-
-Better Auth refuses any request whose `Origin` is not on the branch's **trusted
-domains**, answering `403 Invalid origin`. This shop sends `SITE_URL` as its
-origin, so:
-
-1. In Neon, open your project → **Auth** → **Trusted domains**.
-2. Add your site address exactly, with `https://` and no trailing slash:
-   `https://your-address.vercel.app`
-3. Save.
-
-And make sure Vercel has `SITE_URL` set to that same address. If those two
-disagree, every sign-in fails and the message does not obviously say why.
-
-**Step 7 — prove it**
-
-Do not take this on trust:
-
-```bash
-cd api
-NEON_AUTH_BASE_URL="https://ep-....neon.tech/neondb/auth" \
-SITE_URL="https://your-address.vercel.app" \
-node scripts/prove-neon-auth.mjs your@email.co.ke
-```
-
-It creates a real user, asks for a real code, checks that a **wrong** code is
-refused, asks you to type the code from your inbox, then reads the user back and
-signs in with the password. No secrets are printed.
-
-**Where the emails go — the other thing that looks like a bug**
-
-Neon's shared sender, `auth@mail.myneon.app`, **only delivers to the address on
-your Neon account.** Any other address goes nowhere, silently, while the API
-still reports success. So while testing, use the address your Neon account is
-registered to. For a real shop, connect your own sender in Neon under **Auth →
-Email provider** — and do Way B anyway, because this shop's own mailer sends the
-welcome email and every later sign-in code.
-
-> **What if any of it fails?** Nothing breaks. If Neon Auth is not configured,
-> unreachable, slow, or refuses, this shop sends the code itself with Way B. The
-> worst case is that the email arrives from a different address than expected.
-
-**How to check it took:** open `/api/health` on your site and look at `auth`:
-
-```json
-"auth":{"driver":"neon-auth","ok":true,"host":"ep-something.neon.tech","trustedOrigin":"https://your-address.vercel.app"}
-```
-
-`"driver":"none"` means the setting is not visible to the deployment, and your own
-mailer is sending instead — which still works.
-
-### Way B — connect your own mailer
-
-You need this for a real shop in either case: **welcome emails, and every
-"sign in with a code" email go through your own mailer.** Neon Auth only ever
-sends the first one.
-
-Pick a provider. All of these speak the same standard (SMTP), so the shape is
-identical and only the values differ.
+Pick a provider. They all speak the same standard (SMTP), so only the values
+differ.
 
 | Provider | Free allowance | Best for |
 |---|---|---|
 | **Resend** — <https://resend.com> | 3,000/month, 100/day | simplest. Start here. |
-| **Brevo** — <https://brevo.com> | 300/day | more per day, a few more clicks |
+| **Brevo** — <https://brevo.com> | 300/day | more per day, more clicks |
 | **Gmail** | ~500/day, needs an "app password" | testing only |
-| **Zoho / cPanel / your web host** | depends | if you already pay for email at your domain |
+| **Zoho / cPanel / your host** | depends | if you already pay for email |
 
-> **Why not Gmail for real use:** Gmail treats automated mail as suspicious and
-> often files it under spam. Codes in spam means people cannot sign in. Fine for
-> a test, then move to Resend.
+> **Why not Gmail for real use:** it treats automated mail as suspicious and often
+> files it under spam. Codes in spam means people cannot sign in.
 
 **Getting the values from Resend**
 
@@ -203,8 +114,8 @@ identical and only the values differ.
 2. Left menu → **API Keys** → **Create API Key**.
    - **Name:** `shop-yangu`
    - **Permission:** **Sending access**
-   - Press **Add**, then copy the key. It starts `re_`. **Copy it now** — Resend
-     will not show it again.
+   - Press **Add**, copy the key. It starts `re_`. **Copy it now** — it is not
+     shown again.
 3. Left menu → **SMTP**. The values are fixed:
 
    | Setting | Value |
@@ -213,22 +124,15 @@ identical and only the values differ.
    | Port | `587` |
    | Secure | `false` |
    | Username | `resend` |
-   | Password | the `re_…` key you just copied |
+   | Password | the `re_…` key |
 
-4. **About the sender address.** Out of the box you must send from
+4. **The sender address.** Out of the box you must send from
    `onboarding@resend.dev`, and Resend will only deliver to *your own signup
-   email*. That is enough to test and not enough to run a shop.
+   email*. Enough to test, not enough to run a shop. To send to anyone: Resend →
+   **Domains** → **Add Domain**, and add the DNS records it shows at your
+   registrar. Then **Verify**. Usually ten minutes.
 
-   To send to anyone: Resend → **Domains** → **Add Domain**, type your domain,
-   and add the DNS records it shows you at your domain registrar. Then press
-   **Verify**. Usually ten minutes.
-
-   No domain yet? Stay on `onboarding@resend.dev` and test with your own
-   address. Nothing else depends on it.
-
-**Put the values into Vercel**
-
-Vercel → your project → **Settings** → **Environment Variables**. Add seven:
+**Put the values into Vercel** — Settings → Environment Variables, seven of them:
 
 | Key | Value |
 |---|---|
@@ -240,129 +144,179 @@ Vercel → your project → **Settings** → **Environment Variables**. Add seve
 | `SMTP_PASS` | your `re_…` key |
 | `MAIL_FROM` | `Shop Yangu Kenya <no-reply@yourdomain.co.ke>` |
 
-Keep the angle brackets and the name in front of the address. While testing,
-use `Shop Yangu Kenya <onboarding@resend.dev>`.
+Keep the angle brackets and the name in front. While testing use
+`Shop Yangu Kenya <onboarding@resend.dev>`.
 
-Tick **Production** on each. Then press **Redeploy** — settings are only read
-when the site is built.
-
----
-
-## Step 3 — Create your own shop, for real
-
-1. Open `https://your-address.vercel.app/login/`.
-2. Press the **Open a shop** tab.
-3. Fill in the shop name, your name, your email, and a password twice.
-4. Press **Open my shop**.
-5. Check the inbox. In the same minute you should get:
-   - an email with a six-digit code, and
-   - an email with a one-click link.
-   Either works; the link also confirms the address.
-6. Type the code — or click the link — and you are in the shop.
-
-If you ran the demo file in Step 2 and want your own shop as well, that is fine:
-the demo shop is a separate login. To remove the demo shop later, the top of
-`db/apply-demo.sql` has the one line that deletes it.
+Tick **Production** on each, then press **Redeploy**. Settings are only read when
+the site is built.
 
 ---
 
-## Choosing a password people will actually keep
+## Step 7 — Prove it works, without a terminal
 
-The form refuses a few things, and each refusal explains itself:
+This is the step that was confusing, and it was confusing because it assumed a
+terminal. There are now two ways, and the first needs nothing installed.
+
+### Way 1 — from the GitHub website (recommended if you work in GitHub)
+
+The repository has a GitHub Action that runs the same proof for you.
+
+1. Open your repository's **Actions** tab.
+2. In the left list, click **Prove Neon Auth**.
+3. On the right, press **Run workflow**.
+4. Type an email address you can open right now, and press the green
+   **Run workflow** button.
+5. Wait about a minute, then click the run and open the **prove** job.
+
+You want four ticks and `Neon Auth is working`:
+
+```
+The settings
+  ✓ Neon Auth is configured
+  ✓ the base URL has the /neondb/auth path
+1. Create the user with email and password
+  ✓ Neon Auth created the account
+2. Ask Neon to email a verification code
+  ✓ Neon accepted the request
+4. Read the current user back
+  ✓ sign-in with the password works
+  ✓ the current user came back   you@yourdomain.co.ke
+```
+
+**Before the first run, two settings in GitHub** — Settings → **Secrets and
+variables** → **Actions**:
+
+| Name | Type | Value |
+|---|---|---|
+| `NEON_AUTH_BASE_URL` | Secret | the value from `neon env pull`, ending `/neondb/auth` |
+| `SITE_URL` | Variable | your site address, `https://`, no trailing slash |
+
+Nothing secret is printed. The password is generated fresh and used once.
+
+> **What this does not prove.** It does not type the code from your inbox,
+> because that needs a human with the inbox. That is the one step a robot cannot
+> fake. If the four ticks above pass, the code is the only thing left — and you
+> can prove it in ten seconds by opening your site's sign-in page and signing up
+> for real.
+
+### Way 2 — from a terminal, if you have one
+
+```bash
+cd api
+NEON_AUTH_BASE_URL="https://ep-....neon.tech/neondb/auth" \
+SITE_URL="https://your-address.vercel.app" \
+node scripts/prove-neon-auth.mjs you@yourdomain.co.ke
+```
+
+This one also asks you to type the code from your inbox, so it proves all five
+steps instead of four.
+
+---
+
+## About the snippet Neon gave you
+
+Full version in [`neon-codes.md`](neon-codes.md).
+
+Neon's assistant gave you this:
+
+```ts
+export async function sendSignInOtp(email: string) {
+  const { error } = await authClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' });
+  if (error) throw error;
+}
+```
+
+It is **correct advice for the right job, and not the job this shop does** at
+sign-up. Worth knowing the difference, because it explains a whole class of
+"the code never arrived":
+
+`type: 'sign-in'` is for **signing in an existing user**. `type:
+'email-verification'` is for **confirming an address during sign-up**.
+
+I ran both against a real Better Auth server to be sure:
+
+| Question | Answer | Does an email go out? |
+|---|---|---|
+| `type: 'sign-in'` for an address with no account | `200 {"success":true}` | **yes** — but the code is a *sign-in* code, not a verification one |
+| `type: 'sign-in'` for an existing account | `200 {"success":true}` | yes |
+| `type: 'email-verification'` for an address with no account | `200 {"success":true}` | **no** — silently nothing |
+
+Two conclusions:
+
+1. **The `{"success":true}` is not proof.** Better Auth answers success even when
+   it sends nothing, so "it returned 200" never means "the email went". That is
+   why the proof script checks that a **wrong code is refused** — a real send
+   always leaves a real code to be wrong about.
+2. **At sign-up this shop uses `type: 'email-verification'`, after creating the
+   account.** `api/_lib/neon-auth.js` calls `signUpWithPassword()` first, then
+   `sendSignupCode()`. If you reorder those two lines you get the silent-nothing
+   case. This is commented at both places.
+
+The snippet uses `authClient`, which is the **browser** client. This shop's
+client is on the server (`api/_lib/neon-auth.js`), because the shop's sessions are
+its own and Neon must never steer them.
+
+---
+
+## If no email arrives at all
+
+In order:
+
+1. **`/api/health`** — open `https://your-address.vercel.app/api/health` and read
+   the `auth` and `mail` sections. The first `"ok": false` is your problem.
+2. **Spam folder.** More often than everything else combined.
+3. **Are you on Neon's shared sender?** It only reaches the address on your Neon
+   account. Every other address is dropped silently. Connect custom SMTP under
+   Neon → **Auth → Email provider**, or use Way B.
+4. **Redeployed after changing a setting?** A setting added to a deployment that
+   already exists does nothing.
+
+Full list: [Step 6 →](06-troubleshooting.md#neon-auth-specifically).
+
+---
+
+## Choosing a password people will keep
+
+The form refuses a few things, each with its own reason:
 
 | Refused | Why |
 |---|---|
-| under 8 characters | too easy to guess off a glance at the counter |
+| under 8 characters | too easy to guess off a glance |
 | only numbers | the same |
 | one repeated character | the same |
-| a well-known password (`password123`, `shopyangu`) | it is the first thing anybody tries |
-| your email name inside it | everybody can see your email |
+| `password123`, `shopyangu` and 15 like it | the first thing anybody tries |
+| the email name inside it | everybody can see your email |
 | the shop name inside it | it is printed on every receipt |
 
-Everything else is allowed. **A phrase beats a scramble**: `chapati-na-ndengu`
-is a good password. `Xk9#mQ2!` is a worse one, because it ends up on a sticky
-note under the counter.
+Everything else is allowed. **A phrase beats a scramble**: `chapati-na-ndengu` is
+a good password. `Xk9#mQ2!` is a worse one, because it ends up on a sticky note
+under the counter.
 
-To change it later: **Settings → Password** in the shop app. An account made by
-hand — the demo shop, or the platform admin — starts with no password, and that
-same card is how it gets one.
+Change it later under **Settings → Password**. An account made by hand — the demo
+shop, the platform admin — starts with no password, and that card is how it gets
+one.
 
 ---
 
 ## Check it worked
 
-Three questions, in order.
-
-**1. Can a code be sent?**
-
-Go to `/login/`, type the email you used, press **sign in with a code by email**.
-Watch for the "check your email" panel.
-
-**2. Did it arrive?**
-
-If not, open `/api/health`. The two sections that matter:
-
-```json
-"mail":{"driver":"smtp","ok":true,"host":"smtp.resend.com"},
-"auth":{"driver":"neon-auth","ok":true,"host":"ep-…neon.tech"}
-```
-
-- `"driver":"console"` in `mail` — `EMAIL_DRIVER` is not set to `smtp`, or the
-  site was not redeployed.
-- `"ok":false` in `mail` — the SMTP values are wrong. The `error` field says
-  which one.
-- `"driver":"none"` in `auth` — `NEON_AUTH_BASE_URL` is not set. The mailer
-  should still be delivering; check `mail` above.
-
-**3. Can you sign in with the password?**
-
-Sign out (**Settings → Sign out**, or the menu at the top), then sign in again
-with just the email and password. No email should arrive — that is the point.
-
----
-
-## If it does not work
-
-**"Invalid login" or "535 Authentication failed".**
-`SMTP_PASS` is wrong, or it is the Resend *account* password rather than the
-`re_…` API key. Make a new key.
-
-**Nothing arrives, and `mail` says ok.**
-Check the spam folder. If you are on `onboarding@resend.dev`, Resend will only
-deliver to the address you signed up to Resend with — sending to anybody else
-silently goes nowhere.
-
-**The code arrives but is refused.**
-It expired (ten minutes), or an older code was used. Codes die in the order they
-are sent: **only the newest works**.
-
-**"Too many emails in fifteen minutes".**
-An address may ask for five codes in a quarter of an hour. This exists so the
-form cannot be used to flood somebody's inbox. Wait, or use the link.
-
-**The first sign-in works, but the password does not.**
-Almost always because the sign-up was submitted twice from an older version of
-the page. Sign in with a code, then set the password again under
-**Settings → Password**.
-
-**Neon Auth is on, and no code arrives at all.**
-Neon's own sender is still on its test mode. In the Neon console open
-**Auth → Email provider** and connect your SMTP values there, or turn Neon Auth
-off and let this shop's mailer handle it. Removing `NEON_AUTH_BASE_URL` is always
-a safe move: sign-up falls back to this shop's own email, and nothing else
-changes.
+1. Open `https://your-address.vercel.app/login/`.
+2. **Open a shop** tab. Fill it in with a password you will remember.
+3. Press **Open my shop**, then check your inbox.
+4. Type the code, or click the link.
+5. Sign out, then sign in again with just the email and password — **no email
+   should arrive.** That is the point of a password.
 
 ---
 
 ## The one security idea worth understanding
 
 The password is stored as a **hash** — a one-way scramble with a random salt per
-password. The server can check a password without ever being able to read it
-back. If somebody stole a copy of the database tomorrow, they would get a list
-of scrambled strings, not a list of passwords.
+password. The server can check a password without ever being able to read it back.
+If somebody stole a copy of the database tomorrow they would get scrambled
+strings, not passwords.
 
-The code that does this is in `api/_lib/password.js`. It is deliberately short
-and readable.
+That code is in `api/_lib/password.js`. It is short and readable on purpose.
 
 ---
 

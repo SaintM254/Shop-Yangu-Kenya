@@ -141,20 +141,22 @@ Four things account for almost every Neon Auth failure. Read them in order.
 ### "There is no Auth URL in the Neon console"
 
 Correct — there is no field to copy it from. `NEON_AUTH_BASE_URL` is *generated*
-when Auth is turned on. Turn it on with the CLI:
+when Auth is turned on, by the Neon CLI:
 
 ```bash
 npm install -g neon@latest
 neon login
 neon link
-neon deploy
-neon neon-auth status
+neon deploy          # writes NEON_AUTH_BASE_URL
+neon env pull        # puts it in .env.local
 ```
 
-`neon deploy` reads `neon.ts` (already in this repository, with `auth: true`) and
-writes the URL for you. `neon env pull` then puts it in `.env.local` to copy into
-Vercel. The full walkthrough is
-[Step 4 →](04-email-and-sign-in.md#way-a--let-neon-auth-hold-the-account-and-send-the-first-code).
+`neon deploy` reads `neon.ts`, already in this repository with `auth: true`.
+
+**No terminal?** GitHub Codespaces gives you one inside your browser, free:
+repository → green **Code** button → **Codespaces** → **Create codespace**, then
+type the same commands. The full walkthrough is
+[Step 4 →](04-email-and-sign-in.md#where-neon_auth_base_url-comes-from).
 
 ### `403 Invalid origin` — every sign-in fails
 
@@ -163,11 +165,12 @@ values must match:
 
 1. **Vercel → Settings → Environment Variables → `SITE_URL`** — your real
    address, `https://`, no trailing slash.
-2. **Neon console → your project → Auth → Trusted domains** — the same address,
-   added there.
+2. **Neon console → your project → Auth → Trusted domains** — the same address.
 
-If they disagree by so much as a `www.`, every call is refused. This is a
-setting, not a bug, and the message it produces does not obviously say so.
+> **If you connected Neon and Vercel with the Neon integration, your
+> `.vercel.app` domain is very likely already trusted and you can skip step 2.**
+> Only add a domain if this error actually appears. Adding a custom domain, or
+> using Vercel preview URLs, are the cases that need it.
 
 ### `neon deploy` says Auth cannot be enabled
 
@@ -178,13 +181,25 @@ only.
 
 ### No first code arrives, but `/api/health` says Neon is fine
 
-Neon's shared sender (`auth@mail.myneon.app`) **only delivers to the address on
-your Neon account**. Every other address is dropped silently, and the request
-still answers success. Either:
+Two causes, in order of likelihood.
+
+**1. Neon's shared sender** (`auth@mail.myneon.app`) **only delivers to the
+address on your Neon account.** Every other address is dropped silently, and the
+request still answers success. Either:
 
 - test with the address your Neon account uses, or
 - connect your own sender: Neon console → **Auth → Email provider**, with the
   Resend values from [Step 4 →](04-email-and-sign-in.md#way-b--connect-your-own-mailer).
+
+**2. The account did not exist at Neon when the code was asked for.** This is the
+quiet one. Better Auth answers `{"success": true}` and sends nothing if the user
+is missing, so a success message proves nothing. This shop creates the Neon
+account *before* requesting the code for exactly this reason — but if you have
+edited `api/_lib/neon-auth.js`, check the order in the sign-up route: a code
+requested before `signUpWithPassword()` sends zero emails and looks fine.
+
+> **`{"success": true}` is never proof that an email went out.** The only proof
+> is an email in an inbox, or a code that a wrong guess is refused against.
 
 ### Sign-up sends two emails
 
