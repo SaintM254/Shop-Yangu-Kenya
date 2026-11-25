@@ -1,7 +1,10 @@
 # 3 · Put the site online
 
-**Time:** 20 minutes · **Cost:** free · **You need:** a GitHub account, and the
-two strings from [step 1](01-neon.md)
+**Time:** 20 minutes · **Cost:** free to set up and to try. A shop taking real
+money needs Vercel's $20/month plan — see
+[8 · How much this costs](08-cost-and-limits.md), which explains why before you
+rely on this. · **You need:** a GitHub account, and the two strings from
+[step 1](01-neon.md)
 
 At the end of this page your shop is on the internet at an address you can
 text to someone. Their phone will show the shop, the sign-in page, and — if you
@@ -57,7 +60,11 @@ copy the files and publish them.
 > **Why GitHub and not email?** Because Vercel needs to read your repository,
 > and connecting the two accounts is how it does that. One less password, too.
 
-You land on a dashboard with a **Hobby** plan (the free one). Do not pick Pro.
+You land on a dashboard with a **Hobby** plan, the free one. That is the right
+plan to set up and test on. **If this is a real shop taking real money**, read
+[8 · How much this costs](08-cost-and-limits.md) — Vercel's free plan is for
+personal, non-commercial projects — and plan to move to Pro on the day the
+first customer pays. Nothing stops working in the meantime.
 
 ---
 
@@ -101,51 +108,66 @@ click to expand it if it is closed. Set exactly this:
 ## Step 4 · Add the settings that hold secrets
 
 This is the part people get wrong. There is a section called **Environment
-Variables**, usually below the build settings. It has a **Key** box and a
-**Value** box with an **Add** button.
+Variables**, usually just below the build settings. It has a **Key** box, a
+**Value** box, and an **Add** button.
 
-You need to add four now. **Add each one and click Add before typing the next**
-— the boxes clear themselves each time, and it is easy to overwrite.
+**You need to add two.** Add each one and click **Add** before typing the next —
+the boxes clear themselves, and it is easy to overwrite what you just typed.
 
-| # | Key (copy exactly) | Value | Why |
-|---|---|---|---|
-| 1 | `DATABASE_URL` | The string **with** `-pooler` in it, from step 1 | So the site can reach the database |
-| 2 | `TOKEN_PEPPER` | 64 random characters, from below | Scrambles sign-in tokens |
-| 3 | `SERVE_SITE` | `0` | Says "Vercel serves the pages, not the server" |
-| 4 | `NODE_ENV` | `production` | Turns on the safety rails |
+| Key (copy exactly) | Value |
+|---|---|
+| `DATABASE_URL` | the string **with** `-pooler` in it, from [step 1](01-neon.md) |
+| `TOKEN_PEPPER` | 64 random characters — see below |
 
-### The four values, in detail
+Then, for each one, make sure the **Environments** boxes are ticked for
+**Production** (or all three if they are offered).
 
-**1. `DATABASE_URL`** — paste the string you saved labelled `DATABASE_URL`.
-Check it starts with `postgresql://` and contains `-pooler`. Nothing before or
-after it: no quotes, no spaces.
+### `DATABASE_URL`
 
-**2. `TOKEN_PEPPER`** — 64 random characters. Generate them:
+Paste the string you saved. It must:
 
-- <https://generate.plus/en/base64> — choose 32 bytes, click generate, copy.
-- or in a terminal: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- start with `postgresql://`
+- contain `-pooler` somewhere in the middle
+- end with `sslmode=require`
+- have nothing before or after it — no quotes, no spaces, no second line
 
-Paste the whole thing. It must be long and random: it is the one secret that,
-if guessed, would let someone forge a sign-in. **Do not change it later** —
-changing it signs everybody out. If it leaks, changing it is exactly what you
-should do.
+### `TOKEN_PEPPER`
 
-**3. `SERVE_SITE` = `0`** — a single zero. On Vercel, the pages are served by
-Vercel itself; if the server also tries, it just wastes time on every request.
+A long random string that the server uses to scramble sign-in tokens, so that a
+stolen copy of the database cannot be used to sign in as anybody. It is the one
+secret that would matter if it leaked.
 
-**4. `NODE_ENV` = `production`** — the word `production`.
+Generate it in a terminal:
 
-### The fifth and sixth, which set themselves
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-Two settings you might expect are **not** needed. Vercel fills them in:
+Or use any password generator and ask for **32 characters or more** — a password
+manager's "generate password" button is fine. What matters is that it is long,
+random, and not a word or a date.
 
-- **The site's own address** (`SITE_URL`) — Vercel knows it. It is used for the
-  links inside emails.
-- **The M-Pesa callback address** (`MPESA_CALLBACK_BASE`) — same thing. Until
-  you reach [step 6](05-mpesa.md) you can ignore it entirely.
+Paste the whole thing, then keep a copy somewhere safe.
 
-If you later add your own domain, set `SITE_URL` yourself (step 7 below), so
-emails link to the right place.
+> **Do not change it once the shop is in use.** Changing it signs everybody out,
+> because every existing session was scrambled with the old one. That is exactly
+> what you *should* do if it ever leaks — but not otherwise.
+
+### The others set themselves
+
+Four settings you might expect to have to type are worked out automatically on
+Vercel, and getting them wrong is a common way to break a deploy — so they are
+deliberately not on the list:
+
+| Setting | What it would do | Why you can skip it |
+|---|---|---|
+| `NODE_ENV` | turn on production safety | Vercel sets it |
+| `SERVE_SITE` | stop the server serving the pages | Vercel serves them, so the server already knows not to |
+| `SITE_URL` | the address in emails | read from Vercel's own environment |
+| `MPESA_CALLBACK_BASE` | where Safaricom calls back | the same address; only needed once you reach [step 5](05-mpesa.md) |
+
+The only one you may later need to set by hand is `SITE_URL`, and only if you
+attach a domain of your own — step 7 covers it.
 
 ---
 
@@ -306,7 +328,7 @@ The broken one is replaced in seconds. Nothing is lost.
 - [ ] `/api/health` returns text starting `{"ok":true`.
 - [ ] Opening `/login/` shows the sign-in page.
 - [ ] You can find your way back to **Settings → Environment Variables** and
-      see `DATABASE_URL`, `TOKEN_PEPPER`, `SERVE_SITE` and `NODE_ENV`.
+      see `DATABASE_URL` and `TOKEN_PEPPER` both present, ticked for Production.
 
 If all five are true, **you have a deployed shop with a real database**.
 
@@ -341,8 +363,10 @@ prints `built 19 pages · all checks passed` when it works. If it printed
 `check(s) failed`, a change broke the site and the log says which page.
 
 **"Deployment blocked" or a payment prompt**
-You are on the Pro plan by accident, or you added a team. Hobby is free; check
-**Settings → Billing**.
+You created a team, or picked a paid plan at signup. Hobby is free; check
+**Settings → Billing**. (A prompt on a *commercial* project is a different
+thing — that is the licence in
+[8 · How much this costs](08-cost-and-limits.md), not a mistake.)
 
 **The demo login does not send an email**
 Correct for now — no email provider is connected yet. That is [step 5](04-email.md).

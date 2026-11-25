@@ -64,15 +64,17 @@ for someone who has never deployed anything.
 | Output directory | `dist` |
 | Install command | `npm install` (the default) |
 
+Two environment variables are required:
+
 | Environment variable | Value |
 |---|---|
 | `DATABASE_URL` | the **pooled** Neon string |
-| `TOKEN_PEPPER` | 64 random characters — **mandatory**, the function crashes without it |
-| `SERVE_SITE` | `0` — Vercel serves the site, not the function |
-| `NODE_ENV` | `production` |
+| `TOKEN_PEPPER` | 64 random characters — the function refuses to mint a token without one |
 
-`SITE_URL` and `MPESA_CALLBACK_BASE` are derived from Vercel's own environment
-when unset; set `SITE_URL` explicitly once a custom domain is attached.
+`NODE_ENV`, `SERVE_SITE`, `SITE_URL`, `API_URL` and `MPESA_CALLBACK_BASE` are
+derived from Vercel's own environment (see `onVercel` in
+`api/_lib/config.js`); set `SITE_URL` explicitly once a custom domain is
+attached, so emails link to it rather than the `.vercel.app` address.
 
 On every push to `main` Vercel builds and publishes. **One function**,
 `api/index.js`, answers `/api/*` and `/pay/*` — see

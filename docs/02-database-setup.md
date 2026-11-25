@@ -45,9 +45,8 @@ The instructions that build the tables are in one file in the repository:
    squares. (If you see a "Download raw file" arrow instead, use that and open
    the file in any plain text editor, then select all and copy.)
 
-> **Do not** copy the text by dragging with the mouse. It is 66 kB, about 1500
-> lines, and it is very easy to miss the beginning or the end. Use the copy
-> button.
+> **Do not** copy the text by dragging with the mouse. It is about 1700 lines,
+> and it is very easy to miss the beginning or the end. Use the copy button.
 
 ### Step 2 · Paste it into Neon
 
