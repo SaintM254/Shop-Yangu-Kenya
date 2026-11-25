@@ -202,7 +202,8 @@ single login (its name, editable in place), preferences (allow credit, ask for a
 offline selling), and a data section with full exports.
 
 ### 5.11 Audit log
-Who did what, when, filterable. Append-only: no edit, no delete, no "clear".
+What happened, and when, filterable. Append-only: no edit, no delete, no "clear". With one
+login per shop there is no "who" to record — the log is the shop's own history.
 
 ---
 
@@ -296,7 +297,7 @@ receipt history.
 ### 7.2 Export
 
 Every export is branded: the shop name captured at signup, the branch, the phone and the
-KRA PIN at the top; "Printed by <user>" and the timestamp at the side; the shop name and
+KRA PIN at the top; the timestamp at the side; the shop name and
 eTIMS line in the footer.
 
 - **PDF** is a print stylesheet, not a PDF library. One hidden `#printSheet` holds the
