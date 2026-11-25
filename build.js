@@ -1891,6 +1891,39 @@ fs.copyFileSync(path.join(root, 'src/logo/og.png'), path.join(dist, 'og.png'));
 fs.copyFileSync(path.join(root, 'src/pos-mock.webp'), path.join(dist, 'pos-mock.webp'));
 fs.writeFileSync(path.join(dist, '.nojekyll'), '');
 
+
+
+
+/* 404 → the shop's front door, so a mistyped address still lands somewhere. */
+write(
+  '404.html',
+  document({
+    title: `Page not found — ${content.brand.name}`,
+    description: 'That page does not exist. Head back to the home page or sign in to the shop.',
+    page: '404',
+    body: `<main id="main" class="missing">
+  <div class="wrap">
+    <p class="kicker">404</p>
+    <h1 class="missing__title">That shelf is empty.</h1>
+    <p class="missing__lede">The page you asked for is not here. The home page and the door to the shop both are.</p>
+    <div class="hero__cta">
+      <a class="btn btn--primary" href="${siteUrl('')}">Back home${icon('arrow')}</a>
+      <a class="btn btn--ghost" href="${siteUrl('login/')}">Sign up / Log in</a>
+    </div>
+  </div>
+</main>`,
+  })
+);
+
+/* The webfonts. Copied rather than linked so the site is self-contained: a
+   shop on a slow connection should not be waiting on fonts.googleapis.com. */
+fs.mkdirSync(path.join(dist, 'fonts'), { recursive: true });
+for (const f of fs.readdirSync(path.join(root, 'src/fonts'))) {
+  if (f.endsWith('.woff2') || f === 'OFL.txt') {
+    fs.copyFileSync(path.join(root, 'src/fonts', f), path.join(dist, 'fonts', f));
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* checks — a broken internal link must fail the build, not the page   */
 /* ------------------------------------------------------------------ */
@@ -1903,6 +1936,10 @@ const check = (ok, msg) => {
   }
 };
 
+/* Every asset the pages may refer to. The link check below trusts this list,
+   so *this* list is verified against the disk: a copy step that stopped
+   running once left the site 404ing its own fonts while the build said all
+   checks passed. */
 const assets = new Set([
   ...pages,
   'styles.css',
@@ -1923,6 +1960,12 @@ const assets = new Set([
   'fonts/PublicSans-SemiBold.woff2',
   'fonts/PublicSans-Bold.woff2',
 ]);
+
+/* The list must match the disk. A copy step that silently stopped running
+   would otherwise pass every check and 404 on the deployed site. */
+for (const a of assets) {
+  if (!fs.existsSync(path.join(dist, a))) check(false, `missing from dist: ${a}`);
+}
 
 /* Only real markup counts: skip ids/hrefs that live inside script strings. */
 function anchorsOf(html) {
