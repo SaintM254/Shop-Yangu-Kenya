@@ -74,27 +74,44 @@ conversation. Do not build the scaffolding for it now.
 Mirror the reference prototype. It is flat, quiet, and reads well in sunlight on a cheap
 phone.
 
-**Colour** — Shop Yangu Kenya's own accent is a cerulean blue on deep navy, from the
-supplied swatch sheet. The warm paper palette is shared with the reference system.
+**Colour** — the palette is `Images/color-sytem.html` ("Savanna sand"), and that file is the
+brief: read it before changing a value. Its contrast table is the acceptance test, and every
+pair in it passes.
 
 ```
---syk        #287094   primary: buttons, links, chart lines, active states
---syk-dark   #023246   navigation, dark surfaces, hover on primary
---syk-tint   #E7F0F5   soft fills, selected chips, info pills
---syk-line   #D4D4CE   a soft warm grey, for rules where sand is too warm
+--bg        #F5EFE6   page background (the sand page)
+--surface   #FFFFFF   cards, inputs, sheets
+--ink       #1F1B16   body text        --muted #6A6054  secondary text
+--line      #E2D8C8   dividers only — never the way a card is separated
 
---cream      #FFF8E1   page background
---paper      #FFFFFF   cards, inputs when focused
---cream-deep #F5EBC8   table headers, hover, progress tracks
---sand       #E7DDB5   every 1px border in the product
---ink        #1E2A22   body text
---ink-muted  #596658   secondary text
+--primary   #287094   buttons, links, chart lines, selected states
+--primary-dark #1B5270  hover and pressed
+--sidebar   #1B4A63   the rail — darker and bluer than the pressed button
+--link      #1B5270
 
---forest     #1F4D2E   success,  --forest-tint #E3EFDF
---warning    #8F5200   low stock, --warning-tint #FBE8C2
---danger     #A8321F   out of stock, --danger-tint #F8DFD9
---gold       #B7892B   reserved for the plan/billing accents
+--accent    #D9622B   highlights, the top-seller tag   (--accent-ink #1F1B16)
+--success   #167A45   paid, and only paid
+--warning   #B45309   low stock
+--danger    #C62F3A   errors, deleting, out of stock
+--disabled-bg #D9CFBF  --disabled-ink #5A5046
 ```
+
+Three rules govern how those colours are used:
+
+1. **60-30-10.** Most of any screen is page and card. Primary is the rail, the one main
+   button, and the selected item. Accent and the status colours stay small.
+2. **Buttons are solid or white-with-a-shadow.** No outlines, and no see-through fills.
+   One main button per screen, primary, big, in the same place every time.
+3. **Green means money was received, and nothing else.** Not an "add" button, not a switch
+   that is on, not decoration. Red is only for problems. Colour is never the only signal:
+   pair it with a word or an icon (`✓ Paid`, `! Low stock`, `✕ Out of stock`).
+
+**Shape and depth** — radii 10 px (inputs), 16 px (panels/cards), 20 px (dialogs), 999 px
+(pills, buttons). **Depth comes from shadows, not outlines**: `--shadow-1` for resting
+cards, tiles, white buttons and the search box; `--shadow-2` for pop-ups, hovered cards and
+the screen frame. Shadows stay soft and never coloured. A 1px `--line` is for dividers
+inside a card, not for drawing the card. Icons are lucide line icons at 1.75 stroke, 20 px,
+16 px when inline in text.
 
 **Typography** — Public Sans (self-hosted; never a Google Fonts `<link>`). Tabular figures
 on every number: `font-variant-numeric: tabular-nums`. Money is always `Ksh 12,345`,
@@ -107,8 +124,8 @@ cream/paper contrast. Icons are lucide line icons at 1.75 stroke, 20 px, 16 px w
 in text.
 
 **Layout** — one column under 900 px with a bottom tab bar (5 items: Home, Sell, Stock,
-Customers, Reports) and a slide-in drawer for the rest. At 900 px and up, a 248 px navy rail
-replaces both. Cards are never nested inside cards.
+Customers, Reports) and a slide-in drawer for the rest. At 900 px and up, a 248 px `--sidebar` rail
+replaces both, with the selected item solid white on it. Cards are never nested inside cards.
 
 **The payment-goal card** — the dashboard's signature element, taken from the supplied
 reference image: a white rounded card, "Payment Goal" and a small circular arrow button,

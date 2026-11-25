@@ -24,14 +24,16 @@ const PDF = (() => {
     a4: { w: 595.28, h: 841.89, m: 40 },
     receipt: { w: 226.77, h: 841.89, m: 11.34 },
   };
-  const CREAM = [1, 0.973, 0.882]; /* #FFF8E1 */
+  /* The palette is Images/color-sytem.html ("Savanna sand"). These are the
+     same colours as the tokens in src/styles.css, as 0–1 RGB. */
+  const CREAM = [0.961, 0.937, 0.902]; /* #F5EFE6 — the sand page */
   const PAPER = [1, 1, 1];
-  const SAND = [0.906, 0.867, 0.71]; /* #E7DDB5 */
-  const NAVY = [0.008, 0.196, 0.275]; /* #023246 */
-  const SYK = [0.157, 0.439, 0.58]; /* #287094 */
-  const INK = [0.118, 0.165, 0.133]; /* #1E2A22 */
-  const MUTED = [0.349, 0.4, 0.345]; /* #596658 */
-  const FOREST = [0.122, 0.302, 0.18]; /* #1F4D2E */
+  const SAND = [0.886, 0.847, 0.784]; /* #E2D8C8 — dividers */
+  const NAVY = [0.106, 0.290, 0.388]; /* #1B4A63 — the sidebar */
+  const SYK = [0.157, 0.439, 0.58]; /* #287094 — primary */
+  const INK = [0.122, 0.106, 0.086]; /* #1F1B16 */
+  const MUTED = [0.416, 0.376, 0.329]; /* #6A6054 */
+  const FOREST = [0.086, 0.478, 0.271]; /* #167A45 — paid */
   const WHITE = [1, 1, 1];
 
   /* Adobe's Helvetica metrics, in 1/1000 em — measured, not guessed, so

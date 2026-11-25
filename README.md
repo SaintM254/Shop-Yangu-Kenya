@@ -101,7 +101,7 @@ its `index.html`, and that is what it does.
 | Any sentence on the advert — headline, body, the six cards under *What it does*, the price bullets, the two CTA labels | `src/content.json` |
 | The demo email or password | `demo_account` in `src/content.json` |
 | The login page's layout or behaviour | `loginPage()` in `build.js` |
-| Colours, type, spacing, layout | `src/styles.css` |
+| Colours, type, spacing, layout | `src/styles.css` — the palette itself is `Images/color-sytem.html`, which is the brief; the tokens copy it and must keep matching |
 | Page structure, icons, the spec renderer | `build.js` |
 | The spec text itself | `shop-yangu-kenya.md` (rendered to `spec.html` at build time) |
 | A screen in the shop | `src/app/` — `shell.js` (routing, the collapsible rail), `pos.js`, `stock.js`, `reports.js` … |
@@ -148,7 +148,7 @@ SITE_URL=https://saintm254.github.io/Shop-Yangu-Kenya CHROME_PATH=/usr/bin/googl
 
 Its reader is a shop owner behind a counter, not the engineer who built the system. So it
 carries three sections and nothing else: the **hero** (headline, lede, `Signup/Login` and
-`Services`), the **what it does** band on the cerulean with six cream cards, and the
+`Services`), the **what it does** band on the primary with six white cards, and the
 **plan** card that ends the page above the footer. No screen counts, no pixel widths, no
 database notes, no prototype link — and no stats strip or dark counter demo, which were
 removed so the page reads top to bottom in one pass.
@@ -239,9 +239,16 @@ first paint, `save()` writes changes back, and `persist()` is already called fro
 - **Status is a small square and a word**, at full colour: no tinted capsules, no faded
   text. **Icons are plain line glyphs** with no disc, tile or ring behind them, and they
   point the way they read — import goes *into* the tray, export comes *out*.
-- **Surfaces are flat.** Depth is the cream/paper contrast, not an outline on every card.
-- **Design language** — §4 of the spec: Public Sans, 10/16/20/999 radii, cerulean
-  `#287094` on navy `#023246`.
+- **Depth is a shadow, not an outline.** Cards, tiles and white buttons rest on the sand
+  page under `--shadow-1`; pop-ups and hovered cards lift to `--shadow-2`. Shadows are soft
+  and never coloured. A hairline divider is for the inside of a card, not its edge.
+- **Buttons are solid or white-with-a-shadow** — never an outline with a see-through fill.
+  One main button per screen: primary, big, same place every time.
+- **Green is only for paid.** `--success` marks money received and nothing else — not an
+  "add" button, not a switch that is on. Red is only for problems.
+- **Design language** — §4 of the spec, and the palette is `Images/color-sytem.html`
+  ("Savanna sand"), which is the brief: sand `#F5EFE6` page, white cards, primary
+  `#287094`, sidebar `#1B4A63`, accent `#D9622B`. Public Sans, 10/16/20/999 radii.
 
 ## Licence
 

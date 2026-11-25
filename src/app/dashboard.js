@@ -20,7 +20,7 @@ function sparkline(vals, w = 320, h = 92) {
   const last = pts[pts.length - 1];
   return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
     '<defs><linearGradient id="gsyk" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0" stop-color="#287094" stop-opacity=".22"/>' +
+    '<stop offset="0" stop-color="#287094" stop-opacity=".18"/>' +
     '<stop offset="1" stop-color="#287094" stop-opacity="0"/></linearGradient></defs>' +
     '<path d="' + area + '" fill="url(#gsyk)"/>' +
     '<path d="' + line + '" fill="none" stroke="#287094" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>' +
@@ -109,10 +109,14 @@ function renderDashboard() {
   }));
   const top = Object.values(tallies).sort((a, b) => b.value - a.value).slice(0, 5);
   const topMax = top[0] ? top[0].value : 1;
-  $('#topMovers').innerHTML = top.map(m =>
-    '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px">' +
-    '<span>' + esc(m.name) + '</span><span class="num" style="font-weight:600">' + fmt(m.value) + '</span></div>' +
-    '<div class="progress" style="margin-top:5px"><span style="width:' + ((m.value / topMax) * 100).toFixed(0) + '%"></span></div>' +
+  /* The brief's 10%: the one product leading the shop this week wears the
+     accent. Everything else on the screen stays primary or neutral. */
+  $('#topMovers').innerHTML = top.map((m, i) =>
+    '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;align-items:center">' +
+    '<span style="display:inline-flex;align-items:center;gap:6px;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.name) + '</span>' +
+    (i === 0 ? '<span class="tagtag">Top seller</span>' : '') + '</span>' +
+    '<span class="num" style="font-weight:600">' + fmt(m.value) + '</span></div>' +
+    '<div class="progress" style="margin-top:5px"><span style="width:' + ((m.value / topMax) * 100).toFixed(0) + '%;background:' + (i === 0 ? 'var(--accent)' : 'var(--primary)') + '"></span></div>' +
     '<div class="hint">' + m.qty + ' sold</div></div>').join('');
 }
 
