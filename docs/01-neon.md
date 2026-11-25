@@ -55,6 +55,11 @@ A **project** in Neon is one database. You need one.
 
 You will see a page headed **Connection Details**. Keep it open.
 
+> **Ignore the "Auth" button.** Neon offers a sign-in service next to your
+> database. This shop has its own, and turning Neon's on does nothing useful
+> here. [3c · Should I turn on Neon Auth?](03c-neon-auth.md) explains, so you do
+> not have to take that on trust.
+
 > **Which plan?** The **Free** plan. It is not a trial and it does not ask for
 > a card. [How much this costs](08-cost-and-limits.md) explains its limits.
 

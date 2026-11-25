@@ -1007,7 +1007,7 @@ function loginPage() {
           var why = data.error;
           if (!why && (res.status === 404 || res.status === 405)) {
             why = 'This copy of the site is not connected to the shop server. ' +
-                  'Ask whoever set it up to check API_URL.';
+                  'Ask whoever set it up to check the deployment.';
           }
           var err = new Error(why || 'The server answered ' + res.status + '.');
           err.status = res.status;
@@ -1552,7 +1552,7 @@ function adminPage() {
           var why = data.error;
           if (!why && (res.status === 404 || res.status === 405)) {
             why = 'This copy of the site is not connected to the shop server. ' +
-                  'Ask whoever set it up to check API_URL.';
+                  'Ask whoever set it up to check the deployment.';
           }
           var err = new Error(why || 'The server answered ' + res.status + '.');
           err.status = res.status;

@@ -57,17 +57,41 @@ slash.
 
 ## The server
 
-### `/api/health` returns `500` or `FUNCTION_INVOCATION_FAILED`
+### `/api/health` says the page is unavailable, or shows an error page
 
-The server started and crashed before answering. In this system that has one
-overwhelmingly likely cause:
+Instead of JSON, you get Vercel's own error page — **this page is unavailable**,
+`500`, or `FUNCTION_INVOCATION_FAILED`. The server never got as far as
+answering, so there are two causes: a setting it needs is missing, or the
+deployment is not the one you think.
 
-**`TOKEN_PEPPER` is missing or empty.**
+First, check the site is switched on: **Settings** → **Deployment Protection**,
+and see [the login-page entry](#the-site-is-a-vercel-login-page-not-the-shop)
+below. If production is public and you still get this, then:
+
+**`TOKEN_PEPPER` is missing or empty.** It is the only setting the server cannot
+run without.
 
 1. **Settings** → **Environment Variables**.
-2. Is `TOKEN_PEPPER` there, with a real value, ticked for **Production**?
-3. If not, add it: 64 random characters.
+2. Is `TOKEN_PEPPER` there, with a real value, ticked for **Production**? It must
+   not be empty, and must not be the literal text `TOKEN_PEPPER`.
+3. If it is missing, add it: 32 characters or more, random.
 4. **Redeploy** — a changed variable does nothing until the next build.
+
+### `/api/health` answers, but says `"configured":false`
+
+Good — this is the server telling you exactly what is wrong, which is the whole
+point of that address. The JSON contains a `missing` list:
+
+```json
+{"ok":false,"configured":false,
+ "missing":[{"name":"TOKEN_PEPPER",
+             "what":"a long random string that scrambles sign-in codes...",
+             "fix":"Add it in Vercel → Settings → Environment Variables, then ... Redeploy."}]}
+```
+
+Add what it names, then redeploy. Until you do, every other address answers
+`503` with the same explanation, and the app shows *"The server answered 503"* —
+which is the system refusing to half-work rather than losing a sale quietly.
 
 ### `/api/health` returns `{"ok":false` with a database error
 

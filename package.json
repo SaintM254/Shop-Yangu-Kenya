@@ -10,7 +10,9 @@
     "test:api": "npm --workspace api run test",
     "test:vercel": "npm --workspace api run test:vercel",
     "test:sql": "node scripts/build-sql.js && node scripts/sql-check.mjs",
-    "start": "npm --workspace api start"
+    "start": "npm --workspace api start",
+    "check:docs": "node scripts/check-docs.mjs",
+    "test:all": "node scripts/check-docs.mjs && npm --workspace api run test:all && npm run test:sql"
   },
   "engines": {
     "node": ">=20"

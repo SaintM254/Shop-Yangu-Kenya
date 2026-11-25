@@ -98,10 +98,22 @@ npm run test:vercel
 | `SERVE_SITE` | `false` | `true` |
 | `SITE_URL`, `API_URL`, `MPESA_CALLBACK_BASE` | derived from `VERCEL_PROJECT_PRODUCTION_URL` / `VERCEL_URL` | `http://localhost:8787` |
 
-So a deploy needs only two mandatory variables, `DATABASE_URL` and
-`TOKEN_PEPPER`. **`TOKEN_PEPPER` is required at import time** — a missing one
-crashes the function on cold start, which surfaces as
-`500 FUNCTION_INVOCATION_FAILED` on every request rather than a friendly error.
+So a deploy needs only two variables: `DATABASE_URL` and `TOKEN_PEPPER`.
+
+**Neither throws at import time, deliberately.** An import-time throw makes the
+whole function die before it can answer, which on Vercel means the host's own
+error page for every address — including `/api/health`, the one page a person is
+told to open when something is wrong. Instead:
+
+- `missingSettings()` in `api/server.js` is evaluated per request and reports
+  `{ ok: false, configured: false, missing: [...] }` from `/api/health`;
+- every other route answers `503` with the same list in the message;
+- `requirePepper()` in `_lib/auth.js` still throws at the point a token is
+  hashed, so a pepper-less process can never mint one.
+
+`api/_test/vercel.js` asserts the whole path: with the pepper emptied, `/api/health`
+returns 200 and names it, and a POST to `/api/auth/signin` returns 503 with a
+readable message.
 
 ## Install
 
@@ -160,10 +172,12 @@ Two things to know about `db/002_functions.sql`:
 ## Tests
 
 ```bash
+npm run test:all       # everything below, in order
 npm run test:api       # 109 assertions, PGlite, no network
-npm run test:vercel    #   7 assertions, the Vercel adapter
-npm run test:sql       #   8 assertions, the paste-into-Neon files
-node build.js          # 19 pages + all static checks
+npm run test:vercel    #  15 assertions, the Vercel adapter and a broken deploy
+npm run test:sql       #   9 assertions, the paste-into-Neon files
+npm run check:docs     #  21 guides: no broken links or headings
+node build.js          #  19 pages + all static checks
 ```
 
 The API suite sets `OTP_MAX_PER_WINDOW` high enough not to 429 itself. Any

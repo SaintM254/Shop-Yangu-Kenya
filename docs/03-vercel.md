@@ -153,6 +153,10 @@ Paste the whole thing, then keep a copy somewhere safe.
 > because every existing session was scrambled with the old one. That is exactly
 > what you *should* do if it ever leaks — but not otherwise.
 
+> **The full reference, including what every other setting does and how to ask
+> the site which one is wrong, is
+> [3b · The settings](03b-vercel-settings.md).**
+
 ### The others set themselves
 
 Four settings you might expect to have to type are worked out automatically on

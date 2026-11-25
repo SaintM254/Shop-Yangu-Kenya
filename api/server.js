@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
-import { env, isProd, requirePepper } from './_lib/config.js';
+import { env, isProd } from './_lib/config.js';
 import * as db from './_lib/db.js';
 import {
   HttpError, Router, readJson, send, parseCookies, clientIp,
@@ -34,6 +34,51 @@ import shopRoutes from './_routes/shop.js';
 import mpesaRoutes from './_routes/mpesa.js';
 import adminRoutes from './_routes/admin.js';
 import bootstrapRoutes from './_routes/bootstrap.js';
+
+/* ------------------------------------------------------- is it configured?
+
+   A missing setting used to throw while this file was being imported, which on
+   Vercel means the function dies before it can answer anything: every address,
+   including /api/health, comes back as the host's own error page. You cannot
+   debug that from a browser, and the error page says nothing useful.
+
+   So the check is a function instead. Nothing throws at import; the server
+   starts, answers /api/health with what is missing, and refuses the routes that
+   need the missing piece with a 500 that says so.
+
+   A wrong setting should never be quieter than the damage it does. */
+function missingSettings() {
+  const missing = [];
+
+  if (!env.TOKEN_PEPPER) missing.push('TOKEN_PEPPER');
+
+  /* PGlite is the tests' and the laptop's driver; it has no connection string
+     to be missing. Only the real Postgres driver needs one. */
+  if (env.DATABASE_DRIVER === 'postgres' && !env.DATABASE_URL) missing.push('DATABASE_URL');
+
+  return missing.map((name) => ({
+    name,
+    what: name === 'TOKEN_PEPPER'
+      ? 'a long random string that scrambles sign-in codes; without it nobody can sign in'
+      : 'the database connection string',
+    fix: 'Add it in Vercel → Settings → Environment Variables, then Deployments → ⋯ → Redeploy.',
+  }));
+}
+
+/* Evaluated per request rather than once at import: it reads env, which is a
+   plain object, and a test needs to be able to change it. It is four property
+   reads, on requests that are about to hit a database. */
+const misconfigured = () => missingSettings();
+const isConfigured = () => missingSettings().length === 0;
+
+if (!isConfigured()) {
+  console.error(
+    '\n  Shop Yangu Kenya is missing ' +
+      misconfigured().map((m) => m.name).join(' and ') +
+      '.\n  The server will start, but sign-in and sales will fail until it is set.\n' +
+      '  docs/09-troubleshooting.md explains where to put it.\n'
+  );
+}
 
 /* ------------------------------------------------------------------ router */
 
@@ -51,6 +96,10 @@ adminRoutes(router);
 
 /* --------------------------------------------------------------- health */
 
+/* The one address that must always answer, whatever else is wrong. It is what
+   the setup guides tell a person to open when something is broken, so it may
+   never be the thing that is broken: no throw, no crash, plain JSON, and the
+   missing settings named in it. */
 router.get('/api/health', async () => {
   let database;
   try {
@@ -60,9 +109,16 @@ router.get('/api/health', async () => {
     database = { ok: false, error: err.message };
   }
 
+  /* A missing setting is reported as `configured: false` with the list, rather
+     than making this response fail too. */
+  const problems = misconfigured();
+  const configured = problems.length === 0;
+
   return {
-    ok: database.ok,
+    ok: configured && database.ok,
     version: 1,
+    configured,
+    ...(configured ? {} : { missing: problems }),
     env: env.NODE_ENV,
     database,
     mail: await mailHealth(),
@@ -200,6 +256,19 @@ async function handleRequest(req, res) {
       throw notFound('No such endpoint.');
     }
 
+    /* Health is allowed through even when settings are missing — it is the
+       page that says so. Everything else refuses, with a message a person can
+       act on, instead of failing later in a way nobody can trace. */
+    if (!isConfigured() && pathname !== '/api/health') {
+      const names = misconfigured().map((m) => m.name).join(', ');
+      throw new HttpError(
+        503,
+        `The shop server is not set up yet: ${names} is missing. ` +
+          'If you are the owner, see /api/health and docs/09-troubleshooting.md.',
+        { missing: misconfigured() }
+      );
+    }
+
     const cookies = parseCookies(req.headers.cookie);
     const body = req.method === 'GET' || req.method === 'HEAD' ? {} : await readJson(req);
 
@@ -264,10 +333,10 @@ function log(status, method, pathname, started, rid) {
 const PORT = env.PORT;
 const HOST = env.HOST; /* 0.0.0.0 so the preview proxy can reach it */
 
-/* A missing pepper would sign tokens with an empty key, so refuse to run at
-   all. On Vercel this throws on the first request (a 500 in the logs, which is
-   the right kind of loud); here it throws on start. */
-requirePepper();
+/* Nothing throws here on a missing setting: the check above already said so,
+   loudly, and every route except /api/health refuses with a 503 that names
+   what is missing. A crash at this point would take the health check with it —
+   the one page a person is told to open when something is wrong. */
 
 /* On Vercel there is no port to listen on: the file in api/ is called once per
    request instead. The host sets VERCEL=1, so the server does not try. */
