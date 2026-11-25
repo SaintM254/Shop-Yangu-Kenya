@@ -1,9 +1,10 @@
 /* ==========================================================================
    The app — dashboard, till, stock, reports.
 
-   Shares the site's tokens (src/styles.css) and the product's design language:
-   Public Sans, flat surfaces, 1px sand rules, no shadows. This file is only
-   ever an <html data-shell="app"> page; the marketing site is styles.css.
+   Shares the site's tokens (src/styles.css) and the product's design language,
+   which is Images/color-sytem.html: sand page, white cards on a soft shadow,
+   primary #287094, sidebar #1B4A63. This file is only ever an
+   <html data-shell="app"> page; the marketing site is styles.css.
    ========================================================================== */
 
 :root{
