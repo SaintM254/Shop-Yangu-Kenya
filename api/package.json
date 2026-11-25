@@ -13,7 +13,9 @@
     "migrate": "node ../scripts/db-migrate.js",
     "seed": "node ../scripts/db-seed.js",
     "superadmin": "node ../scripts/make-super-admin.js",
-    "test": "node test/run.js"
+    "test": "node _test/run.js",
+    "test:vercel": "node _test/vercel.js",
+    "test:all": "node _test/run.js && node _test/vercel.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",

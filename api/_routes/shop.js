@@ -1,4 +1,4 @@
-/* ============================================================ api/routes/shop.js
+/* ============================================================ api/_routes/shop.js
 
    The writing half of the app: sales, stock, products, customers, suppliers,
    purchases, expenses and credit payments.
@@ -16,10 +16,10 @@
        cookie, and row-level security checks it again.
 */
 
-import * as db from '../lib/db.js';
-import * as shape from '../lib/shape.js';
-import { requireOwner } from '../lib/auth.js';
-import { badRequest, notFound, conflict } from '../lib/http.js';
+import * as db from '../_lib/db.js';
+import * as shape from '../_lib/shape.js';
+import { requireOwner } from '../_lib/auth.js';
+import { badRequest, notFound, conflict } from '../_lib/http.js';
 
 const num = (v, d = 0) => {
   const n = Number(v);

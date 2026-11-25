@@ -1,4 +1,4 @@
-/* ============================================================ api/lib/shape.js
+/* ============================================================ api/_lib/shape.js
 
    The screens were written against the sample data in src/app/data.js. That
    was deliberate: the shape `S` has is the shape the API must return, so the

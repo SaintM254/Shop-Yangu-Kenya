@@ -15,13 +15,17 @@ This repository holds these things:
 | **The server** — `/api/*` | `api/` | Node + Neon Postgres. Receipts, stock, credit, M-Pesa. |
 | **The database** | `db/001`–`004` | 24 tables, the money-moving functions, row-level security |
 | **The platform console** | `/admin/` (`adminPage()`) | Every shop, who is signed in, pause a shop |
-| **How to run it** | `docs/` | Neon, migrations, linking the page to the API, email, M-Pesa, eTIMS |
+| **How to run it** | `docs/` | Plain-language guides: Neon, Vercel, email, M-Pesa, eTIMS |
 | **The build spec** — data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
 
-**Two pieces, not one.** The site is static and lives on GitHub Pages; the data
-lives in Postgres behind a small Node API. `docs/README.md` is the order to
-build that in, and `docs/03-link-the-page.md` is the one step that surprises
-people: the published page has to be *built* with the API's address.
+**Two pieces, one address.** The site is static files; the data lives in Neon
+Postgres behind a small Node API. Both are published by **Vercel**, from this
+repository, so the pages and the API share one origin — the session cookie is
+first-party and the app calls `/api/…` with no base URL to configure.
+
+**New here?** [docs/00-start-here.md](docs/00-start-here.md) takes a
+non-developer from zero to a live shop with a real database. The technical
+version is [docs/10-for-developers.md](docs/10-for-developers.md).
 
 ## The addresses are real addresses
 
@@ -35,75 +39,99 @@ people: the published page has to be *built* with the API's address.
 | anything else | `404.html` |
 
 No `.html` in any link, and the address bar changes as you move around the shop — Back and
-Forward work, and a screen can be bookmarked. GitHub Pages serves static files, so each
+Forward work, and a screen can be bookmarked. Vercel serves static files, so each
 route is a folder with an `index.html`; `build.js` writes them all from one shell. The app
 itself routes in the browser (`history.pushState`), and if the folder is opened straight
 from disk it falls back to `#/till` style addresses so nothing 404s.
 
-**Live site:** https://saintm254.github.io/Shop-Yangu-Kenya/
+**Previously live at:** https://saintm254.github.io/Shop-Yangu-Kenya/ — the
+GitHub Pages deploy still runs and still works; Vercel is the deployment to use,
+and [docs/03-vercel.md](docs/03-vercel.md) is how to set it up.
 
 ---
 
-## Deploying it — one manual setting, then nothing
+## Deploying it
 
-### 1. The one thing you must turn on by hand
+**Vercel publishes both halves from one repository push.** Setup is four
+dashboard settings and four environment variables, and
+[docs/03-vercel.md](docs/03-vercel.md) walks through it click by click, written
+for someone who has never deployed anything.
 
-> **Repository → Settings → Pages → Build and deployment → Source = `GitHub Actions`**
-
-That is the only manual step, and it is the setting in your screenshot. Without it the
-workflow still builds happily and then fails at the deploy step with
-`Get Pages site failed` / `Not Found`.
-
-Check it in one command if you prefer the API:
-
-```bash
-gh api repos/SaintM254/Shop-Yangu-Kenya/pages --jq '.build_type'
-# "workflow"  → already correct
-# "legacy"    → set Source to GitHub Actions in the UI
-```
-
-On this repository `build_type` is already `workflow`, so **nothing needs clicking** —
-pushing to `main` publishes.
-
-### 2. Everything else is automatic
-
-| On | What happens |
+| Setting | Value |
 |---|---|
-| Push to `main` | `.github/workflows/pages.yml` builds and deploys |
-| Pull request to `main` | Builds and runs the checks, **but does not deploy** |
-| Actions → *Build and deploy site* → *Run workflow* | Manual rebuild of the current `main` |
-| After a successful deploy | `.github/workflows/site-check.yml` loads the live site in Chromium at 360 / 768 / 1280 px |
+| Framework preset | `Other` |
+| Build command | `node build.js` |
+| Output directory | `dist` |
+| Install command | `npm install` (the default) |
 
-The deploy job: `actions/checkout@v7` → `actions/setup-node@v7` (Node 24) →
-`actions/configure-pages@v6` → `node build.js` → `actions/upload-pages-artifact@v5` →
-`actions/deploy-pages@v5` → prints the live URL to the run summary.
+| Environment variable | Value |
+|---|---|
+| `DATABASE_URL` | the **pooled** Neon string |
+| `TOKEN_PEPPER` | 64 random characters — **mandatory**, the function crashes without it |
+| `SERVE_SITE` | `0` — Vercel serves the site, not the function |
+| `NODE_ENV` | `production` |
 
-There is **no `npm install`** anywhere in the build. `build.js` uses only the Node
-standard library, so there is no lockfile to drift and no registry outage that can break
-a deploy.
+`SITE_URL` and `MPESA_CALLBACK_BASE` are derived from Vercel's own environment
+when unset; set `SITE_URL` explicitly once a custom domain is attached.
 
-### 3. If something goes wrong
+On every push to `main` Vercel builds and publishes. **One function**,
+`api/index.js`, answers `/api/*` and `/pay/*` — see
+[docs/10-for-developers.md](docs/10-for-developers.md) for why it is one file
+and not a file per route.
+
+### The GitHub Pages deploy still runs
+
+`.github/workflows/pages.yml` keeps publishing to
+<https://saintm254.github.io/Shop-Yangu-Kenya/> as a fallback. It needs nothing
+installed — `build.js` has only the standard library. Once the Vercel site is
+confirmed, delete that workflow or set **Settings → Pages → Source** to *None*.
+
+`.github/workflows/site-check.yml` loads the live site in headless Chromium (67
+assertions: no horizontal scroll at 360/768/1280 px, no JS errors, fonts
+present, links resolve). It cannot be triggered by Vercel finishing, so it is
+manual — or set the repository variable `SITE_URL` and it follows the site.
+
+### If something goes wrong
+
+[docs/09-troubleshooting.md](docs/09-troubleshooting.md) is message → fix for
+every failure in the setup. The four that account for most of them:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Get Pages site failed` / `Not Found` on the deploy step | Source is still *Deploy from a branch* | Set Source to **GitHub Actions**, re-run |
-| The site 404s but the run is green | The artifact has no `index.html` at its root | `build.js` writes exactly that into `dist/`; check the upload step points at `dist` |
-| Nothing runs on push | Actions disabled for the repo/fork | Settings → Actions → General → allow actions |
-| The build fails with `✗ … broken link` | A page links to a file that is not built | Fix the link; the build is deliberately strict |
-| Fonts look like Times | `dist/fonts/` missing from the artifact | `src/fonts/*.woff2` must be committed |
+| Every page is `404: NOT_FOUND` from Vercel | Wrong output directory | Set it to `dist` and redeploy |
+| `/api/health` is `500 FUNCTION_INVOCATION_FAILED` | `TOKEN_PEPPER` missing or empty | Add it, ticked for Production, then **Redeploy** |
+| `/api/health` says `"ok":false` | `DATABASE_URL` wrong, or tables not built | Re-paste the pooled string; run `apply-all.sql` in Neon |
+| A setting changed but nothing happened | Settings are read at build time | **Deployments → ⋯ → Redeploy** |
 
 ---
 
 ## Working on it locally
 
 ```bash
+npm install             # once: the API's dependencies (an npm workspace)
 node build.js           # writes dist/ and runs the checks
+npm start               # the API, serving dist/ too, at http://localhost:8787
+```
+
+`npm start` runs `api/server.js`, which in development serves the built site *and*
+answers `/api/*` — same origin, same as production, so sign-in behaves identically.
+
+For the static pages alone, without the API:
+
+```bash
 node tools/serve.mjs    # serves dist/ at http://localhost:8080, folders like Pages
 ```
 
-No install step. Node 20 or newer. Use `tools/serve.mjs`, not a plain file server: the
-clean addresses only work when `/till` redirects to `/till/` and a folder answered with
-its `index.html`, and that is what it does.
+Use `tools/serve.mjs`, not a plain file server: the clean addresses only work when
+`/till` redirects to `/till/` and a folder is answered with its `index.html`.
+
+Tests:
+
+```bash
+npm run test:api        # 109 assertions, PGlite, no network
+npm run test:vercel     #   7 — the Vercel adapter, driven Vercel-shaped
+npm run test:sql        #   8 — the files people paste into Neon
+```
 
 ### Where to change things
 
@@ -257,15 +285,15 @@ Charge button or an open dialog.
 
 ## Where the database plugs in
 
-`src/app/backend.js` is the only place the app knows about a server:
-
-```js
-BACKEND.base = 'https://api.shopyangu.co.ke';  // the new API
-BACKEND.live = true;                            // and the screens keep working
-```
+`src/app/backend.js` is the only place the app knows about a server. `BACKEND.base`
+stays **empty** — same origin — because Vercel serves the pages and routes `/api/*`
+to the one function. Only a split deployment (static site on one host, API on
+another) sets it, from `API_URL` at build time.
 
 It documents the exact shape `S` has to keep, the money and date rules, and the one write
-that must be a transaction (a sale, its payments and the stock decrement together). Nothing
+that must be a transaction (a sale, its payments and the stock decrement together).
+The setup — Neon, environment variables, Vercel — is
+[docs/00-start-here.md](docs/00-start-here.md). Nothing
 in `shell.js`, the screens or the exports needs changing: `load()` fills `S` before the
 first paint, `save()` writes changes back, and `persist()` is already called from the till.
 

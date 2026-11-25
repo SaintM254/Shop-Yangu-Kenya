@@ -1,4 +1,4 @@
-/* ============================================================ api/routes/auth.js
+/* ============================================================ api/_routes/auth.js
 
    The door.
 
@@ -19,12 +19,12 @@
    password is a second thing to forget, reset and leak.
 */
 
-import * as db from '../lib/db.js';
-import { env } from '../lib/config.js';
-import * as auth from '../lib/auth.js';
-import { sendMail } from '../lib/mail.js';
-import * as emails from '../lib/emails.js';
-import { badRequest, notFound, unauthorized, send, tooMany, HttpError } from '../lib/http.js';
+import * as db from '../_lib/db.js';
+import { env } from '../_lib/config.js';
+import * as auth from '../_lib/auth.js';
+import { sendMail } from '../_lib/mail.js';
+import * as emails from '../_lib/emails.js';
+import { badRequest, notFound, unauthorized, send, tooMany, HttpError } from '../_lib/http.js';
 
 /* The cookie is set by the handler, which is why these routes get `res`. */
 const withCookie = (body, cookieLine) => [body, { 'set-cookie': cookieLine }];

@@ -1,76 +1,67 @@
-# Shop Yangu Kenya — running the real thing
+# Shop Yangu Kenya — the guides
 
-The app is a static site on GitHub Pages. It has no database of its own, so
-there are two pieces:
+Written for someone who has never deployed anything. No jargon without a
+translation, no step that needs you to read code.
 
-```
-  browser ──▶ GitHub Pages (the pages, the CSS, app.js)
-     │
-     └──────▶ Node API (api/)  ──▶  Neon Postgres
-```
+**Start at [00-start-here.md](00-start-here.md).** It is a one-page map of the
+whole setup, and it tells you which guide to open next.
 
-This folder is the order to build that in, and the reasons behind the choices
-you are about to make.
+---
 
-| | Question | File |
+## The guides
+
+Setup, in the order you do them:
+
+| | Guide | Time | Ends with |
+|---|---|---|---|
+| — | [Start here](00-start-here.md) | 5 min | Knowing what you are building and what it costs |
+| 1 | [Create the database](01-neon.md) | 10 min | An empty database at Neon, and two saved strings |
+| 2 | [Put the tables in](02-database-setup.md) | 10 min | Tables, and a demo shop to look at |
+| 3 | [Put the site online](03-vercel.md) | 20 min | Your shop, live at an address you can share |
+| 4 | [Turn on sign-in emails](04-email.md) | 15 min | A real code arriving in a real inbox |
+| 5 | [Take M-Pesa](05-mpesa.md) | 20 min | Customers paying into your own till |
+| 6 | [The platform console](06-admin.md) | 5 min | A console at `/admin/` |
+
+Steps 1–3 give you a working site. 4–6 make it usable by real people.
+
+Reference, once you are running:
+
+| | Guide | For |
 |---|---|---|
-| 1 | Where does the data live? | [01-neon-setup.md](01-neon-setup.md) |
-| 2 | What do I run, and in what order? | [02-run-order.md](02-run-order.md) |
-| 3 | How does the published page find the API? | [03-link-the-page.md](03-link-the-page.md) |
-| 4 | How do people sign in, with no passwords? | [04-email-sign-in.md](04-email-sign-in.md) |
-| 5 | How does each shop take M-Pesa? | [05-mpesa-tills.md](05-mpesa-tills.md) |
-| 6 | What can a platform admin see? | [06-super-admin.md](06-super-admin.md) |
-| 7 | When does a receipt go to KRA? | [07-etims-later.md](07-etims-later.md) |
+| 7 | [eTIMS and KRA](07-etims.md) | What is finished and what is not, before you promise anyone tax compliance |
+| 8 | [How much this costs](08-cost-and-limits.md) | Free-plan limits, honestly — including where free stops being allowed |
+| 9 | [Troubleshooting](09-troubleshooting.md) | Message → fix |
+| 10 | [For developers](10-for-developers.md) | The technical version, for whoever maintains the code |
 
-## What exists already
+---
 
-- **`db/`** — four SQL files, applied in order and once each:
-  `001_schema.sql` (tables), `002_functions.sql` (the functions that move
-  money and stock), `003_rls.sql` (row-level security: a shop can only ever
-  see its own rows), `004_seed_demo.sql` (a demo shop with fourteen days of
-  trading).
-- **`api/`** — a small Node server, no framework, that connects to Neon as
-  `syk_app` and answers `/api/*`.
-- **`scripts/`** — `db-migrate.js`, `db-seed.js`, `make-super-admin.js`.
-- **the site** — `build.js` writes `dist/`, which is what Pages publishes.
+## If you only read one page
 
-## Three decisions worth knowing before you start
+[Start here](00-start-here.md). It has the map, the words you will meet, and
+the order.
 
-**No passwords.** People sign in with a six-digit code or a link, emailed. A
-shopkeeper in Mombasa does not need another password, and there is no password
-database to leak. See [04](04-email-sign-in.md).
+## If something is broken
 
-**The server numbers receipts, not the till.** Two tills numbering their own
-receipts will eventually print the same number twice, and that number is the
-one a customer brings back. So the till prints a provisional number, posts the
-sale, and the receipt card on screen is corrected the moment the API answers.
-The sale, its lines, its payments and the stock decrement happen in one
-transaction — see `record_sale()` in `db/002_functions.sql`.
+[9 · Troubleshooting](09-troubleshooting.md), or open
+`https://your-address.vercel.app/api/health` — that page is the system telling
+you what it can and cannot reach.
 
-**A failed connection does not lose a sale.** The till sells anyway and queues
-the sale in the browser; it replays when the connection returns. Nothing is
-renumbered on replay, because the API never used the till's number.
+---
 
-## The shortest path to a working shop
+<details>
+<summary>Where the older, more technical docs went</summary>
 
-```bash
-# 1. a Neon project, then its two connection strings
-#    (see 01-neon-setup.md)
+These guides replaced a set written for developers. Each old file still exists
+at its old address so nothing breaks, and each one now points here:
 
-# 2. the schema
-node scripts/db-migrate.js --check     # what would run
-node scripts/db-migrate.js             # run it
+| Old file | Now |
+|---|---|
+| `01-neon-setup.md` | [01-neon.md](01-neon.md) |
+| `02-run-order.md` | [02-database-setup.md](02-database-setup.md) and [10-for-developers.md](10-for-developers.md) |
+| `03-link-the-page.md` | [03-vercel.md](03-vercel.md) — the two hosts are now one |
+| `04-email-sign-in.md` | [04-email.md](04-email.md) |
+| `05-mpesa-tills.md` | [05-mpesa.md](05-mpesa.md) |
+| `06-super-admin.md` | [06-admin.md](06-admin.md) |
+| `07-etims-later.md` | [07-etims.md](07-etims.md) |
 
-# 3. a shop to look at
-node scripts/db-seed.js                # demo shop + demo@shopyangu.co.ke
-
-# 4. the API, serving the built site
-cd api && npm install && npm start     # http://localhost:8787
-```
-
-Then open <http://localhost:8787/login/>, enter `demo@shopyangu.co.ke`, and
-read the code off the terminal. With `EMAIL_DRIVER=console` that is the whole
-"email" — nothing is sent anywhere.
-
-Full detail, including every environment variable, is in
-[02-run-order.md](02-run-order.md).
+</details>

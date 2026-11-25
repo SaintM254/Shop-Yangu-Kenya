@@ -30,14 +30,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
-import { splitStatements } from '../api/lib/sql-split.js';
+import { splitStatements } from '../api/_lib/sql-split.js';
 
 const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 
 /* Reuse the API's .env loader and config so there is one source of truth. */
 process.chdir(path.join(root, 'api'));
-const { env } = await import('../api/lib/config.js');
+const { env } = await import('../api/_lib/config.js');
 process.chdir(root);
 
 const args = new Set(process.argv.slice(2));
@@ -51,7 +51,7 @@ if (!env.DATABASE_URL) {
 
   Copy api/.env.example to api/.env and paste the connection string from the
   Neon console (Connection Details → the DIRECT string, not the pooled one).
-  docs/01-neon-setup.md walks through it.
+  docs/01-neon.md walks through it.
 `);
   process.exit(1);
 }

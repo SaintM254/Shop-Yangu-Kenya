@@ -43,9 +43,9 @@
 
 const BACKEND = {
   /* Empty means same origin, which is how it runs in development (the API
-     serves the built site) and how it runs behind a proxy. On GitHub Pages the
-     site has no API of its own, so build.js writes the host in here from
-     API_URL — see docs/03-link-the-page.md. */
+     serves the built site) and on Vercel (Vercel serves the site and routes
+     /api to the one function). Only a split setup puts a host in here, from
+     API_URL at build time — see docs/10-for-developers.md. */
   base: typeof window !== 'undefined' && window.SYK_API ? window.SYK_API : '',
 
   /* Set by load(): true when the API answered. */

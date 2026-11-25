@@ -21,7 +21,7 @@ const here = path.dirname(url.fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 
 process.chdir(path.join(root, 'api'));
-const { env } = await import('../api/lib/config.js');
+const { env } = await import('../api/_lib/config.js');
 process.chdir(root);
 
 const [email, name = 'Platform admin'] = process.argv.slice(2);
@@ -37,7 +37,7 @@ if (!email || !email.includes('@')) {
 }
 
 if (!env.DATABASE_URL) {
-  console.error('\n  No DATABASE_URL. See docs/01-neon-setup.md.\n');
+  console.error('\n  No DATABASE_URL. See docs/01-neon.md.\n');
   process.exit(1);
 }
 

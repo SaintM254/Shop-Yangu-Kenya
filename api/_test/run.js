@@ -1,4 +1,4 @@
-/* ============================================================ api/test/run.js
+/* ============================================================ api/_test/run.js
 
    The end-to-end suite. It starts the real server against a real Postgres
    (PGlite, in-process), runs the SQL migrations, and then uses the API the way
@@ -90,7 +90,7 @@ const shim = {
   },
   async close() {},
 };
-const { __setTestDriver } = await import('../lib/db.js');
+const { __setTestDriver } = await import('../_lib/db.js');
 __setTestDriver(shim);
 
 /* ------------------------------------------------------------------ client */

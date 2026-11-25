@@ -1,11 +1,11 @@
-/* ============================================================ api/routes/mpesa.js
+/* ============================================================ api/_routes/mpesa.js
 
    M-Pesa, one till per shop.
 
    The thing that makes this per-shop rather than per-platform:
 
      · the shortcode, passkey, consumer key and consumer secret live in
-       mpesa_tills, one row per shop (db/001_schema.sql, docs/05-mpesa-tills.md);
+       mpesa_tills, one row per shop (db/001_schema.sql, docs/05-mpesa.md);
      · each row has its own callback_secret, and the callback URL contains it:
        https://api.example.com/pay/<32 hex characters>
        so a callback that arrives proves which shop it belongs to;
@@ -15,7 +15,7 @@
 
    The URL avoids the words "mpesa", "m-pesa" and "safaricom": Safaricom's
    portal rejects callback URLs containing them. /pay/<secret> is the whole
-   trick, and docs/05-mpesa-tills.md explains it for whoever is registering the shortcode.
+   trick, and docs/05-mpesa.md explains it for whoever is registering the shortcode.
 
      POST /api/mpesa/prompt      owner asks for a prompt on a phone
      POST /pay/:secret           Safaricom's callback (no auth: it is Safaricom)
@@ -26,11 +26,11 @@
      POST /api/mpesa/tills/:id/test  prove the credentials work
 */
 
-import * as db from '../lib/db.js';
-import { env } from '../lib/config.js';
-import * as shape from '../lib/shape.js';
-import { requireOwner } from '../lib/auth.js';
-import { badRequest, notFound, forbidden, send, HttpError } from '../lib/http.js';
+import * as db from '../_lib/db.js';
+import { env } from '../_lib/config.js';
+import * as shape from '../_lib/shape.js';
+import { requireOwner } from '../_lib/auth.js';
+import { badRequest, notFound, forbidden, send, HttpError } from '../_lib/http.js';
 
 /* Sandbox and production are different hosts with different rules. */
 const BASE =
