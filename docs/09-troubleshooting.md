@@ -214,6 +214,19 @@ A package did not install. **Settings** → **General** → **Install Command**
 should be `npm install` or empty. If you changed it to something else, put it
 back and redeploy.
 
+### The site is a Vercel login page, not the shop
+
+Vercel protects new deployments by default, so a site nobody has seen yet cannot
+be found by a search engine. Two versions of this:
+
+- **A preview address** (`...-git-branch-....vercel.app`) always asks you to log
+  in. That is not your shop's address — share the production one,
+  `https://your-project.vercel.app`.
+- **The production address asks too:** somebody switched protection on for
+  everything. **Settings** → **Deployment Protection** → set **Vercel
+  Authentication** to **Standard Protection** (previews protected, production
+  public) or **Disabled**. Then reload.
+
 ### The deploy succeeds but nothing changed
 
 Browsers cache pages aggressively. Open your address in a private window, or add

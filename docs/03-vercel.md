@@ -362,6 +362,20 @@ The build wrote nothing to `dist`. Look at the build log: `node build.js`
 prints `built 19 pages · all checks passed` when it works. If it printed
 `check(s) failed`, a change broke the site and the log says which page.
 
+**The site shows a Vercel login page instead of the shop**
+
+You are looking at a *preview* address, or deployment protection is switched on
+for everything. Vercel protects new deployments by default so a half-finished
+site cannot be found by search engines.
+
+- On a **preview** address (`...-git-something-....vercel.app`) this is normal.
+  The production address — `https://your-project.vercel.app` — is the one to
+  share.
+- If the **production** address shows it too, open **Settings** → **Deployment
+  Protection** (older accounts: **Settings** → **Security**) and set
+  **Vercel Authentication** to **Standard Protection** or **Disabled**. Standard
+  protects previews and leaves production public, which is what a shop wants.
+
 **"Deployment blocked" or a payment prompt**
 You created a team, or picked a paid plan at signup. Hobby is free; check
 **Settings → Billing**. (A prompt on a *commercial* project is a different
