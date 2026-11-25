@@ -469,20 +469,44 @@ function completeSale() {
 }
 
 function finishSale(total, paidBits, change, credit, customerId) {
-  const no = 'R-' + (3807 + S.sales.length);
+  /* The receipt number is provisional. The server numbers receipts, in the
+     same transaction that writes the sale, because two tills numbering their
+     own would collide on the one number a customer might bring back. The
+     provisional one is replaced the moment the API answers — see
+     replaceLocalSale() in backend.js — and `pending` is what tells the
+     receipt card to say "saving". */
+  const provisional = 'S-' + String(S.sales.length + 1).padStart(4, '0');
   const sale = {
-    no, at: now().toISOString(),
+    no: provisional,
+    pending: BACKEND.live,
+    at: now().toISOString(),
     items: basket.map(b => ({ id: b.id, name: b.name, qty: b.qty, price: b.price, cost: b.cost, unit: b.unit })),
     total, paid: paidBits.map(p => ({ m: p.m, amt: Number(p.amt) })),
-    credit, customer: customerId,
-    etims: { status: 'sent', sig: 'KRA' + (721000 + S.sales.length) }
+    credit,
+    customer: customerId === 'c6' ? '' : customerId,
+    etims: { status: 'pending', sig: '' }
   };
   basket.forEach(b => { const p = prod(b.id); if (p) p.qty = Math.max(0, p.qty - b.qty); });
   S.sales.unshift(sale);
-  S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Completed sale ' + no, detail: fmt(total) + (credit ? ', ' + fmt(credit) + ' on credit' : '') });
-  /* the one write that must be atomic once Postgres is behind this: the
-     sale, its payments and the stock decrement, in one transaction */
-  persist('sales', { sale, stock: basket.map((b) => ({ id: b.id, qty: b.qty })) });
+  S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Completed sale ' + provisional, detail: fmt(total) + (credit ? ', ' + fmt(credit) + ' on credit' : '') });
+
+  /* One request, one transaction on the server: the sale, its lines, its
+     payments and the stock decrement either all happen or none of them do. */
+  persist('sales', {
+    items: sale.items,
+    paid: sale.paid,
+    customer: sale.customer || null,
+    receipt: sale.no,
+  }).then((result) => {
+    if (!result || !result.sale) return;
+    /* The server's number is the real one: update the receipt on screen if it
+       is still the one being looked at. */
+    sale.no = result.sale.no;
+    if (shownSale === sale) {
+      $('#receiptNo').textContent = 'No. ' + sale.no + ' · ' + dmy(new Date(sale.at)) + ' ' + clock(new Date(sale.at)) +
+    (sale.pending ? ' · saving' : '');
+    }
+  });
 
   sale.customer_name = customerLabel();
   basket = []; pay = [{ m: 'Cash', amt: '' }];
@@ -490,7 +514,7 @@ function finishSale(total, paidBits, change, credit, customerId) {
   if (!keepCustomer) posCustomer = { id: 'c6', name: 'Walk-in', walkin: '', open: false };
   renderBasket(); renderPay(); renderCustomer();
   showReceipt(sale, change);
-  toast('Sale ' + no + ' completed' + (credit ? ', ' + fmt(credit) + ' on credit' : ''), 'good');
+  toast('Sale recorded' + (credit ? ', ' + fmt(credit) + ' on credit' : ''), 'good');
   if (route === 'dashboard') renderDashboard();
 }
 
@@ -498,7 +522,8 @@ function showReceipt(sale, change) {
   shownSale = sale;
   const c = cust(sale.customer);
   $('#receiptCard').hidden = false;
-  $('#receiptNo').textContent = 'No. ' + sale.no + ' · ' + dmy(new Date(sale.at)) + ' ' + clock(new Date(sale.at));
+  $('#receiptNo').textContent = 'No. ' + sale.no + ' · ' + dmy(new Date(sale.at)) + ' ' + clock(new Date(sale.at)) +
+    (sale.pending ? ' · saving' : '');
   $('#receiptBody').innerHTML =
     '<div class="rcptmark" aria-hidden="true"><svg viewBox="0 0 636 722"><use href="#i-logo"/></svg></div>' +
     '<div style="text-align:center">' +

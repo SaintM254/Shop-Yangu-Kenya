@@ -38,6 +38,21 @@ document.addEventListener('click', e => {
         if (amt <= 0) { toast('Enter an amount.', 'bad'); return; }
         c.bal = Math.round((c.bal - amt) * 100) / 100;
         S.ledger.unshift({ at: now().toISOString(), customer: c.id, amt, how: $('#payHow').value, who: S.user.name });
+        /* A credit payment reduces what the customer owes. The server
+           recalculates the balance itself and sends back the real figure. */
+        persist('credit-payments', {
+          customerId: c.id,
+          amount: amt,
+          /* 'Bank transfer' is a cash-equivalent for the API, which knows
+             cash, mpesa and card only. */
+          method: /mpesa/i.test($('#payHow').value) ? 'mpesa' : /card/i.test($('#payHow').value) ? 'card' : 'cash'
+        }).then((r) => {
+          if (r && typeof r.balance === 'number') {
+            const row = S.customers.find(x => x.id === c.id);
+            if (row) row.bal = r.balance;
+            renderCustomers();
+          }
+        });
         S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Recorded payment', detail: c.name + ', ' + fmt(amt) });
         closeSheet(); renderCustomers();
         toast('Payment recorded. ' + c.name + ' now owes ' + fmt(c.bal), 'good');
@@ -72,7 +87,18 @@ document.addEventListener('click', e => {
       actions: [{ label: 'Add customer', kind: '', onClick: () => {
         const n = $('#cN').value.trim();
         if (!n) { toast('A customer needs a name.', 'bad'); return; }
-        S.customers.push({ id: 'c' + (S.customers.length + 1) + 'x', name: n, phone: $('#cP').value.trim(), limit: Number($('#cL').value) || 0, bal: Number($('#cB').value) || 0, since: ymd(today()) });
+        const localId = 'c' + (S.customers.length + 1) + 'x';
+        const bal = Number($('#cB').value) || 0;
+        S.customers.push({ id: localId, name: n, phone: $('#cP').value.trim(), limit: Number($('#cL').value) || 0, bal, since: ymd(today()) });
+        /* The opening balance is not part of the customer record: it is money
+           already owed, so it goes in as a credit sale the server can age. */
+        persist('customers', {
+          name: n,
+          phone: $('#cP').value.trim() || null,
+          limit: Number($('#cL').value) || 0,
+          openingBalance: bal,
+          __local: localId
+        });
         closeSheet(); renderCustomers(); toast('Added ' + n, 'good');
       }}]
     });

@@ -148,9 +148,30 @@ function saveProduct(p) {
     reorder: Math.max(0, parseInt($('#pReorder').value, 10) || 0),
     exp: $('#pExp').value, unit: p ? p.unit : 'piece'
   };
-  if (p) Object.assign(p, data);
-  else S.products.push(Object.assign({ id: 'p' + (S.products.length + 1) + 'x' }, data));
-  S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: (p ? 'Edited ' : 'Added ') + name, detail: p ? 'Stock now ' + data.qty : 'Opening stock ' + data.qty });
+  /* The API takes the category by id and the rest by name, so the payload is
+     built here rather than being the form's own shape. */
+  const categoryId = (S.catIds || {})[data.cat] || null;
+  const payload = {
+    name: data.name, sku: data.sku, unit: data.unit, categoryId,
+    cost: data.cost, price: data.price, qty: data.qty,
+    reorder: data.reorder, exp: data.exp || null
+  };
+
+  if (p) {
+    Object.assign(p, data);
+    S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Edited ' + name, detail: 'Stock now ' + data.qty });
+    /* A price edit is not a stock movement: qty stays out of it, because the
+       server moves stock only through the ledger. */
+    delete payload.qty;
+    persist('products', payload, p.id);
+  } else {
+    const localId = 'p' + (S.products.length + 1) + 'x';
+    const row = Object.assign({ id: localId }, data);
+    S.products.push(row);
+    S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Added ' + name, detail: 'Opening stock ' + data.qty });
+    payload.__local = localId;
+    persist('products', payload);
+  }
   closeSheet();
   renderInventory();
   toast(p ? 'Saved ' + name : 'Added ' + name, 'good');
@@ -183,6 +204,9 @@ document.addEventListener('click', e => {
     const po = S.pos.find(x => x.no === rec.dataset.receive);
     po.status = 'received';
     S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Received ' + po.no, detail: fmt(po.total) + ' from ' + sup(po.supplier).name });
+    /* The server applies the stock when the order turns received, once. It
+       refuses to un-receive an order whose goods are already on the shelf. */
+    persist('purchases', { status: 'received' }, po.id);
     renderPurchases();
     toast(po.no + ' marked received, stock updated', 'good');
   }
@@ -211,9 +235,18 @@ document.addEventListener('click', e => {
       actions: [{ label: 'Save as draft', kind: '', onClick: () => {
         const supName = $('#poSup').value;
         const s = S.suppliers.find(x => x.name === supName);
-        const total = (Number($('#poQty').value) || 0) * (Number($('#poCost').value) || 0);
-        S.pos.push({ no: 'PO-' + (1046 + S.pos.length), supplier: s.id, at: ymd(today()), status: 'draft', total, lines: 1 });
+        const qty = Number($('#poQty').value) || 0;
+        const cost = Number($('#poCost').value) || 0;
+        const total = qty * cost;
+        const product = S.products.find(p => p.name === $('#poItem').value);
+        /* The number is provisional: the server issues PO-nnnn per shop, the
+           same way it numbers receipts. */
+        S.pos.push({ no: 'PO-…', supplier: s.id, at: ymd(today()), status: 'draft', total, lines: 1 });
         S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Created purchase order', detail: supName + ', ' + fmt(total) });
+        persist('purchases', {
+          supplier: s.id, at: ymd(today()), status: 'draft',
+          items: [{ productId: product ? product.id : null, name: product ? product.name : 'Item', qty, cost }]
+        });
         closeSheet(); renderPurchases(); toast('Draft order saved');
       }}]
     });
