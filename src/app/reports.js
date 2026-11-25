@@ -113,8 +113,9 @@ function renderSettings() {
     const k = t.dataset.toggle;
     t.setAttribute('aria-checked', String(!!S.settings[k]));
   });
+  /* the plan price is shown on Settings; the drawer's plan card was removed
+     with the rail foot, so there is only the one target now */
   $$('[data-plan-price]').forEach(n => { n.textContent = fmt(S.shop.plan); });
-  $$('[data-plan-line]').forEach(n => { n.textContent = fmt(S.shop.plan) + ' / month'; });
   $('#setShop').value = S.shop.name;
   $('#setBranch').value = S.shop.branch;
   $('#setPhone').value = S.shop.phone;

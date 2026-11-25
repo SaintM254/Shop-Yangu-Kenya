@@ -223,18 +223,6 @@ function paintNav() {
     g.items.forEach((item) => links.appendChild(navButton(item, () => {})));
   });
 
-  const foot = $('#railFoot');
-  foot.innerHTML = '';
-  const me = el('div', 'railme');
-  me.innerHTML = '<b>' + esc(S.user.name) + '</b>Shop owner' +
-    '<br>' + fmt(S.shop.plan) + ' / month';
-  foot.appendChild(me);
-  const out = el('button', 'railout');
-  out.type = 'button';
-  out.innerHTML = icon('log-out', 'sm') + '<span>Sign out</span>';
-  out.onclick = signOut;
-  foot.appendChild(out);
-
   /* Phones use the drawer and the tab bar. */
   const tabs = TABS;
   const tabbar = $('#tabbar');
@@ -263,7 +251,7 @@ function paintNav() {
 
 /* The mark in the rail and the phone bar is the way home inside the app.
    It navigates to the dashboard without leaving the app or touching the
-   session — signing out is the button in the rail foot, and only that. */
+   session — signing out is the button in the rail head, and only that. */
 document.addEventListener('click', (e) => {
   const home = e.target.closest('[data-home]');
   if (!home) return;
@@ -302,9 +290,32 @@ function requireSession() {
   return null;
 }
 
-function signOut() {
-  try {
-    sessionStorage.removeItem(SIGNED_IN_KEY);
-  } catch (err) {}
-  location.href = location.protocol === 'file:' ? '../../login/index.html' : '../login/';
+/* Signing out drops the shop's own session, so it asks first — a mis-tap on a
+   phone should not end the shop's day. The sheet is the app's dialog, so it
+   reads the same at 360px as it does on a laptop. */
+function confirmSignOut() {
+  sheet({
+    title: 'Sign out of the shop?',
+    sub: 'You will need the password to get back in.',
+    body: '<p class="hint" style="margin-top:2px">Nothing is lost: every sale, receipt and ' +
+      'stock change is already saved. Signing back in shows the shop exactly as you left it.</p>',
+    actions: [
+      { label: 'Stay signed in', kind: 'secondary', onClick: () => closeSheet() },
+      { label: 'Sign out', kind: 'danger', id: 'confirmSignOut', onClick: () => {
+        try {
+          sessionStorage.removeItem(SIGNED_IN_KEY);
+        } catch (err) {}
+        location.href = location.protocol === 'file:' ? '../../login/index.html' : '../login/';
+      } },
+    ],
+  });
 }
+
+/* One handler for every sign-out control: the rail's, the phone bar's, the
+   drawer's. There is no path that signs out without the confirmation. */
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-signout]')) return;
+  e.preventDefault();
+  closeDrawer();
+  confirmSignOut();
+});

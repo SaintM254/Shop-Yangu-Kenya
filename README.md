@@ -108,7 +108,8 @@ its `index.html`, and that is what it does.
 | The shop's look | `src/app/app.css` (shares the tokens in `src/styles.css`) |
 | PDF exports | `src/app/pdf.js` + the payloads in `src/app/exports.js` |
 | Excel exports | `src/app/excel.js` (a real `.xlsx`, zipped in the browser) |
-| The logo | `Images/Icon.svg` is the source; `src/logo/mark.svg` is the recoloured mark the site and the PDFs use. `favicon.svg` is white on nothing, for the browser tab; `apple-touch-icon.png` is the one place with a plate, because a home screen has no background of its own |
+| The logo | `Images/Icon.svg` is the source; `src/logo/mark.svg` is the recoloured mark the site and the PDFs use. `favicon.svg` is white on nothing, for the browser tab; `apple-touch-icon.png` is the one place with a plate, because a home screen has no background of its own. The install icons (`icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) are rasterised from that 180 px plate by `node tools/make-pwa-icons.mjs` — there is no SVG rasteriser in the project, so the tool decodes the PNG, upscales it 3×, snaps the two flat colours and box-filters back down |
+| The install prompt | `src/app/pwa.js` — the offer card and its per-browser wording, plus the service-worker registration. `src/app/sw.js` caches the shell (never shop data) and falls back to the `offline/` page. The manifest is `src/app/manifest.json` |
 | The hero | `Images/Mobile POS Receipt Mockup.png`, trimmed and re-encoded by `tools/make-pos-mock.mjs` into `src/pos-mock.webp` (1065 wide, ~128 kB, transparency kept) so a phone never downloads the 1 MB original. It tilts and lifts on scroll and settles under the pointer — the motion lives in `src/styles.css` (`.hero__mock`) and the small script in the hero. Its size is proportional, never a fixed pixel width: a `min(42%, 404px)` column inside the hero grid, so its height tracks the copy block's at every width (the smoke check fails if that ratio drifts outside 0.8–1.25) |
 | The prototype (kept for reference) | `shop-yangu-kenya.html` — no longer published |
 
@@ -206,6 +207,34 @@ app. `node tools/make-logo.mjs` regenerates every logo asset from `Images/Icon.s
 They sit on top of `exports.js`, which turns the live data into rows. When Postgres arrives
 that is the only file that has to learn where the rows come from — and `src/app/backend.js`
 is already the seam for it (see below).
+
+## The till fills the screen, and the shop can install it
+
+### Point of sale
+
+The till is the one screen where a scroll costs money, so it is laid out as a
+workbench rather than an article. On a laptop it owns the viewport: a product
+grid on the left, the basket and payment on the right, and none of the two
+scrolls the page — the grid and the basket list each scroll inside their own
+box. The total and the Charge button therefore never move.
+
+On a phone the same three regions stack, and the basket folds to one line
+("Basket · 3 items · Ksh 340") that opens over the grid when tapped, so the
+Charge button is always in reach of a thumb. A payment that is less than the
+bill is a deposit on account; the till asks who is taking the credit, as it
+always did.
+
+### Installing it
+
+The site is a PWA: `src/app/manifest.json` (standalone display, three
+shortcuts — Sell, Stock, Reports), a service worker that caches the shell so
+the app opens on a flaky connection, and icons at 192, 512 and a maskable 512.
+
+Every open offers to install — on Android and desktop Chrome the offer uses the
+browser's own `beforeinstallprompt`; on iPhone it explains Share → Add to Home
+Screen, which is the only route Safari allows; on Firefox it points at the
+menu. It is shown once per page load and never inside the rail, the till's
+Charge button or an open dialog.
 
 ## Where the database plugs in
 

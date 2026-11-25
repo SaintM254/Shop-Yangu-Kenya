@@ -1,0 +1,45 @@
+{
+  "name": "Shop Yangu Kenya",
+  "short_name": "Shop Yangu",
+  "description": "Sell, take payment, check stock and print the receipt for a Kenyan duka.",
+  "id": "./",
+  "start_url": "./dashboard/",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#F5EFE6",
+  "theme_color": "#1B4A63",
+  "lang": "en-KE",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Point of sale",
+      "short_name": "Sell",
+      "description": "Open the till and start a sale",
+      "url": "./till/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Stock",
+      "short_name": "Stock",
+      "description": "See what is on the shelf",
+      "url": "./stock/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "description": "Today's takings and what sold",
+      "url": "./reports/",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

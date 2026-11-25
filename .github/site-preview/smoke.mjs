@@ -554,10 +554,22 @@ try {
   await tab.waitForTimeout(250);
   const kept = await tab.inputValue('[data-user-name="me"]');
   if (kept !== 'Wanjiku Kamau (Mombasa)') fail(`app: the renamed login came back as "${kept}"`);
-  const railName = (await tab.locator('#railFoot .railme b').textContent()) || '';
-  if (!railName.includes('Wanjiku Kamau (Mombasa)')) {
-    fail(`app: the rail still says "${railName.trim()}" after renaming the shop login`);
+  /* The name used to sit in the rail's foot. The foot is gone — it cost the
+     rail two nav items and a scrollbar — so the name now lives in the phone
+     bar's sub-line and in the drawer's header. Check the drawer: it is the
+     only place the login's own name is written, and it must follow a rename
+     without a reload. */
+  await tab.setViewportSize({ width: 390, height: 844 });
+  await tab.waitForTimeout(200);
+  await tab.click('#menuBtn');
+  await tab.waitForTimeout(300);
+  const drawerName = (await tab.locator('#drawerWho').textContent()) || '';
+  if (!drawerName.includes('Wanjiku Kamau (Mombasa)')) {
+    fail(`app: the drawer still says "${drawerName.trim()}" after renaming the shop login`);
   }
+  await tab.keyboard.press('Escape');
+  await tab.setViewportSize({ width: 1280, height: 900 });
+  await tab.waitForTimeout(200);
 
   /* The mark in the rail goes to the dashboard. It must never sign anyone out. */
   await gotoRoute('Audit log', 'audit');

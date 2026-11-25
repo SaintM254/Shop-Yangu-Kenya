@@ -159,7 +159,7 @@ const XLSX_STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
   '<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;Ksh&quot;\\ #,##0"/></numFmts>' +
   '<fonts count="4">' +
   '<font><sz val="11"/><name val="Calibri"/><color rgb="FF1E2A22"/></font>' +
-  '<font><b/><sz val="16"/><name val="Calibri"/><color rgb="FF023246"/></font>' +
+  '<font><b/><sz val="16"/><name val="Calibri"/><color rgb="FF1B4A63"/></font>' +
   '<font><sz val="10"/><name val="Calibri"/><color rgb="FF596658"/></font>' +
   '<font><b/><sz val="11"/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>' +
   '</fonts>' +
