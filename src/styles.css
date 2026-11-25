@@ -2053,6 +2053,16 @@ a:hover {
   overflow-wrap: anywhere;
 }
 
+/* Who sent the code, and which kind it is. Set apart from the address because
+   it is the answer to a different question: "where do I look, and why is this
+   code not what I expected". */
+.authsent__note {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--primary-dark);
+}
+
 /* A password field is an ordinary field, with the browser's own dots. The
    class exists so the reveal button and the build's styling audit can both
    find it — a class with no rule would fail the build. */

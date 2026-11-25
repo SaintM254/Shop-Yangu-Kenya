@@ -34,21 +34,43 @@ can be locked out of their own shop.
 
 ---
 
-## What you actually have to set up
+## There is nothing to code, and almost nothing to set up
 
-Only two things, and one of them may already be done.
+Your screenshot was right and this page was wrong. Linking Vercel and Neon is
+**all toggles**; there is no integration code to write, and no Auth URL to paste
+into the Neon console.
 
-| What | Where | Why |
+**In Neon:** project → **Vercel** → the variables to sync. Tick these and the
+Neon console puts them in Vercel for you:
+
+| Variable | Keep ticked? | Why |
 |---|---|---|
-| `NEON_AUTH_BASE_URL` | Vercel → Settings → Environment Variables | Neon holds the account and sends the first code |
-| Your own mailer (Way B below) | Vercel, same place | welcome email, and every later sign-in code |
+| `DATABASE_URL` | **yes** | the shop's data |
+| `DATABASE_URL_UNPOOLED` | yes | harmless; used for building tables |
+| `NEON_AUTH_BASE_URL` | **yes** | this is the URL that puzzled you — it is created here, not copyable from a page |
+| `VITE_NEON_AUTH_URL` | yes | for browser code. This shop does not use it; harmless |
+| `PGHOST`, `PGUSER`, `PGPASSWORD`, … | no | this app does not read them |
 
-> **A note on trusted domains.** Earlier versions of this page told you to add
-> your site address in Neon under **Auth → Trusted domains**. If you connected
-> Neon and Vercel with the Neon integration, **your `.vercel.app` domain is
-> already trusted and you can skip that entirely.** Only add a domain if you get
-> a `403 Invalid origin` error, or if you are using a custom domain and preview
-> URLs. See [Step 6 →](06-troubleshooting.md#403-invalid-origin--every-sign-in-fails).
+**In Neon:** project → **Better Auth** → the toggles:
+
+| Toggle | Set it to | Why it matters here |
+|---|---|---|
+| **Sign-up with Email** | **on** | accounts are created with email and password |
+| **Sign-in with Email** | **on** | day-to-day sign-in |
+| **Verify at Sign-up** | **on** | see below — this is the one that decided whether you got a code |
+| **Verification method** | **Verification code** | this shop checks six digits, not links |
+| **Revoke sessions on password reset** | either | this shop issues its own sessions; either is safe |
+
+**The two things the toggles cannot do for you**, and both are Vercel settings:
+
+1. **Your own mailer** — Neon's shared sender only reaches the address on your
+   Neon account. Way B below.
+2. **`SITE_URL`** — your site's address, used as the Origin Neon checks. Only
+   needed if you ever see `403 Invalid origin`.
+
+> **Trusted domains are already handled** if you linked Neon and Vercel. Your
+> `.vercel.app` address is trusted automatically. Add a domain only for a custom
+> domain or preview URLs — [Step 6 →](06-troubleshooting.md#403-invalid-origin--every-sign-in-fails).
 
 ---
 
@@ -257,6 +279,59 @@ client is on the server (`api/_lib/neon-auth.js`), because the shop's sessions a
 its own and Neon must never steer them.
 
 ---
+
+## "The app is not requesting the OTP" — the actual cause
+
+This was the real problem, and it is worth understanding because it is not a bug
+in this shop. It is a rule in Better Auth:
+
+> **An address that is already verified is never sent a sign-up verification
+> code.** The request succeeds, answers `{"success": true}`, and sends nothing.
+
+With **Verify at Sign-up** switched on in the Neon console (your screenshot), the
+user is marked verified the moment the account is created. So by the time this
+shop would ask for a verification code, there is nothing left to verify — and the
+code never arrives.
+
+**What this shop now does about it**, automatically:
+
+| What Neon says | Which code is requested |
+|---|---|
+| address needs verifying (`emailVerified: false`) | `type: 'email-verification'` |
+| address already verified (`emailVerified: true`) | `type: 'sign-in'` — the only kind that can arrive |
+
+And because those two kinds are checked by **different** endpoints, the shop
+tries both when the code comes back. Verified against a real Better Auth server:
+
+| Endpoint | `email-verification` code | `sign-in` code |
+|---|---|---|
+| `/email-otp/verify-email` | accepted | **rejected — `400 Invalid OTP`** |
+| `/sign-in/email-otp` | — | accepted |
+
+So checking only the first endpoint would show "that code is not right" for a
+perfectly good code. Both are checked now.
+
+**You can see which one happened**, on the screen and in the API. The "check your
+email" panel now says who sent it and which kind it is:
+
+> *Sent by Neon. Your address was already verified, so this is a sign-in code —
+> it works here.*
+
+And `POST /api/auth/signup` returns `sentBy` and `codeType` for the same reason.
+
+### What to do about it right now
+
+You have two good options, and one of them needs no changes at all:
+
+1. **Sign in with a code by email.** On the sign-in page, under the button. That
+   path uses this shop's own code, tied to the login row, and it works whatever
+   Neon thinks your `emailVerified` is. It is the way back in, permanently.
+2. **Turn Verify at Sign-up OFF** in Neon → Better Auth. Then new accounts are
+   unverified, this shop asks for a verification code, and the first sign-in is
+   a "prove your inbox" step exactly as designed. Existing users are unaffected.
+
+If you are the only user and your address is already verified, option 1 is the
+one to use — there is nothing to prove that has not been proved.
 
 ## If no email arrives at all
 

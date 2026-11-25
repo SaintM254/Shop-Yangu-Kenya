@@ -922,6 +922,7 @@ function loginPage() {
       <div class="authsent">
         <p class="authsent__h" id="sentTitle">Check your email</p>
         <p class="authsent__to" id="sentTo"></p>
+        <p class="authsent__note" id="sentHow" hidden></p>
       </div>
 
       <div class="field-group">
@@ -996,16 +997,42 @@ function loginPage() {
 
   /* Step 2 replaces the form rather than sitting beneath it: one thing to look
      at, one thing to do. */
-  function showVerify(email, title) {
+  function showVerify(email, title, note) {
     tabs.login.panel.hidden = true;
     tabs.signup.panel.hidden = true;
     el('tabLogin').parentNode.hidden = false;
     verify.hidden = false;
     el('sentTitle').textContent = title || 'Check your email';
     el('sentTo').textContent = email;
+
+    /* WHO SENT IT, AND WHICH KIND. This line exists because "no email arrived"
+       used to be unanswerable from the screen. If the server says our own mailer
+       handled it, Neon is not in play at all. If it says a sign-in code, the
+       address was already verified and that is the code to look for. */
+    var sent = el('sentHow');
+    if (note) {
+      sent.textContent = note;
+      sent.hidden = false;
+    } else {
+      sent.hidden = true;
+      sent.textContent = '';
+    }
+
     el('code').value = '';
     clear(el('verifyError'));
     el('code').focus();
+  }
+
+  /* A sentence for the panel, written from what the server actually did. */
+  function sentNote(data) {
+    if (!data || !data.sentBy) return '';
+    if (data.sentBy !== 'neon-auth') {
+      return 'Sent by this shop, through its own mailer.';
+    }
+    if (data.codeType === 'sign-in') {
+      return 'Sent by Neon. Your address was already verified, so this is a sign-in code — it works here.';
+    }
+    return 'Sent by Neon Auth.';
   }
 
   tabs.login.tab.onclick = function () { show('login'); };
@@ -1180,7 +1207,7 @@ function loginPage() {
         /* The admin's link goes to /admin/, not /auth/link/. */
         sessionStorage.setItem('syk-admin-pending', e);
       }
-      showVerify(e, 'Check your email');
+      showVerify(e, 'Check your email', sentNote(data));
     }).catch(function (err) {
       busy(btn, false);
       fail(loginError, err.message, email);
@@ -1260,9 +1287,9 @@ function loginPage() {
           /* The address already has a shop: the email that just went out is a
              sign-in, not a sign-up. Say so rather than pretending. */
           mode = 'signin';
-          showVerify(e, 'You already have a shop');
+          showVerify(e, 'You already have a shop', sentNote(data));
         } else {
-          showVerify(e, 'One last step');
+          showVerify(e, 'One last step', sentNote(data));
         }
       })
       .catch(function (err) {

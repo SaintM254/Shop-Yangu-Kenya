@@ -85,8 +85,8 @@ if (health.error) console.log(`\n  ${health.error}\n`);
 
 head('1. Create the user with email and password');
 const signup = await signUpWithPassword({ email, password, name: 'Proof Check' });
-if (signup.ok) pass('Neon Auth created the account');
-else if (signup.existed) pass('the account already exists at Neon Auth — continuing');
+if (signup.ok) pass('Neon Auth created the account', `emailVerified: ${Boolean(signup.emailVerified)}`);
+else if (signup.existed) pass('the account already exists at Neon Auth — continuing', 'treated as verified');
 else {
   fail('Neon Auth refused the sign-up', signup.error || signup.code);
   console.log(
@@ -97,9 +97,27 @@ else {
   process.exit(1);
 }
 
-head('2. Ask Neon to email a verification code');
-const sent = await sendSignupCode(email, 'Proof Check');
-ok('Neon accepted the request', sent.ok === true, sent.ok ? '' : sent.error);
+head('2. Ask Neon to email a code');
+/* WHICH KIND, AND WHY IT IS REPORTED. An address that Neon already considers
+   verified is never sent a sign-up verification code — the request succeeds and
+   nothing arrives. So the type is chosen from what step 1 reported, and the type
+   is printed, because "a code was requested" and "a code that can arrive was
+   requested" are different facts. */
+const verified = Boolean(signup.emailVerified);
+const sent = await sendSignupCode(email, 'Proof Check', { verified });
+ok(
+  'Neon accepted the request',
+  sent.ok === true,
+  sent.ok ? `type: ${sent.type}` : sent.error
+);
+if (sent.ok) {
+  console.log(
+    verified
+      ? '  \x1b[90mThis address is already verified at Neon, so the code is a SIGN-IN code.\x1b[0m\n' +
+        '  \x1b[90mThat is the only kind an already-verified address can receive.\x1b[0m'
+      : '  \x1b[90mThis address needs verifying, so the code is an EMAIL-VERIFICATION code.\x1b[0m'
+  );
+}
 if (!sent.ok) {
   console.log('\n  Nothing was emailed, so stop here. The usual causes:\n' +
     '    · the address has no user at Neon — step 1 must succeed first\n' +
@@ -129,6 +147,15 @@ if (rl) rl.close();
 if (/^\d{6}$/.test(typed)) {
   const right = await verifySignupCode(email, typed);
   ok('the code from the inbox is ACCEPTED', right === true);
+  if (!right) {
+    console.log(
+      '\n  The code was refused. The two usual reasons:\n' +
+        '    · it expired (ten minutes), or an older code was typed\n' +
+        '    · this address is verified, so the code is a sign-in code, and the\n' +
+        '      shop checks both kinds — but a code CANNOT be reused. If you ran\n' +
+        '      this twice, only the newest email works.\n'
+    );
+  }
 } else if (!NO_PROMPT) {
   console.log('  \x1b[90mskipped — the code step was not proved from this machine\x1b[0m');
 }

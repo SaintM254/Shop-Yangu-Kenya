@@ -899,6 +899,17 @@ group('Neon Auth: the first code, sent and checked by Neon');
     ],
   });
 
+  /* `verifyAtSignup` models the Neon console toggle of the same name. When it is
+     on, the user is already verified the moment the account exists — and an
+     already-verified user is never sent a sign-up verification code. That is the
+     case that made "the app is not requesting the OTP" happen, so it is a real
+     toggle here rather than a comment. */
+  const console_ = { verifyAtSignup: false };
+  const markVerified = (address) => {
+    const row = store.user.find((u) => u.email === address);
+    if (row) row.emailVerified = console_.verifyAtSignup;
+  };
+
   const neonServer = http.createServer(async (req, res) => {
     const chunks = [];
     for await (const c of req) chunks.push(c);
@@ -918,8 +929,28 @@ group('Neon Auth: the first code, sent and checked by Neon');
       })
     );
     const text = await response.text();
+
+    /* The hosted service marks a new user verified when "Verify at Sign-up" is
+       on, before the caller ever sees the response. Same here. */
+    let out = text;
+    if (url.pathname.endsWith('/sign-up/email') && response.status === 200) {
+      try {
+        const parsed = JSON.parse(text);
+        markNewlyVerified(parsed?.user?.email);
+        /* The hosted service RETURNS the verified user, so the caller can see
+           it and choose the right kind of code. A body still saying false would
+           be the bug being fixed, not a test of it. */
+        if (console_.verifyAtSignup && parsed?.user) {
+          parsed.user.emailVerified = true;
+          out = JSON.stringify(parsed);
+        }
+      } catch {
+        /* A malformed body is the caller's problem, not ours. */
+      }
+    }
+
     res.writeHead(response.status, Object.fromEntries(response.headers));
-    res.end(text);
+    res.end(out);
   });
 
   await new Promise((r) => neonServer.listen(0, '127.0.0.1', r));
@@ -930,6 +961,18 @@ group('Neon Auth: the first code, sent and checked by Neon');
   /* The code that was really generated, read from the server that generated it.
      The shop's client is never given it. */
   const realCode = () => delivered.otp;
+
+  /* Apply the console setting at sign-up time WITHOUT patching the adapter's
+     arrays: the memory adapter spreads them (`[...db.user]`) internally, so a
+     patched `push` is bypassed and, worse, breaks its transaction wrapper.
+     The handler is wrapped instead — this runs after Better Auth has answered
+     and before the shop sees the reply, which is exactly where the hosted
+     service's "Verify at Sign-up" takes effect. */
+  const markNewlyVerified = (address) => {
+    if (!console_.verifyAtSignup) return;
+    const row = store.user.find((u) => u.email === String(address).toLowerCase());
+    if (row) row.emailVerified = true;
+  };
 
   const email = 'neon-shop@jaribu.co.ke';
 
@@ -981,6 +1024,54 @@ group('Neon Auth: the first code, sent and checked by Neon');
   const ourOwn = lastCode();
   const sneaky = await call('POST', '/api/auth/signup/verify', { email, code: ourOwn || '111111' });
   ok('a shop cannot be created twice with the same address', sneaky.status !== 200, `status ${sneaky.status}`);
+  jar = { ...ownerCookie };
+
+  /* ---------------------------------------------------------------- THE CASE
+     "Verify at Sign-up" switched ON. This is the default on a Neon branch, and
+     it is what made the OTP silently never arrive: the user is verified by the
+     time we would ask for a verification code, so nothing is sent. */
+  console_.verifyAtSignup = true;
+
+  jar = {};
+  const verifiedEmail = 'already-verified@jaribu.co.ke';
+  delivered.otp = '';
+  delivered.type = '';
+
+  const v1 = await call('POST', '/api/auth/signup', {
+    shop: 'Jaribu Tatu',
+    name: 'Verified Person',
+    email: verifiedEmail,
+    password: 'bahari-ndege-2026',
+    confirmPassword: 'bahari-ndege-2026',
+  });
+  ok('sign-up answers when the address is verified by Neon at sign-up', v1.status === 200, `status ${v1.status}`);
+  ok('and reports that Neon considers it verified', v1.body.verifiedAtNeon === true, String(v1.body.verifiedAtNeon));
+  ok(
+    'so it asks for a SIGN-IN code, which is the only kind that can arrive',
+    v1.body.codeType === 'sign-in',
+    v1.body.codeType
+  );
+  ok('and Neon really sent one', /^\d{6}$/.test(realCode() || ''), String(realCode()));
+
+  /* The code is a sign-in code, so verify-email would reject it. The shop has to
+     try the other check too, or a real code reads as wrong. */
+  const accepted = await call('POST', '/api/auth/signup/verify', { email: verifiedEmail, code: realCode() });
+  ok(
+    'a sign-in code is accepted at sign-up, not just a verification code',
+    accepted.status === 200 && accepted.body.user?.role === 'owner',
+    `status ${accepted.status}`
+  );
+
+  jar = {};
+  const byPw = await call('POST', '/api/auth/signin/password', { email: verifiedEmail, password: 'bahari-ndege-2026' });
+  ok('and the password from that sign-up still works', byPw.status === 200, `status ${byPw.status}`);
+
+  /* A wrong code must STILL be refused in this mode. Accepting the second check
+     must not turn into accepting anything. */
+  const wrongStillWrong = await call('POST', '/api/auth/signup/verify', { email: verifiedEmail, code: '000000' });
+  ok('a wrong code is still refused when the user is already verified', wrongStillWrong.status !== 200, `status ${wrongStillWrong.status}`);
+
+  console_.verifyAtSignup = false;
   jar = { ...ownerCookie };
 
   /* A dead Neon must not stop a shop being created. */

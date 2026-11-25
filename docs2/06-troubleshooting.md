@@ -201,6 +201,36 @@ requested before `signUpWithPassword()` sends zero emails and looks fine.
 > **`{"success": true}` is never proof that an email went out.** The only proof
 > is an email in an inbox, or a code that a wrong guess is refused against.
 
+### "The app is not requesting the OTP" — a success and no email
+
+This is the one that looks like a code bug and is a Better Auth rule.
+
+**An already-verified address is never sent a sign-up verification code.** With
+**Verify at Sign-up** on in Neon (the default), the user is verified as part of
+creating the account, so there is nothing left to verify. The request answers
+`{"success": true}` and no email is sent.
+
+The shop now detects this and asks for the *other* kind of code instead:
+
+| Neon says | Code requested |
+|---|---|
+| not verified | `type: 'email-verification'` |
+| already verified | `type: 'sign-in'` |
+
+and it checks both kinds when the code returns, because they use different
+endpoints — `/email-otp/verify-email` rejects a sign-in code with
+`400 Invalid OTP`.
+
+**The fastest way in, today:** on the sign-in page press **"sign in with a code
+by email"**. That uses this shop's own code, tied to the login row, and works
+regardless of `emailVerified`. Then set a password under **Settings → Password**.
+
+**The other fix:** Neon → **Better Auth** → turn **Verify at Sign-up** off, so new
+accounts genuinely need proving.
+
+**To see which kind was sent**, the "check your email" panel says it, and so does
+the `codeType` field in the sign-up response.
+
 ### Sign-up sends two emails
 
 Expected. Neon sends the code; this shop sends the one-click link, because the
