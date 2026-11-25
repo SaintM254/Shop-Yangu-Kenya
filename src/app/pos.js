@@ -101,10 +101,9 @@ function renderCustomer() {
 }
 
 function openCustomerSheet() {
-  const isOwn = () => isOwner();
   sheet({
     title: 'Who is buying?',
-    sub: isOwn() ? 'Search the list, or add someone new' : 'Search the customer list',
+    sub: 'Search the list, or add someone new',
     body:
       '<div class="searchbox">' + icon('search') +
         '<input class="field" id="custSearch" placeholder="Name or phone number" autocomplete="off" />' +
@@ -112,9 +111,8 @@ function openCustomerSheet() {
       '<div id="custResults" style="margin-top:10px"></div>' +
       '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
         '<button class="btn ghost sm" id="useWalkin">' + icon('user-round', 'sm') + 'Walk-in</button>' +
-        (isOwn() ? '<button class="btn secondary sm" id="newCustomer">' + icon('plus', 'sm') + 'New customer</button>' : '') +
-      '</div>' +
-      (isOwn() ? '' : '<div class="hint" style="margin-top:9px">Only the owner can add a customer or keep a balance.</div>'),
+        '<button class="btn secondary sm" id="newCustomer">' + icon('plus', 'sm') + 'New customer</button>' +
+      '</div>',
     actions: [],
     onMount: () => {
       const search = $('#custSearch');
@@ -192,7 +190,7 @@ function openNewCustomerSheet() {
           notes: 'Added at the till'
         };
         S.customers.push(c);
-        S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Added customer ' + c.name, detail: fmt(c.bal) + ' opening balance' });
+        S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Added customer ' + c.name, detail: fmt(c.bal) + ' opening balance' });
         posCustomer = { id: c.id, name: c.name, walkin: '', open: false };
         renderCustomer();
         if (route === 'customers') renderCustomers();
@@ -414,12 +412,12 @@ function finishSale(total, paidBits, change, credit, customerId) {
     no, at: now().toISOString(),
     items: basket.map(b => ({ id: b.id, name: b.name, qty: b.qty, price: b.price, cost: b.cost, unit: b.unit })),
     total, paid: paidBits.map(p => ({ m: p.m, amt: Number(p.amt) })),
-    credit, customer: customerId, cashier: S.me.name,
+    credit, customer: customerId,
     etims: { status: 'sent', sig: 'KRA' + (721000 + S.sales.length) }
   };
   basket.forEach(b => { const p = prod(b.id); if (p) p.qty = Math.max(0, p.qty - b.qty); });
   S.sales.unshift(sale);
-  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Completed sale ' + no, detail: fmt(total) + (credit ? ', ' + fmt(credit) + ' on credit' : '') });
+  S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Completed sale ' + no, detail: fmt(total) + (credit ? ', ' + fmt(credit) + ' on credit' : '') });
   /* the one write that must be atomic once Postgres is behind this: the
      sale, its payments and the stock decrement, in one transaction */
   persist('sales', { sale, stock: basket.map((b) => ({ id: b.id, qty: b.qty })) });
@@ -446,7 +444,7 @@ function showReceipt(sale, change) {
     '<div class="hint">' + esc(S.shop.branch) + ' · ' + esc(S.shop.phone) + '<br>PIN ' + esc(S.shop.kra) + '</div>' +
     '</div><hr>' +
     '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Receipt</span><span class="num">' + esc(sale.no) + '</span></div>' +
-    '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Cashier</span><span>' + esc(sale.cashier) + '</span></div>' +
+
     '<div class="rline" style="font-size:11.5px;color:var(--ink-muted)"><span>Customer</span><span>' + esc(sale.customer_name || (c ? c.name : 'Walk-in')) + '</span></div>' +
     '<hr>' +
     sale.items.map(it => '<div class="rline" style="margin-bottom:4px"><span>' + esc(it.name) + '<br><span class="hint">' + it.qty + ' × ' + fmt(it.price) + '</span></span>' +
@@ -479,7 +477,7 @@ function printDoc(inner, title) {
     '<div class="phead"><div><div class="pname">' + esc(S.shop.name) + '</div>' +
     '<div class="pmeta" style="text-align:left;margin-top:3px">' + esc(S.shop.branch) + ' · ' + esc(S.shop.phone) +
     ' · PIN ' + esc(S.shop.kra) + '</div></div>' +
-    '<div class="pmeta">' + esc(title) + '<br>' + dmy(now()) + ' ' + clock(now()) + '<br>Printed by ' + esc(S.me.name) + '</div></div>' +
+    '<div class="pmeta">' + esc(title) + '<br>' + dmy(now()) + ' ' + clock(now()) + '</div></div>' +
     inner +
     '<div class="pfoot"><span>' + esc(S.shop.name) + ' · Shop Yangu Kenya</span>' +
     '<span>KRA eTIMS registered · etims.kra.go.ke</span></div></div>';
@@ -516,7 +514,7 @@ function receiptDoc(s) {
   const vat = s.total * 16 / 116;
   return '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-muted);margin-bottom:10px">' +
     '<span>Receipt <b style="color:var(--ink)">' + esc(s.no) + '</b></span>' +
-    '<span>' + dmy(new Date(s.at)) + ' ' + clock(new Date(s.at)) + ' · ' + esc(s.cashier) + '</span></div>' +
+    '<span>' + dmy(new Date(s.at)) + ' ' + clock(new Date(s.at)) + '</span></div>' +
     '<table><thead><tr><th>Item</th><th class="n">Qty</th><th class="n">Price</th><th class="n">Amount</th></tr></thead><tbody>' +
     s.items.map(it => '<tr><td>' + esc(it.name) + '</td><td class="n">' + it.qty + '</td>' +
       '<td class="n">' + fmt(it.price) + '</td><td class="n">' + fmt(it.qty * it.price) + '</td></tr>').join('') +

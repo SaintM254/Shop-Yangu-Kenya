@@ -104,11 +104,10 @@ const EXPORT_DEFS = {
       { label: 'Paid by', w: 108 },
       { label: 'Total', w: 88, align: 'right', type: 'money' },
       { label: 'Credit', w: 84, align: 'right', type: 'money' },
-      { label: 'Cashier', w: 100 },
       { label: 'eTIMS', w: 78 },
     ],
     meta() {
-      const mine = isOwner() ? S.sales : S.sales.filter((s) => s.cashier === S.me.name);
+      const mine = S.sales;
       const gross = sum(mine, (s) => s.total);
       const credit = sum(mine, (s) => s.credit || 0);
       return [
@@ -122,16 +121,16 @@ const EXPORT_DEFS = {
       return 'Every receipt is signed by KRA eTIMS. Verify any signature at etims.kra.go.ke.';
     },
     rows() {
-      const mine = isOwner() ? S.sales : S.sales.filter((s) => s.cashier === S.me.name);
+      const mine = S.sales;
       return mine.map((s) => [
         s.no, dmy(new Date(s.at)),
         s.customer_name || (cust(s.customer) || {}).name || 'Walk-in',
         s.paid.map((p) => p.m).join(' + ') || '-',
-        s.total, s.credit || 0, s.cashier, s.etims.status === 'sent' ? 'Signed' : 'Queued',
+        s.total, s.credit || 0, s.etims.status === 'sent' ? 'Signed' : 'Queued',
       ]);
     },
     totals() {
-      const mine = isOwner() ? S.sales : S.sales.filter((s) => s.cashier === S.me.name);
+      const mine = S.sales;
       return [
         ['Receipts', num(mine.length)],
         ['Gross sales', kes(sum(mine, (s) => s.total)), true],
@@ -285,8 +284,7 @@ const EXPORT_DEFS = {
       return [
         ['Entries', num(S.audit.length)],
         ['Today', num(todayEntries)],
-        ['Signed in as', S.me.name],
-        ['Role', isOwner() ? 'Owner' : 'Sales'],
+        ['Signed in as', S.user.name],
       ];
     },
     note() {
@@ -380,7 +378,7 @@ function excelSheetFor(def) {
     name: def.sheet,
     title: def.title,
     subtitle: S.shop.name + ' · ' + S.shop.branch,
-    note: 'Exported ' + stampNow() + ' by ' + S.me.name,
+    note: 'Exported ' + stampNow(),
     columns: def.columns.map((c) => ({ label: c.label, width: Math.max(9, Math.round(c.w / 7)), type: c.type })),
     rows: rows.map((r) => r.map((v, i) => (typeof v === 'number' && def.columns[i].type === 'money' ? Math.round(v) : v))),
   };
@@ -403,7 +401,7 @@ function exportExcel(kind) {
         ['KRA PIN', S.shop.kra], ['Plan', kes(S.shop.plan) + ' / month'],
         ['Products', S.products.length], ['Customers', S.customers.length],
         ['Sales', S.sales.length], ['Purchase orders', S.pos.length],
-        ['Exported', stampNow()], ['Exported by', S.me.name],
+        ['Exported', stampNow()],
       ],
     });
   } else {
@@ -438,7 +436,6 @@ function receiptPdf(sale) {
     receiptNo: sale.no,
     dateLine: dmy(new Date(sale.at)) + '  ·  ' + clock(new Date(sale.at)),
     customer: who,
-    cashier: sale.cashier,
     lines: sale.items.map((it) => ({
       name: it.name,
       qty: it.qty,
@@ -467,7 +464,7 @@ function receiptExcel(sale) {
     name: 'Receipt',
     title: 'Sales receipt ' + sale.no,
     subtitle: S.shop.name + ' · ' + dmy(new Date(sale.at)) + ' ' + clock(new Date(sale.at)),
-    note: 'Customer: ' + (sale.customer_name || (c ? c.name : 'Walk-in')) + ' · Served by ' + sale.cashier,
+    note: 'Customer: ' + (sale.customer_name || (c ? c.name : 'Walk-in')),
     columns: [
       { label: 'Item', width: 34 }, { label: 'Qty', width: 8, type: 'number' },
       { label: 'Price', width: 12, type: 'money' }, { label: 'Amount', width: 14, type: 'money' },
@@ -501,7 +498,7 @@ function downloadBytes(name, data, type) {
 function recordExport(kind, format) {
   S.audit.unshift({
     at: now().toISOString(),
-    who: S.me.name,
+    who: S.user.name,
     what: 'Exported ' + (EXPORT_DEFS[kind] ? EXPORT_DEFS[kind].title : kind),
     detail: format + ' file, with the shop name and KRA PIN',
   });

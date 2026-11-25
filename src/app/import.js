@@ -30,9 +30,9 @@ const SCHEMAS = {
   sales: {
     label: 'Sales history',
     hint: 'One row per item sold. Rows with the same receipt_no are one receipt.',
-    cols: ['receipt_no', 'date', 'customer', 'sku', 'qty', 'unit_price', 'amount_paid', 'payment_method', 'cashier', 'notes'],
+    cols: ['receipt_no', 'date', 'customer', 'sku', 'qty', 'unit_price', 'amount_paid', 'payment_method', 'notes'],
     auto: ['receipt_no'],
-    sample: ['', '01/04/26', 'Hotel Bahari', 'DRK-001', '24', '50', '1200', 'M-Pesa', 'Otieno Were', 'March order, settled'],
+    sample: ['', '01/04/26', 'Hotel Bahari', 'DRK-001', '24', '50', '1200', 'M-Pesa', 'March order, settled'],
     dateCols: ['date']
   }
 };
@@ -166,8 +166,7 @@ function kindHint(kind, c) {
     qty: 'Units sold, whole numbers',
     unit_price: 'Ksh per unit',
     amount_paid: 'Blank if unpaid',
-    payment_method: 'Cash, M-Pesa or Card',
-    cashier: 'Who sold it, as on their account'
+    payment_method: 'Cash, M-Pesa or Card'
   };
   return h[c] || '';
 }
@@ -451,13 +450,13 @@ function commitImport(v) {
         items: [{ id: p.id, name: p.name, qty, price, cost: p.cost, unit: p.unit }],
         total, paid: paidAmt ? [{ m: r.payment_method || 'Cash', amt: paidAmt }] : [],
         credit: Math.max(0, total - paidAmt), customer: c ? c.id : 'c6',
-        cashier: r.cashier || S.me.name, etims: { status: 'imported', sig: '—' }
+        etims: { status: 'imported', sig: '—' }
       });
       added++;
     });
     S.sales.sort((a, b) => new Date(b.at) - new Date(a.at));
   }
-  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Imported ' + SCHEMAS[kind].label, detail: added + ' added, ' + skipped + ' skipped' });
+  S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Imported ' + SCHEMAS[kind].label, detail: added + ' added, ' + skipped + ' skipped' });
   parsed = null;
   $('#importReport').innerHTML = '<div class="card" style="margin:0"><div class="empty" style="padding:20px">' +
     '<div class="big">' + icon('circle-check') + '</div><b>' + added + ' row' + (added === 1 ? '' : 's') + ' imported</b>' +

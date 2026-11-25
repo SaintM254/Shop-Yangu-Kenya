@@ -43,29 +43,29 @@ Deliver, in this order:
 
 ---
 
-## 3. Users and roles
+## 3. One login per shop
 
-Only two roles. Resist the urge to add a third until a customer asks in writing.
+**The shop is the account.** There is exactly one login per shop, and everyone at the
+counter uses it. There are no staff accounts, no roles, no invitations, no enable/disable,
+and no per-person permissions to reason about.
 
-| Capability | Owner | Sales |
-|---|---|---|
-| Take a sale, split payment, print a receipt | yes | yes |
-| See *their own* receipts for the day | yes | yes |
-| Look up a product, its price and its shelf quantity | yes | yes |
-| Create a purchase order, receive a delivery | yes | yes |
-| See cost price and margin | yes | **no** |
-| See anyone else's sales, or the shop's totals | yes | **no** |
-| Customers, credit balances, taking a credit payment | yes | **no** |
-| Profit, expenses, reports | yes | **no** |
-| KRA eTIMS settings, users, plan, imports, audit log | yes | **no** |
+That is a management decision, not a placeholder: one shop owner, one password to keep,
+one place to look when the shop needs to get in. Every screen in the app belongs to that
+one account.
 
-That last row of restrictions is deliberate, not an oversight. It is what a shopkeeper
-asked for: a salesperson should be able to sell and to order stock, and should not be able
-to see the shop's margin or hand out credit.
+What this means for the build:
 
-The prototype has a "Viewing as Owner / Sales" switch in the dashboard header. Keep that
-idea in development builds — it is the fastest way to catch a screen that leaks cost price
-to a sales user.
+- **No role column, no role gate.** Nothing in the UI is hidden from the shop, because the
+  only person who can sign in is the shop.
+- **No "who sold it".** A sale belongs to the shop, not to a cashier. The receipt prints the
+  shop's details and no "served by" line, the sales list has no cashier column, and the
+  audit log records *what* happened rather than who did it.
+- **No switch in the header** to preview another role. There is no other role.
+- **The audit log stays.** It is still append-only and still useful — it is the shop's
+  record of what happened, not a staff surveillance tool.
+
+If a future customer genuinely needs staff accounts, that is a new spec and a new
+conversation. Do not build the scaffolding for it now.
 
 ---
 
@@ -128,15 +128,12 @@ opposite of the habit in the reference system. Implement it as one function
 Eleven. Each one must work at 360 px with no horizontal scrolling outside deliberately
 scrollable chip rows.
 
-### 5.1 Dashboard (owner)
-Greeting with the user's first name, today's date and branch. The payment-goal card showing
+### 5.1 Dashboard
+Greeting with the shop owner's first name, today's date and branch. The payment-goal card showing
 today's takings as "Total Balance". Four stat cards: sales today, gross profit, receipts,
 owed to you — each with a delta against yesterday, coloured by the rule above. A grouped
 bar chart of this week against last week. "Needs attention": low stock, out of stock,
 customers near their credit limit. Recent receipts and top movers by value.
-
-**Sales variant:** same page, but "My sales today", their own receipts and no profit or
-credit figures.
 
 ### 5.2 Point of sale
 Product search (name or barcode) and category chips. Basket lines with a large
@@ -152,7 +149,7 @@ The totals block shows subtotal, VAT 16% *included*, the total, and then exactly
 
 The primary button changes with the situation: "Complete sale", or "Complete and hold
 Ksh 980 on credit". A blank amount on a single method means "the exact total" — do not make
-the cashier type the same number twice.
+the person at the till type the same number twice.
 
 Completing a sale with a shortfall asks **who** is taking the credit, then writes the
 difference to that customer's balance. The stock is decremented, the receipt is rendered
@@ -170,16 +167,14 @@ expiry date. The stepper input must be `inputmode="numeric"` and select its cont
 focus, so a stock-take is tap, type, done. Quantity *replaces* the old figure — it is a
 count, not a delta, and the sheet says so in one line.
 
-Sales users see this screen without the cost and margin columns.
-
 ### 5.4 Purchases
 Purchase orders with status (draft → ordered → received) and a Receive action that puts the
 quantities on the shelf. Suppliers with their terms and what is owed.
 
 ### 5.5 Sales
 Every receipt, newest first, filterable by payment method and "on credit". Each row can be
-printed (branded A4/PDF) or opened in the till's receipt block. Sales users see only their
-own receipts, and the filter counts match what they can see.
+printed (branded A4/PDF) or opened in the till's receipt block. Every receipt in the shop is
+listed, newest first, and the filter counts match.
 
 ### 5.6 Customers
 Balance, credit limit and a usage bar per customer. "Take payment" records a payment against
@@ -202,8 +197,8 @@ Recent transmissions, each with its signature.
 
 ### 5.10 Settings
 Plan card (price rendered from data, never hard-coded in markup — the client has said the
-price will change), shop profile (name, branch, phone on receipts, KRA PIN), users and
-roles with enable/disable, preferences (allow credit, ask for a customer, SMS receipts,
+price will change), shop profile (name, branch, phone on receipts, KRA PIN), the shop's
+single login (its name, editable in place), preferences (allow credit, ask for a customer, SMS receipts,
 offline selling), and a data section with full exports.
 
 ### 5.11 Audit log
@@ -219,8 +214,8 @@ because a receipt belongs to a day, not an instant.
 
 ```sql
 shop            (id, name, branch, phone, kra_pin, plan_kes, plan_renews_on, created_at)
-user            (id, shop_id, name, phone unique, role enum('owner','sales'),
-                 password_hash, active, last_seen_at)
+-- one login per shop: no user table, no roles, no per-person permissions
+login           (id, shop_id, name, email unique, password_hash, last_seen_at)
 category        (id, shop_id, name, position)
 product         (id, shop_id, sku, name, category_id, unit, cost_price, selling_price,
                  qty, reorder_level, expiry_date date null, barcode null,
@@ -232,17 +227,17 @@ purchase_order  (id, shop_id, supplier_id, no, status enum('draft','ordered','re
 po_line         (id, po_id, product_id, qty, unit_cost)
 customer        (id, shop_id, name, phone, credit_limit, balance, since date, notes)
 sale            (id, shop_id, receipt_no, sold_at timestamptz, sold_on date,
-                 customer_id null, cashier_id, subtotal, vat, total,
+                 customer_id null, subtotal, vat, total,
                  credit_amount, created_at,
                  unique (shop_id, receipt_no))
 sale_line       (id, sale_id, product_id, name_snapshot, qty, unit_price,
                  unit_cost_snapshot)          -- snapshots: a receipt must never change
 sale_payment    (id, sale_id, method enum('cash','mpesa','card'), amount)
-payment         (id, shop_id, customer_id, received_at, amount, method, user_id)
+payment         (id, shop_id, customer_id, received_at, amount, method)
 expense         (id, shop_id, spent_on date, description, category, amount)
 etims_transmission (id, sale_id, status enum('pending','sent','failed'), signature,
                     sent_at, response)
-audit_entry     (id, shop_id, user_id, at, action, detail)
+audit_entry     (id, shop_id, at, action, detail)
 ```
 
 Rules that matter:
@@ -274,7 +269,7 @@ real product the API serves them from a template folder.
 |---|---|
 | Products | `sku, name, category, unit, cost_price, selling_price, opening_qty, reorder_level, expiry_date, supplier, barcode` |
 | Customers | `name, phone, credit_limit, opening_balance, since, notes` |
-| Sales history | `receipt_no, date, customer, sku, qty, unit_price, amount_paid, payment_method, cashier, notes` |
+| Sales history | `receipt_no, date, customer, sku, qty, unit_price, amount_paid, payment_method, notes` |
 
 The flow is: choose the sheet type → drop a file → **preview and a full validation report**
 → press Import. Nothing is written before the press, and an import can be undone as one
@@ -346,8 +341,8 @@ Suggested stack — a small team can hold all of this in their head:
   the one bug that ends a SaaS.
 - **Database:** Postgres with plain SQL migrations. Not an ORM that hides the money column
   types.
-- **Auth:** phone + password (users remember phone numbers, not emails). JWT in an
-  httpOnly cookie; role in the token *and* re-checked on the server for every write.
+- **Auth:** one login per shop, scoped by `shop_id`. JWT in an httpOnly cookie; every write
+  is scoped to the shop from that token, never from the request body.
 - **Offline:** the till must keep selling when the signal drops. Queue sales in IndexedDB,
   show a quiet "held on this device" count, transmit on reconnect. Keep this simple and
   visible; silent data loss kills trust.
@@ -369,7 +364,7 @@ Check each of these in a browser at **360 px wide** and again at 1280 px. Both, 
 - [ ] An overpayment shows change and does not touch credit.
 - [ ] A product's stock drops by the quantity sold, and never goes below zero.
 - [ ] The stock sheet's stepper is usable with a thumb; the quantity can be typed directly.
-- [ ] Sales users cannot see cost, margin, reports, settings, or another cashier's receipts.
+- [ ] The shop signs in once, and every screen is reachable from that one login.
 - [ ] An import of 50 rows with 3 bad dates reports the 3 rows, imports 47, and can be
       undone in one action.
 - [ ] An imported sale dated last quarter appears in that quarter's report and not in today.
@@ -408,7 +403,7 @@ Check each of these in a browser at **360 px wide** and again at 1280 px. Both, 
 
 ## 12. What to build next, in order
 
-1. Auth, shop signup (capture the shop name — it brands every receipt), and the role gate.
+1. Auth: shop signup (capture the shop name — it brands every receipt) and the single login.
 2. Products and stock, with the stepper sheet. This is what people touch most.
 3. The till: basket, split payment, credit, receipt, print.
 4. Customers and credit payments.
@@ -420,5 +415,5 @@ Check each of these in a browser at **360 px wide** and again at 1280 px. Both, 
     than a hard lock — a shop that cannot sell because a payment failed will not come back.
 10. Offline mode and the audit log.
 
-Do not build: multi-shop chains, payroll, a customer-facing storefront, or a loyalty
-programme. None of them were asked for, and each one would slow down the thing that was.
+Do not build: staff accounts or roles, multi-shop chains, payroll, a customer-facing
+storefront, or a loyalty programme. None of them were asked for, and each one would slow down the thing that was.

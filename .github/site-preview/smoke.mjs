@@ -106,14 +106,18 @@ for (const page of PAGES) {
 
     let status = 200;
     if (page.viaBase) {
+      /* Fetch the markup fresh, so a cached edge copy can never leave us
+         checking yesterday's page — then serve that markup *at its own
+         address* instead of pasting it into a blank document. Pasting gave the
+         page the origin "null", which blocks its webfonts by CORS: a failure
+         that could only ever happen inside this check, never on the site. */
       const fetched = await tab.request.get(`${BASE}${page.path}`, { timeout: 45_000 });
       status = fetched.status();
       const html = await fetched.text();
-      const withBase = html.replace(
-        /<head([^>]*)>/i,
-        `<head$1><base href="${BASE}${page.path}">`
+      await tab.route(`${BASE}${page.path}`, (route) =>
+        route.fulfill({ status, contentType: 'text/html; charset=utf-8', body: html })
       );
-      await tab.setContent(withBase, { waitUntil: 'networkidle', timeout: 45_000 });
+      await tab.goto(`${BASE}${page.path}`, { waitUntil: 'networkidle', timeout: 45_000 });
       await tab.evaluate(() => document.fonts.ready);
     } else {
       const res = await tab.goto(`${BASE}${page.path}`, {
@@ -284,6 +288,7 @@ for (const page of PAGES) {
       if (/YYYY-MM-DD/.test(body)) fail('import: the instructions still ask for YYYY-MM-DD');
       if (!/DD\/MM\/YY/.test(body)) fail('import: the date format is not stated');
       const waitTpl = tab.waitForEvent('download', { timeout: 15_000 });
+      waitTpl.catch(() => {});
       await tab.click('[data-template="products"]');
       await tab.waitForTimeout(250);
       await tab.click('#dlTpl');
@@ -396,7 +401,7 @@ try {
 }
 
 /* The shop itself: it boots, its addresses are real addresses, the rail
-   collapses, the till lets a cashier name the customer, and every date reads
+   collapses, the till lets the shop name the customer, and every date reads
    DD/MM/YY. One context, signed in through the real form. */
 try {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
@@ -467,26 +472,48 @@ try {
   await gotoRoute('Stock', 'stock');
   const menus = await tab.locator('[data-menu]').count();
   if (menus < 1) fail('app: no export menu on Stock');
-  await tab.click('#s-inventory [data-menu-btn]');
-  await tab.waitForTimeout(150);
-  const choices = await tab.locator('#s-inventory [data-menu-pop] button').count();
+  /* Open the menu by reading its state, not by clicking and hoping: a blind
+     click on a button that is already open closes it again, and every later
+     step then fails with a timeout that says nothing about the menu. */
+  const openExportMenu = async () => {
+    const isOpen = await tab.evaluate(() => {
+      const pop = document.querySelector('#s-inventory [data-menu-pop]');
+      return !!pop && !pop.hidden;
+    });
+    if (!isOpen) {
+      await tab.click('#s-inventory [data-menu-btn]');
+      await tab.waitForFunction(
+        () => {
+          const pop = document.querySelector('#s-inventory [data-menu-pop]');
+          return !!pop && !pop.hidden;
+        },
+        null,
+        { timeout: 10_000 }
+      );
+    }
+  };
+
+  await openExportMenu();
+  const choices = await tab.locator('#s-inventory [data-menu-pop] button:visible').count();
   if (choices !== 2) fail(`app: the export menu offers ${choices} choices, expected 2`);
   if (!(await tab.locator('#s-inventory [data-export="products"][data-format="pdf"]').count())) fail('app: no PDF export');
   if (!(await tab.locator('#s-inventory [data-export="products"][data-format="xlsx"]').count())) fail('app: no Excel export');
 
   const grab = async (selector) => {
+    await openExportMenu();
     const wait = tab.waitForEvent('download', { timeout: 15_000 });
-    await tab.click(selector);
+    /* Attach a catch before awaiting, so a timeout is reported as a check
+       failure instead of escaping as an unhandledRejection. */
+    wait.catch(() => {});
+    await tab.click(selector, { timeout: 10_000 });
     const dl = await wait;
     const file = await dl.path();
     const size = fs.statSync(file).size;
     return { name: dl.suggestedFilename(), size };
   };
-  await tab.click('#s-inventory [data-menu-btn]');
   const pdf = await grab('#s-inventory [data-export="products"][data-format="pdf"]');
   if (!/\.pdf$/.test(pdf.name) || pdf.size < 3000) fail(`app: the PDF export is wrong (${pdf.name}, ${pdf.size} bytes)`);
   if (pdf.size > 40_000) fail(`app: the PDF is ${pdf.size} bytes — the logo may be inlined twice`);
-  await tab.click('#s-inventory [data-menu-btn]');
   const xls = await grab('#s-inventory [data-export="products"][data-format="xlsx"]');
   if (!/\.xlsx$/.test(xls.name) || xls.size < 1500) fail(`app: the Excel export is wrong (${xls.name}, ${xls.size} bytes)`);
 
@@ -500,6 +527,7 @@ try {
   await tab.click('#completeSale');
   await tab.waitForTimeout(400);
   const waitSlip = tab.waitForEvent('download', { timeout: 15_000 });
+  waitSlip.catch(() => {});
   await tab.click('#pdfReceipt');
   const slipDl = await waitSlip;
   const slipPath = await slipDl.path();
@@ -515,16 +543,21 @@ try {
   }
   note(`ok receipt slip (${slipDl.suggestedFilename()}, ${Math.round(slipBuf.length / 1024)} kB, ${box ? Math.round(Number(box[1])) + 'x' + Math.round(Number(box[2])) + 'pt' : '?'})`);
 
-  /* Settings: a person's name is editable, and renaming the owner renames
-     them in the rail without a reload. */
+  /* Settings: the shop has exactly one login, and its name is editable in
+     place. Renaming it renames the shop in the rail without a reload. */
   await gotoRoute('Settings', 'settings');
-  if (!(await tab.locator('[data-user-name]').count())) fail('app: user names are not editable in Settings');
-  const field = tab.locator('[data-user-name="u2"]');
-  await field.fill('Otieno Were (Till 1)');
+  const logins = await tab.locator('[data-user-name]').count();
+  if (logins !== 1) fail(`app: Settings shows ${logins} logins, expected exactly one for the shop`);
+  const field = tab.locator('[data-user-name="me"]');
+  await field.fill('Wanjiku Kamau (Mombasa)');
   await field.blur();
   await tab.waitForTimeout(250);
-  const kept = await tab.inputValue('[data-user-name="u2"]');
-  if (kept !== 'Otieno Were (Till 1)') fail(`app: the renamed user came back as "${kept}"`);
+  const kept = await tab.inputValue('[data-user-name="me"]');
+  if (kept !== 'Wanjiku Kamau (Mombasa)') fail(`app: the renamed login came back as "${kept}"`);
+  const railName = (await tab.locator('#railFoot .railme b').textContent()) || '';
+  if (!railName.includes('Wanjiku Kamau (Mombasa)')) {
+    fail(`app: the rail still says "${railName.trim()}" after renaming the shop login`);
+  }
 
   /* The mark in the rail goes to the dashboard. It must never sign anyone out. */
   await gotoRoute('Audit log', 'audit');

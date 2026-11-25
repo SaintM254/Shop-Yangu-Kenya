@@ -91,26 +91,24 @@ $('#etimsTest').onclick = () => {
     b.disabled = false; b.innerHTML = icon('scan-line', 'sm') + 'Send a test transmission';
     $('#etimsLast').textContent = 'Today, ' + clock(now());
     toast('Test accepted by eTIMS. Signature returned.', 'good');
-    S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Sent eTIMS test', detail: 'Accepted' });
+    S.audit.unshift({ at: now().toISOString(), who: S.user.name, what: 'Sent eTIMS test', detail: 'Accepted' });
   }, 1100);
 };
 
 /* ============================================================ settings */
 function renderSettings() {
-  /* A name is editable where it is shown: the row is the field. Renaming a
-     person renames them on the audit trail and on their receipts from then
-     on, which is why the rename is written to the audit trail itself. */
-  $('#userList').innerHTML = S.users.map(u =>
+  /* The shop's one account. Its name is editable where it is shown — the row
+     is the field — and renaming it renames the person on the audit trail from
+     then on, which is why the rename is written to the audit trail itself. */
+  $('#userList').innerHTML =
     '<div class="setrow"><div style="min-width:0;flex:1">' +
-      '<input class="field field--name" data-user-name="' + u.id + '" value="' + esc(u.name) + '" ' +
-        'aria-label="Name of ' + esc(u.name) + '" autocomplete="off" />' +
-      '<div class="d" style="margin-top:5px">' + esc(u.phone) + ' · ' + (u.role === 'owner' ? 'Owner' : 'Sales') +
-        ' · last seen ' + esc(u.last) + '</div></div>' +
+      '<input class="field field--name" data-user-name="me" value="' + esc(S.user.name) + '" ' +
+        'aria-label="Name on the shop login" autocomplete="off" />' +
+      '<div class="d" style="margin-top:5px">' + esc(S.user.phone) + ' · the only login for this shop</div></div>' +
     '<div style="display:flex;gap:6px;align-items:center;flex:none">' +
-    (u.id === 'u1' ? '<span class="pill info">You</span>' : '') +
-    (u.active ? '<span class="pill ok">Active</span>' : '<span class="pill neutral">Off</span>') +
-    (u.id === 'u1' ? '' : '<button class="btn ghost sm" data-toggleuser="' + u.id + '">' + (u.active ? 'Disable' : 'Enable') + '</button>') +
-    '</div></div>').join('');
+    '<span class="pill info">You</span>' +
+    '<span class="pill ok">Active</span>' +
+    '</div></div>';
   $$('.toggle').forEach(t => {
     const k = t.dataset.toggle;
     t.setAttribute('aria-checked', String(!!S.settings[k]));
@@ -126,20 +124,16 @@ function renderSettings() {
 /* Renaming: saved when the field loses focus or Enter is pressed, not on
    every keystroke — a name is not saved half-typed. */
 function commitUserName(input, quiet) {
-  const u = S.users.find(x => x.id === input.dataset.userName);
-  if (!u) return;
   const next = input.value.trim().replace(/\s+/g, ' ');
   if (next.length < 2) {
-    input.value = u.name;
+    input.value = S.user.name;
     toast('A name needs at least two letters.', 'bad');
     return;
   }
-  if (next === u.name) return;
-  const was = u.name;
-  u.name = next;
-  /* the signed-in person is the same person, so the rail and the audit trail follow */
-  if (S.me.name === was) S.me.name = next;
-  S.audit.unshift({ at: now().toISOString(), who: S.me.name, what: 'Renamed user', detail: was + ' → ' + next });
+  if (next === S.user.name) return;
+  const was = S.user.name;
+  S.user.name = next;
+  S.audit.unshift({ at: now().toISOString(), who: next, what: 'Renamed the shop login', detail: was + ' → ' + next });
   input.value = next;
   if (!quiet) toast('Saved. ' + was + ' is now ' + next + '.', 'good');
   paintNav();
@@ -161,33 +155,12 @@ document.addEventListener('click', e => {
     t.setAttribute('aria-checked', String(S.settings[k]));
     toast(k === 'allowCredit' && !S.settings[k] ? 'Credit sales are off — the till will refuse a shortfall.' : 'Saved');
   }
-  const tu = e.target.closest('[data-toggleuser]');
-  if (tu) {
-    const u = S.users.find(x => x.id === tu.dataset.toggleuser);
-    u.active = !u.active;
-    renderSettings(); toast(u.name + (u.active ? ' can sign in again.' : ' can no longer sign in.'));
-  }
   if (e.target.closest('[data-save-settings]')) {
     S.shop.name = $('#setShop').value.trim() || 'Shop Yangu Kenya';
     S.shop.branch = $('#setBranch').value.trim();
     S.shop.phone = $('#setPhone').value.trim();
     S.shop.kra = $('#setKra').value.trim();
     paintNav(); toast('Shop profile saved. It is now on every receipt.', 'good');
-  }
-  if (e.target.closest('[data-add-user]')) {
-    sheet({
-      title: 'Add a user', sub: 'Sales are limited on purpose',
-      body: '<div class="formrow"><label class="lbl" for="uN">Name</label><input class="field" id="uN" /></div>' +
-        '<div class="formrow"><label class="lbl" for="uP">Phone, used to sign in</label><input class="field" id="uP" inputmode="tel" /></div>' +
-        '<div class="formrow"><label class="lbl" for="uR">Role</label><select class="field" id="uR"><option value="sales">Sales — till, stock, buying</option><option value="owner">Owner — everything</option></select></div>' +
-        '<p class="hint" style="margin-top:9px">A sales user sees the till, the stock list and purchase orders. Costs, profit, reports, users and eTIMS settings stay with the owner.</p>',
-      actions: [{ label: 'Send invite', kind: '', onClick: () => {
-        const n = $('#uN').value.trim();
-        if (!n) { toast('A name is needed.', 'bad'); return; }
-        S.users.push({ id: 'u' + (S.users.length + 1) + 'x', name: n, phone: $('#uP').value.trim(), role: $('#uR').value, active: true, last: 'Never' });
-        closeSheet(); renderSettings(); toast('Invite sent to ' + n);
-      }}]
-    });
   }
 });
 
@@ -197,9 +170,9 @@ function renderAudit() {
   const kinds = ['Everything', 'Sales', 'Stock', 'Credit'];
   $('#auditChips').innerHTML = kinds.map(k => '<button class="chip" data-audit="' + k + '" aria-pressed="' + (auditFilter === k) + '">' + k + '</button>').join('');
   if (!S.audit.length) {
-    S.audit.push({ at: now().toISOString(), who: 'Wanjiku Kamau', what: 'Signed in', detail: 'Owner, Mombasa Branch' });
-    S.audit.push({ at: addDays(now(), 0).toISOString(), who: 'Otieno Were', what: 'Completed sale R-3804', detail: 'Ksh 1,240, M-Pesa' });
-    S.audit.push({ at: now().toISOString(), who: 'Fatuma Ali', what: 'Adjusted stock', detail: 'Fresh milk 500ml, 12 → 8' });
+    S.audit.push({ at: now().toISOString(), who: S.user.name, what: 'Signed in to the shop', detail: 'Mombasa Branch' });
+    S.audit.push({ at: addDays(now(), 0).toISOString(), who: S.user.name, what: 'Completed sale R-3804', detail: 'Ksh 1,240, M-Pesa' });
+    S.audit.push({ at: now().toISOString(), who: S.user.name, what: 'Adjusted stock', detail: 'Fresh milk 500ml, 12 → 8' });
   }
   const rows = S.audit.filter(a => {
     if (auditFilter === 'Everything') return true;

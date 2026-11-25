@@ -12,7 +12,7 @@ This repository holds three things:
 | **The advert** — headline, what it does, the price, and one way in | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
 | **The door** — `/login/` | `build.js` (`loginPage`) + `content.demo_account` | Demo credentials in one place, shown on the page |
 | **The shop** — `/dashboard/`, `/till/`, `/stock/` … | `src/app/` → `dist/<route>/index.html` | A real front end: one shell, real addresses, no `.html` |
-| **The build spec** — roles, data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
+| **The build spec** — the single login, data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
 
 ## The addresses are real addresses
 
@@ -157,6 +157,10 @@ All of that engineering detail still exists, one click away in `/spec/` and in t
 itself; it is just not what sells a till.
 
 ### Demo sign-in
+
+**One login per shop.** This account is the shop's only sign-in — everyone at the counter
+uses it. There are no staff accounts, no roles and nothing to switch between, which is the
+whole point: one shop, one password to manage.
 
 | | |
 |---|---|

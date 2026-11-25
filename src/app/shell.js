@@ -111,11 +111,6 @@ let route = 'dashboard';
 function go(id, opts) {
   if (!ROUTE_IDS.includes(id)) id = 'dashboard';
   if (!$('#s-' + id)) return;
-  const allowed = navFor(S.me.role).some((g) => g.items.some((i) => i[0] === id));
-  if (!allowed) {
-    toast('That section is for the owner.', 'bad');
-    return;
-  }
   route = id;
   $$('.screen').forEach((s) => s.classList.toggle('active', s.id === 's-' + id));
   paintNav();
@@ -199,11 +194,10 @@ function initRail() {
 
 /* ============================================================ nav paint */
 
-function navFor(role) {
-  const allow = role === 'owner'
-    ? ['dashboard', 'pos', 'sales', 'inventory', 'purchases', 'customers', 'reports', 'etims', 'migration', 'settings', 'audit']
-    : ['dashboard', 'pos', 'sales', 'inventory', 'purchases'];
-  return NAV.map((g) => ({ group: g.group, items: g.items.filter((i) => allow.includes(i[0])) })).filter((g) => g.items.length);
+/* One login per shop: every screen is available to it, so the menu is the
+   whole list and there is no role to filter by. */
+function navGroups() {
+  return NAV.filter((g) => g.items.length);
 }
 
 function navButton([id, ic, label], onPick, extraClass) {
@@ -220,7 +214,7 @@ function navButton([id, ic, label], onPick, extraClass) {
 }
 
 function paintNav() {
-  const groups = navFor(S.me.role);
+  const groups = navGroups();
 
   const links = $('#railLinks');
   links.innerHTML = '';
@@ -232,8 +226,7 @@ function paintNav() {
   const foot = $('#railFoot');
   foot.innerHTML = '';
   const me = el('div', 'railme');
-  me.innerHTML = '<b>' + esc(S.me.name) + '</b>' +
-    (isOwner() ? 'Owner · everything' : 'Sales · till and stock') +
+  me.innerHTML = '<b>' + esc(S.user.name) + '</b>Shop owner' +
     '<br>' + fmt(S.shop.plan) + ' / month';
   foot.appendChild(me);
   const out = el('button', 'railout');
@@ -243,7 +236,7 @@ function paintNav() {
   foot.appendChild(out);
 
   /* Phones use the drawer and the tab bar. */
-  const tabs = TABS.filter((t) => navFor(S.me.role).some((g) => g.items.some((i) => i[0] === t[0])));
+  const tabs = TABS;
   const tabbar = $('#tabbar');
   tabbar.innerHTML = '';
   tabs.forEach(([id, ic, label]) => {
@@ -263,10 +256,9 @@ function paintNav() {
   });
 
   $('#topShopName').textContent = S.shop.name;
-  $('#topRole').textContent = isOwner() ? 'Owner' : 'Sales';
+  $('#topRole').textContent = 'Shop owner';
   $('#drawerShopName').textContent = S.shop.name;
-  $('#drawerWho').textContent = S.me.name + ' · ' + (isOwner() ? 'Owner' : 'Sales');
-  $('#roleSwitchLabel').textContent = 'Viewing as ' + (isOwner() ? 'Owner' : 'Sales');
+  $('#drawerWho').textContent = S.user.name;
 }
 
 /* The mark in the rail and the phone bar is the way home inside the app.
@@ -277,22 +269,6 @@ document.addEventListener('click', (e) => {
   if (!home) return;
   e.preventDefault();
   go('dashboard');
-});
-
-/* switching role, so the shop can see both sides */
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('[data-role-switch]')) return;
-  if (S.me.role === 'owner') {
-    S.me.role = 'sales';
-    S.me.name = 'Otieno Were';
-    toast('Now viewing as sales. Reports, costs and settings are hidden.');
-  } else {
-    S.me.role = 'owner';
-    S.me.name = 'Wanjiku Kamau';
-    toast('Back to the owner view.');
-  }
-  paintNav();
-  go(navFor(S.me.role).some((g) => g.items.some((i) => i[0] === route)) ? route : 'pos', { silent: true });
 });
 
 /* ============================================================ session

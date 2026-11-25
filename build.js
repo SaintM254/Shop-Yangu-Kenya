@@ -488,7 +488,7 @@ const hero = `
     <div class="hero__mock">
       <div class="hero__mockglow" aria-hidden="true"></div>
       <img class="hero__mockimg" src="pos-mock.webp" width="1065" height="1234" fetchpriority="high" decoding="async"
-        alt="A phone at the till showing the sale, with the customer's printed receipt coming out of it: cashier, items, subtotal, tax and the total, with a barcode and receipt number." />
+        alt="A phone at the till showing the sale, with the customer's printed receipt coming out of it: items, subtotal, tax and the total, with a barcode and receipt number." />
     </div>
   </div>
 </section>
@@ -650,7 +650,7 @@ function specPage() {
   return document({
     title: `Build spec — ${content.brand.name}`,
     description:
-      'The full build prompt for Shop Yangu Kenya: roles, screens, data model, money rules, import rules and the definition of done.',
+      'The full build prompt for Shop Yangu Kenya: the single shop login, screens, data model, money rules, import rules and the definition of done.',
     page: 'spec',
     body,
     bodyClass: 'page-doc',
@@ -756,7 +756,7 @@ function loginPage() {
     <div class="auth__aside">
       <a class="auth__brand" href="../">${logo}<span>${escapeHtml(content.brand.name)}</span></a>
       <h1 class="auth__title">Welcome back.</h1>
-      <p class="auth__lede">Sign in to ring up a sale, check the drawer and see what sold today.</p>
+      <p class="auth__lede">One login for the whole shop. Sign in to ring up a sale, check the drawer and see what sold today.</p>
       <ul class="auth__list">
         <li>${icon('smartphone', 'ic ic--sm')}<span>Sell with cash or M-Pesa, and split a payment across both.</span></li>
         <li>${icon('receipt', 'ic ic--sm')}<span>Print the receipt as soon as the sale is paid.</span></li>
@@ -775,7 +775,7 @@ function loginPage() {
     <div class="auth__card">
       <div class="auth__cardhead">
         <h2 class="auth__cardh">Log in</h2>
-        <p class="auth__cardp">This is the demo shop. Nothing is charged, and nothing leaves your browser.</p>
+        <p class="auth__cardp">This is the demo shop. One account signs the shop in — there are no staff logins to manage. Nothing is charged, and nothing leaves your browser.</p>
       </div>
       <form class="auth__form" id="loginForm" novalidate>
         <div class="field-group">
@@ -805,7 +805,7 @@ function loginPage() {
             <input type="checkbox" id="remember" checked />
             <span>Keep me signed in</span>
           </label>
-          <span class="auth__help">Forgot your password? Call the shop owner.</span>
+          <span class="auth__help">Forgot your password? It is the shop's only login.</span>
         </div>
 
         <p class="auth__error" id="loginError" role="alert" hidden></p>
@@ -813,13 +813,13 @@ function loginPage() {
         <button class="btn btn--primary btn--lg btn--block" id="loginBtn" type="submit">
           Log in${icon('arrow')}
         </button>
-        <p class="auth__fine">Trouble signing in? The demo details are just above.</p>
+        <p class="auth__fine">The shop owner keeps this one login. Trouble signing in? The demo details are just above.</p>
       </form>
 
       <div class="auth__done" id="loginDone" hidden>
         <span class="auth__tick" aria-hidden="true">${icon('check')}</span>
         <h2 class="auth__done-h">You're in, ${escapeHtml(demo.name.split(' ')[0])}.</h2>
-        <p class="auth__done-p" id="loginDoneP">Signed in to ${escapeHtml(demo.shop)} as ${escapeHtml(demo.role)}.</p>
+        <p class="auth__done-p" id="loginDoneP">Signed in to ${escapeHtml(demo.shop)}.</p>
         <a class="btn btn--primary btn--lg btn--block" href="../dashboard/">
           Open the shop${icon('arrow')}
         </a>
@@ -830,7 +830,7 @@ function loginPage() {
 </main>
 <script>
 (function () {
-  var DEMO = ${JSON.stringify({ email: demo.email, password: demo.password, name: demo.name, role: demo.role, shop: demo.shop })};
+  var DEMO = ${JSON.stringify({ email: demo.email, password: demo.password, name: demo.name, shop: demo.shop })};
   var form = document.getElementById('loginForm');
   var email = document.getElementById('email');
   var password = document.getElementById('password');
@@ -895,8 +895,7 @@ function loginPage() {
 
     form.hidden = true;
     done.hidden = false;
-    document.getElementById('loginDoneP').textContent =
-      'Signed in to ' + DEMO.shop + ' as ' + DEMO.role + '.';
+    document.getElementById('loginDoneP').textContent = 'Signed in to ' + DEMO.shop + '.';
     done.querySelector('a').focus();
   };
 
