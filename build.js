@@ -129,7 +129,7 @@ const sparkline = (() => {
 })();
 
 const FAVICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#023246"/>
+  <rect width="64" height="64" rx="14" fill="#1B4A63"/>
   <path d="M16 40V22h5l7 10 7-10h5v18h-4V28l-8 11-8-11v12z" fill="#FFF8E1"/>
   <circle cx="46" cy="38" r="4" fill="#287094"/>
 </svg>`;
@@ -346,7 +346,7 @@ function head({ title, description, page, styles }) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#023246" />
+<meta name="theme-color" content="#1B4A63" />
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}" />
 <link rel="icon" href="${fix('favicon.svg')}" type="image/svg+xml" />
@@ -695,6 +695,7 @@ const APP_SCRIPTS = [
   'pdf.js',
   'exports.js',
   'shell.js',
+  'pwa.js',
   'boot.js',
 ];
 
@@ -716,7 +717,12 @@ function appPage(route) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#023246" />
+<meta name="theme-color" content="#1B4A63" />
+<link rel="manifest" href="../manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Shop Yangu" />
+<meta name="mobile-web-app-capable" content="yes" />
 <title>${escapeHtml(title)}</title>
 <meta name="robots" content="noindex" />
 <meta name="description" content="Shop Yangu Kenya — the shop's own screens: sell, take payment, check stock and print the receipt." />
@@ -952,6 +958,57 @@ write('login/index.html', loginPage());
 /* the app: one page, one folder per screen */
 for (const route of Object.keys(APP_ROUTES)) writeRoute(route);
 
+/* The page the worker falls back to when a shop opens the installed app with
+   no connection. It is deliberately not a route in the app: the app needs its
+   data to be useful, and pretending otherwise would show empty numbers. */
+fs.mkdirSync(path.join(dist, 'offline'), { recursive: true });
+fs.writeFileSync(
+  path.join(dist, 'offline', 'index.html'),
+  `<!doctype html>
+<html lang="en-KE">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1B4A63" />
+<title>No connection — ${escapeHtml(content.brand.name)}</title>
+<meta name="robots" content="noindex" />
+<meta name="description" content="Shop Yangu could not reach the internet. Your last sale is still on this device." />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; min-height: 100dvh; display: grid; place-items: center;
+    background: #F5EFE6; color: #1F1B16;
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 24px;
+  }
+  .card { max-width: 380px; text-align: center; }
+  .offlinemark { width: 64px; height: 72px; color: #1B4A63; margin: 0 auto 18px; display: block; }
+  h1 { font-size: 22px; letter-spacing: -0.02em; margin: 0 0 8px; }
+  p { color: #6A6054; margin: 0 0 20px; }
+  button {
+    font: inherit; font-weight: 600; min-height: 48px; padding: 0 22px;
+    border: 0; border-radius: 999px; background: #1B4A63; color: #fff; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <svg class="offlinemark" viewBox="0 0 636 722" aria-hidden="true"><use href="#mark"/></svg>
+  <h1>No connection</h1>
+  <p>Shop Yangu could not reach the internet. Your last sale is still on this device.
+     Reconnect, then open the app again.</p>
+  <button onclick="location.reload()">Try again</button>
+</div>
+<svg width="0" height="0" aria-hidden="true"><defs>
+  <symbol id="mark" viewBox="0 0 636 722"><path fill="currentColor" d="${/\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1]}"/></symbol>
+</defs></svg>
+</body>
+</html>
+`
+);
+pages.add('offline/index.html');
+
 /* assets */
 fs.cpSync(path.join(root, 'src/styles.css'), path.join(dist, 'styles.css'));
 fs.mkdirSync(path.join(dist, 'app'), { recursive: true });
@@ -967,6 +1024,18 @@ for (const [from, to] of [
 }
 
 fs.copyFileSync(path.join(root, 'src/logo/apple-touch-icon.png'), path.join(dist, 'apple-touch-icon.png'));
+
+/* ---- installable app: manifest, worker, icons -------------------------
+
+   The manifest sits at the site root so its scope is the whole site, and the
+   worker beside it so it can control every route. The icons are produced by
+   tools/make-pwa-icons.mjs from the 180 px touch icon — run it if the mark
+   changes. */
+fs.copyFileSync(path.join(root, 'src/app/manifest.json'), path.join(dist, 'manifest.json'));
+fs.copyFileSync(path.join(root, 'src/app/sw.js'), path.join(dist, 'sw.js'));
+for (const icon of ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png']) {
+  fs.copyFileSync(path.join(root, 'src/logo', icon), path.join(dist, icon));
+}
 fs.copyFileSync(path.join(root, 'src/logo/og.png'), path.join(dist, 'og.png'));
 /* The hero mock. Trimmed and re-encoded from Images/Mobile POS Receipt Mockup.png
    by tools/make-pos-mock.mjs, so the 1 MB original never reaches a phone. */
@@ -1019,6 +1088,11 @@ const assets = new Set([
   'app/app.css',
   'app/app.js',
   'apple-touch-icon.png',
+  'manifest.json',
+  'sw.js',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-maskable-512.png',
   'og.png',
   'favicon.svg',
   'logo.svg',
@@ -1090,6 +1164,7 @@ for (const page of pages) {
   if (page !== '404.html') {
     check(/<meta name="description" content="[^"]{20,}/.test(html), `${page}: thin description`);
   }
+
   /* No address may end in .html — that is the file, not the site. */
   for (const m of markup.matchAll(/\s(?:href|src)="([^"]+\.html[^"]*)"/g)) {
     check(false, `${page}: .html in a link → ${m[1]}`);
@@ -1111,7 +1186,10 @@ const CSS_BY_PAGE = (page) =>
 
 /* These are hooks with no styling of their own by design — they exist for
    JavaScript to find an element, or for print. */
-const UNSTYLED_BY_DESIGN = new Set(['paygrid', 'is-hidden', 'active']);
+/* Classes that carry no rule of their own: behaviour hooks, state toggles, and
+   the offline page's inline-styled mark (that page ships its own CSS because
+   it must render with no stylesheet cached). */
+const UNSTYLED_BY_DESIGN = new Set(['paygrid', 'is-hidden', 'active', 'offlinemark']);
 
 for (const page of pages) {
   if (page === '404.html') continue;

@@ -3,18 +3,22 @@
   <nav class="nav" id="rail" aria-label="Main">
     <div class="railhead">
       <!-- The mark goes to the dashboard, not out of the app. Signing out is
-           a deliberate action in the rail foot, never a mis-click on the logo. -->
+           its own button beside it, never a mis-click on the logo. -->
       <a class="railbrand" href="../dashboard/" data-home aria-label="Shop Yangu Kenya — dashboard">
         <span class="railbrand__mark" aria-hidden="true"><svg class="ic"><use href="#i-logo"/></svg></span>
         <span class="railbrand__text"><strong>Shop Yangu</strong><span>Kenya</span></span>
       </a>
-      <button class="railtoggle" id="railToggle" type="button" aria-expanded="true" aria-controls="rail"
-              aria-label="Collapse the menu" title="Collapse the menu">
-        <svg class="ic"><use href="#i-panel-left"/></svg>
-      </button>
+      <div class="railact">
+        <button class="railtoggle" id="railToggle" type="button" aria-expanded="true" aria-controls="rail"
+                aria-label="Collapse the menu" title="Collapse the menu">
+          <svg class="ic"><use href="#i-panel-left"/></svg>
+        </button>
+        <button class="iconbtn signoutbtn" id="signOutBtn" type="button" data-signout aria-label="Sign out" title="Sign out">
+          <svg class="ic"><use href="#i-log-out"/></svg>
+        </button>
+      </div>
     </div>
     <div class="raillinks" id="railLinks"></div>
-    <div class="railfoot" id="railFoot"></div>
   </nav>
 
   <!-- ============ phone top bar ============ -->
@@ -33,6 +37,9 @@
     <button class="iconbtn" id="bellBtn" aria-label="Notifications">
       <svg class="ic"><use href="#i-bell"/></svg>
       <span class="dotbadge" id="bellDot"></span>
+    </button>
+    <button class="iconbtn signoutbtn" id="signOutBtnTop" type="button" data-signout aria-label="Sign out" title="Sign out">
+      <svg class="ic"><use href="#i-log-out"/></svg>
     </button>
   </div>
 
@@ -155,62 +162,47 @@
 
       <!-- ================================================== POINT OF SALE -->
       <section class="screen" id="s-pos" data-title="Point of sale">
-        <div class="pagehead">
-          <div>
-            <h1>Point of sale</h1>
-            <p class="sub">Sell, split the payment, print a KRA-valid receipt.</p>
-          </div>
-          <span class="pill info" id="posBranch">Mombasa Branch</span>
-        </div>
-
+        <!-- The till is a workbench, not an article: it owns the height of the
+             screen and each region scrolls on its own, so a hundred products
+             and a ten-line basket never make the page move. -->
         <div class="pos">
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2>New sale</h2>
-                <div class="sub">Search the shelf, or pick a fast mover</div>
+          <div class="pos-col pos-col--catalogue">
+            <div class="pos-search">
+              <div class="searchbox">
+                <svg class="ic"><use href="#i-search"/></svg>
+                <input class="field" id="posSearch" placeholder="Search or scan a barcode"
+                       autocomplete="off" aria-label="Search products" />
               </div>
+              <!-- #posCustomer is the till's customer control, whether it is a
+                   card, a pill or a menu: the live-site check looks for it. -->
+              <button class="pos-cust" id="posCustomer" type="button">
+                <svg class="ic"><use href="#i-user-round"/></svg>
+                <span id="posCustName">Walk-in</span>
+              </button>
             </div>
-            <div class="searchbox">
-              <svg class="ic"><use href="#i-search"/></svg>
-              <input class="field" id="posSearch" placeholder="Search by product or barcode" autocomplete="off" />
-            </div>
-            <div class="chips" style="margin-top:9px" id="posChips"></div>
-            <div id="posResults" style="margin-top:11px"></div>
+            <div class="chips" id="posChips" role="tablist" aria-label="Categories"></div>
+            <div id="posResults" class="pos-grid"></div>
           </div>
 
-          <div>
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Customer</h2>
-                  <div class="sub">Who is buying — printed on the receipt</div>
-                </div>
-                <button class="btn ghost sm" id="walkInBtn">Walk-in</button>
-              </div>
-              <div id="posCustomer"></div>
-            </div>
-
-            <div class="card">
-              <div class="card-head">
+          <div class="pos-col pos-col--ticket">
+            <div class="pos-ticket">
+              <div class="pos-ticket__head" id="basketHead">
                 <div>
                   <h2>Basket</h2>
                   <div class="sub" id="basketCount">Nothing in it yet</div>
                 </div>
-                <button class="btn ghost sm" id="clearBasket">Clear</button>
+                <button class="btn ghost sm fold" id="foldBasket" type="button" aria-expanded="false">
+                  <svg class="ic"><use href="#i-chevron-down"/></svg>
+                  <span class="sr-only">Show the basket</span>
+                </button>
+                <button class="btn ghost sm" id="clearBasket" type="button">Clear</button>
               </div>
-              <div id="basket"></div>
+              <div id="basket" class="pos-lines"></div>
             </div>
 
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <h2>Payment</h2>
-                  <div class="sub">Split it across up to three methods</div>
-                </div>
-              </div>
-              <div class="paygrid" id="payMethods"></div>
-              <div id="payDetail" style="margin-top:10px"></div>
+            <div class="pos-pay">
+              <div class="paygrid" id="payMethods" role="group" aria-label="Payment method"></div>
+              <div id="payDetail"></div>
 
               <div class="totals">
                 <div class="line"><span>Subtotal</span><span class="num" id="tSub">Ksh 0</span></div>
@@ -220,35 +212,35 @@
                 <div class="line neg" id="tCreditRow" hidden><span>Goes to credit</span><span class="num" id="tCredit">Ksh 0</span></div>
               </div>
 
-              <button class="btn block" style="margin-top:11px;min-height:52px;font-size:16px" id="completeSale" disabled>
+              <button class="btn block pos-charge" id="completeSale" disabled>
                 <svg class="ic"><use href="#i-circle-check"/></svg>
                 Complete sale
               </button>
-              <p class="hint" style="text-align:center">
-                A negative balance is allowed — the customer goes into credit and it is carried forward.
-              </p>
             </div>
+          </div>
 
-            <div class="card" id="receiptCard" hidden>
-              <div class="card-head">
-                <div>
-                  <h2>Receipt</h2>
-                  <div class="sub" id="receiptNo">No. —</div>
-                </div>
-                <div style="display:flex;gap:7px" class="no-print">
-                  <button class="btn secondary sm" id="printReceipt">
-                    <svg class="ic sm"><use href="#i-printer"/></svg>Print
-                  </button>
-                  <button class="btn secondary sm" id="pdfReceipt">
-                    <svg class="ic sm"><use href="#i-file-text"/></svg>PDF
-                  </button>
-                  <button class="btn secondary sm" id="xlsxReceipt">
-                    <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel
-                  </button>
-                </div>
+          <div class="pos-receipt" id="receiptCard" hidden>
+            <div class="card-head">
+              <div>
+                <h2>Receipt</h2>
+                <div class="sub" id="receiptNo">No. —</div>
               </div>
-              <div class="receipt" id="receiptBody"></div>
+              <div class="pos-receipt__act no-print">
+                <button class="btn secondary sm" id="printReceipt" type="button">
+                  <svg class="ic sm"><use href="#i-printer"/></svg>Print
+                </button>
+                <button class="btn secondary sm" id="pdfReceipt" type="button">
+                  <svg class="ic sm"><use href="#i-file-text"/></svg>PDF
+                </button>
+                <button class="btn secondary sm" id="xlsxReceipt" type="button">
+                  <svg class="ic sm"><use href="#i-file-spreadsheet"/></svg>Excel
+                </button>
+                <button class="btn ghost sm" id="closeReceipt" type="button">
+                  <svg class="ic sm"><use href="#i-x"/></svg>New sale
+                </button>
+              </div>
             </div>
+            <div class="receipt" id="receiptBody"></div>
           </div>
         </div>
       </section>
@@ -779,10 +771,9 @@
       </button>
     </div>
     <div id="drawerLinks" style="display:flex;flex-direction:column;gap:2px"></div>
-    <div class="plan">
-      <b>Plan: Malipo ya mwezi</b>
-      <span data-plan-line>Ksh 1,500 / month</span> · 14 days left
-    </div>
+    <button class="drawerout" type="button" data-signout>
+      <svg class="ic"><use href="#i-log-out"/></svg><span>Sign out</span>
+    </button>
   </div>
 </div>
 

@@ -2,57 +2,89 @@
 const PAY_METHODS = [['Cash', 'banknote'], ['M-Pesa', 'smartphone'], ['Card', 'credit-card']];
 let basket = [];
 let pay = [{ m: 'Cash', amt: '' }];
+/* '' is "everything", otherwise a category from S.cats */
+let posCat = '';
 
 function renderPOS() {
   renderCustomer();
-  $('#posChips').innerHTML = S.cats.map(c => {
-    return '<button class="chip" data-poscat="' + esc(c) + '">' + esc(c) + '</button>';
-  }).join('');
-  renderPOSResults('');
+  $('#posChips').innerHTML = '<button class="chip" data-poscat="" aria-pressed="true">All</button>' +
+    S.cats.map(c => '<button class="chip" data-poscat="' + esc(c) + '" aria-pressed="false">' + esc(c) + '</button>').join('');
+  renderPOSResults($('#posSearch').value || '');
   renderBasket();
   renderPay();
 }
 
+/* Fast movers, for the empty search box. A shop with a queue does not want to
+   type; it wants the six things it sold most. */
+const FAST_MOVERS = ['p05', 'p06', 'p01', 'p03', 'p09', 'p14'];
+
+function posList(term) {
+  const q = (term || '').toLowerCase().trim();
+  let list = S.products.filter(p =>
+    (!posCat || p.cat === posCat) &&
+    (!q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
+  );
+  if (!q && !posCat) {
+    /* fast movers first, then the rest of the shelf, so a tap is nearly always
+       quicker than a search */
+    const fast = FAST_MOVERS.map(id => prod(id)).filter(Boolean);
+    return fast.concat(list.filter(p => !FAST_MOVERS.includes(p.id)));
+  }
+  return list;
+}
+
+/* One tile per product: name, price, and how many are on the shelf. The whole
+   tile is the button — a thumb hits a 96px square far more reliably than a
+   40px "Add" at the end of a row, and nothing has to be scrolled to reach it. */
 function renderPOSResults(q) {
-  const term = (q || '').toLowerCase().trim();
-  let list = S.products.filter(p => !term || p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term));
-  if (term) list = list.slice(0, 6);
-  else list = S.products.filter(p => ['p05', 'p06', 'p01', 'p03', 'p09', 'p14'].includes(p.id));
+  const list = posList(q);
+  const box = $('#posResults');
   if (!list.length) {
-    $('#posResults').innerHTML = '<div class="empty"><b>Nothing matches that</b><p>Check the spelling, or scan the barcode on the pack.</p></div>';
+    box.className = 'pos-grid pos-grid--empty';
+    box.innerHTML = '<div class="empty"><b>Nothing matches that</b>' +
+      '<p>Check the spelling, or scan the barcode on the pack.</p></div>';
     return;
   }
-  $('#posResults').innerHTML = list.map(p => {
+  box.className = 'pos-grid';
+  box.innerHTML = list.map(p => {
     const out = p.qty === 0;
-    return '<div class="setrow"><div style="min-width:0">' +
-      '<div class="t">' + esc(p.name) + '</div>' +
-      '<div class="d">' + esc(p.sku) + ' · ' + fmt(p.price) + ' per ' + esc(p.unit) +
-      (out ? ' · <span style="color:var(--danger)">out of stock</span>' : ' · ' + p.qty + ' left') + '</div></div>' +
-      '<button class="btn secondary sm" data-add="' + p.id + '"' + (out ? ' disabled' : '') + '>' +
-      icon('plus', 'sm') + 'Add</button></div>';
+    const inBasket = basket.find(b => b.id === p.id);
+    return '<button class="ptile' + (out ? ' ptile--out' : '') + (inBasket ? ' ptile--in' : '') + '"' +
+      ' type="button" data-add="' + p.id + '"' + (out ? ' disabled aria-disabled="true"' : '') + '>' +
+      '<span class="ptile__name">' + esc(p.name) + '</span>' +
+      '<span class="ptile__price">' + fmt(p.price) + '</span>' +
+      '<span class="ptile__meta">' + (out ? 'Out of stock' : p.qty + ' ' + esc(p.unit) + 's' +
+        (posCat && !inBasket ? '' : '') ) + '</span>' +
+      (inBasket ? '<span class="ptile__qty" aria-hidden="true">' + inBasket.qty + '</span>' : '') +
+      '</button>';
   }).join('');
 }
 
 function renderBasket() {
   const b = $('#basket');
   if (!basket.length) {
-    b.innerHTML = '<div class="empty">' + '<div class="big">' + icon('shopping-cart') + '</div>' +
-      '<b>Basket is empty</b><p>Search for a product above, or tap one of the fast movers.</p></div>';
+    b.innerHTML = '<div class="pos-empty">' + icon('shopping-cart') +
+      '<b>No items yet</b><span>Tap a product to start the sale.</span></div>';
     $('#basketCount').textContent = 'Nothing in it yet';
   } else {
     const n = sum(basket, it => it.qty);
     $('#basketCount').textContent = n + (n === 1 ? ' item' : ' items') + ' · ' + fmt(basketTotal());
     b.innerHTML = basket.map((it, i) =>
-      '<div class="rowcard"><div class="top"><div style="min-width:0"><div class="ttl">' + esc(it.name) + '</div>' +
-      '<div class="meta">' + fmt(it.price) + ' each' + (it.cost ? '' : '') + '</div></div>' +
-      '<div class="amt">' + fmt(it.price * it.qty) + '</div></div>' +
-      '<div class="bottom"><div class="stepper">' +
-      '<button data-qty="' + i + ':-1" aria-label="One fewer">' + icon('minus', 'sm') + '</button>' +
-      '<input class="num" value="' + it.qty + '" inputmode="numeric" data-qtyinput="' + i + '" aria-label="Quantity" />' +
-      '<button data-qty="' + i + ':1" aria-label="One more">' + icon('plus', 'sm') + '</button>' +
-      '</div>' +
-      '<div class="btns"><button class="btn danger sm" data-remove="' + i + '" aria-label="Remove from basket">' + icon('trash', 'sm') + '</button></div></div></div>'
-    ).join('');
+      '<div class="pl">' +
+        '<div class="pl__top">' +
+          '<span class="pl__name">' + esc(it.name) + '</span>' +
+          '<span class="pl__amt num">' + fmt(it.price * it.qty) + '</span>' +
+        '</div>' +
+        '<div class="pl__bot">' +
+          '<span class="pl__each">' + fmt(it.price) + ' each</span>' +
+          '<div class="pstepper">' +
+            '<button type="button" data-qty="' + i + ':-1" aria-label="One fewer ' + esc(it.name) + '">' + icon('minus', 'sm') + '</button>' +
+            '<input class="num" value="' + it.qty + '" inputmode="numeric" data-qtyinput="' + i + '" aria-label="Quantity of ' + esc(it.name) + '" />' +
+            '<button type="button" data-qty="' + i + ':1" aria-label="One more ' + esc(it.name) + '">' + icon('plus', 'sm') + '</button>' +
+          '</div>' +
+          '<button class="pl__del" type="button" data-remove="' + i + '" aria-label="Remove ' + esc(it.name) + '">' + icon('trash', 'sm') + '</button>' +
+        '</div>' +
+      '</div>').join('');
   }
   updateTotals();
 }
@@ -71,33 +103,21 @@ function customerLabel() {
   return c ? c.name : 'Walk-in';
 }
 
+/* The customer is a pill beside the search box. It shows who the receipt will
+   name and opens the picker; it costs no vertical space in the till. */
 function renderCustomer() {
-  const box = $('#posCustomer');
-  if (!box) return;
+  const name = $('#posCustName');
+  if (!name) return;
   const isWalk = posCustomer.id === 'c6';
   const c = isWalk ? null : cust(posCustomer.id);
   const label = customerLabel();
-
-  box.innerHTML =
-    '<div class="rowcard" style="box-shadow:inset 0 0 0 1px ' + (isWalk ? 'transparent' : 'var(--syk)') + '">' +
-      '<div class="top"><div style="min-width:0">' +
-        '<div class="ttl">' + esc(label) + '</div>' +
-        '<div class="meta">' + (c
-          ? esc(c.phone || 'no phone') + ' · limit ' + fmt(c.limit) + ' · owes ' + fmt(c.bal)
-          : 'Walk-in · no balance kept, so no credit') + '</div>' +
-      '</div>' +
-      '</div>' +
-      '<div class="bottom" style="display:flex;gap:7px;margin-top:9px">' +
-        '<button class="btn secondary sm" id="pickCustomer">' + icon('search', 'sm') + 'Change</button>' +
-        (isWalk ? '<button class="btn ghost sm" id="nameWalkin">' + icon('pencil', 'sm') + (posCustomer.walkin.trim() ? 'Edit name' : 'Add a name') + '</button>' : '') +
-      '</div>' +
-    '</div>' +
-    '<div class="hint" style="margin-top:8px">A name here is what prints on the receipt under Customer.</div>';
-
-  const pick = $('#pickCustomer');
-  if (pick) pick.onclick = openCustomerSheet;
-  const name = $('#nameWalkin');
-  if (name) name.onclick = askWalkinName;
+  name.textContent = label;
+  const btn = $('#posCustomer');
+  if (btn) {
+    btn.classList.toggle('pos-cust--named', !isWalk);
+    btn.setAttribute('aria-label', 'Customer: ' + label + '. Change it');
+    btn.title = c ? c.phone + ' · owes ' + fmt(c.bal) : 'Walk-in — no account kept';
+  }
 }
 
 function openCustomerSheet() {
@@ -110,7 +130,9 @@ function openCustomerSheet() {
       '</div>' +
       '<div id="custResults" style="margin-top:10px"></div>' +
       '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
-        '<button class="btn ghost sm" id="useWalkin">' + icon('user-round', 'sm') + 'Walk-in</button>' +
+        '<button class="btn secondary sm" id="useWalkin">' + icon('user-round', 'sm') + 'Walk-in</button>' +
+        '<button class="btn ghost sm" id="nameWalkin">' + icon('pencil', 'sm') +
+          (posCustomer.walkin.trim() ? 'Edit walk-in name' : 'Name the walk-in') + '</button>' +
         '<button class="btn secondary sm" id="newCustomer">' + icon('plus', 'sm') + 'New customer</button>' +
       '</div>',
     actions: [],
@@ -121,11 +143,11 @@ function openCustomerSheet() {
         const list = S.customers.filter(c => c.id !== 'c6' && (!needle ||
           c.name.toLowerCase().includes(needle) || (c.phone || '').replace(/\s/g, '').includes(needle.replace(/\s/g, ''))));
         $('#custResults').innerHTML = list.length ? list.map(c =>
-          '<button class="rowcard" style="width:100%;text-align:left;cursor:pointer;background:var(--paper)" data-pick="' + c.id + '">' +
+          '<button type="button" class="rowcard pickrow" data-pick="' + c.id + '">' +
             '<div class="top"><div style="min-width:0"><div class="ttl">' + esc(c.name) + '</div>' +
             '<div class="meta">' + esc(c.phone || 'no phone') + ' · limit ' + fmt(c.limit) + '</div></div>' +
             '<div class="amt">' + fmt(c.bal) + '</div></div></button>').join('')
-          : '<p class="hint">No customer matches “' + esc(q) + '”.' + (isOwn() ? ' Add them with New customer.' : '') + '</p>';
+          : '<p class="hint">No customer matches “' + esc(q) + '”. Add them with New customer.</p>';
       };
       paint('');
       search.oninput = () => paint(search.value);
@@ -143,6 +165,7 @@ function openCustomerSheet() {
         renderCustomer();
         closeSheet();
       };
+      $('#nameWalkin').onclick = () => { closeSheet(); askWalkinName(); };
       const add = $('#newCustomer');
       if (add) add.onclick = () => { closeSheet(); openNewCustomerSheet(); };
       setTimeout(() => search.focus(), 40);
@@ -239,8 +262,16 @@ function addToBasket(id) {
   if (line) line.qty += 1;
   else basket.push({ id: p.id, name: p.name, price: p.price, cost: p.cost, unit: p.unit, qty: 1 });
   renderBasket();
-  $('#posSearch').value = '';
-  renderPOSResults('');
+  /* the grid stays as it is — clearing the search on every tap made a cashier
+     re-search for the second item on every sale */
+  renderPOSResults($('#posSearch').value || '');
+}
+
+/* Focus goes to the search box when the till opens, so a barcode scanner and
+   the keyboard both work without touching the screen first. */
+function focusTill() {
+  const q = $('#posSearch');
+  if (q && !matchMedia('(max-width: 899px)').matches) q.focus({ preventScroll: true });
 }
 
 function updateTotals() {
@@ -252,52 +283,68 @@ function updateTotals() {
 
   const paid = sum(pay, p => Number(p.amt) || 0);
   const diff = paid - total;
+  /* What the customer holds out can be more than the bill (change) or less
+     than it (the shortfall goes on their account). A part that is not filled
+     in at all is not a decision yet, so it claims neither. */
+  const typed = pay.some(p => String(p.amt).trim() !== '');
   const changeRow = $('#tChangeRow'), creditRow = $('#tCreditRow');
-  changeRow.hidden = !(diff > 0.5);
-  creditRow.hidden = !(diff < -0.5);
-  if (diff > 0.5) $('#tChange').textContent = fmt(diff);
-  if (diff < -0.5) $('#tCredit').textContent = fmt(-diff);
+  changeRow.hidden = !(typed && diff > 0.5);
+  creditRow.hidden = !(typed && diff < -0.5);
+  if (typed && diff > 0.5) $('#tChange').textContent = fmt(diff);
+  if (typed && diff < -0.5) $('#tCredit').textContent = fmt(-diff);
 
   $('#completeSale').disabled = !basket.length;
   const label = $('#completeSale');
-  if (basket.length && diff < -0.5) {
+  if (basket.length && typed && diff < -0.5) {
     label.innerHTML = icon('circle-check') + 'Complete and hold ' + fmt(-diff) + ' on credit';
   } else {
     label.innerHTML = icon('circle-check') + 'Complete sale';
   }
 }
 
+/* Payment is three method buttons and one amount field — not a card per
+   method with its own header. A split adds a second amount under the first,
+   which is the only extra row the cashier should ever see. */
 function renderPay() {
   const total = basketTotal();
   const paidSoFar = sum(pay, p => Number(p.amt) || 0);
   const unpaid = total - paidSoFar;
 
-  $('#payMethods').innerHTML = pay.map((p, i) => {
-    const isLast = i === pay.length - 1;
+  /* The method buttons act on the part the cashier is on: the only part, or
+     the newest one when a split is open. */
+  const active = pay[pay.length - 1];
+  $('#payMethods').innerHTML = PAY_METHODS.map(([m, ic]) =>
+    '<button type="button" class="paybtn" data-method="' + m + '" aria-pressed="' +
+      (active.m === m) + '">' + icon(ic) + '<span>' + m + '</span></button>').join('');
+
+  const parts = pay.map((p, i) => {
     const rest = total - sum(pay, (x, k) => (k === i ? 0 : Number(x.amt) || 0));
-    return '<div class="paypart">' +
-      '<div class="prow"><span class="plabel">' + icon('wallet', 'sm') +
-        (pay.length > 1 ? 'Part ' + (i + 1) + ' of ' + pay.length : 'How are they paying?') + '</span>' +
-        (pay.length > 1 ? '<button class="del" style="width:30px;height:30px" data-delpay="' + i + '" aria-label="Remove this part">' + icon('x', 'sm') + '</button>' : '') +
-      '</div>' +
-      '<div class="segmented">' + PAY_METHODS.map(([m, ic]) =>
-        '<button data-method="' + i + ':' + m + '" aria-pressed="' + (p.m === m) + '">' + icon(ic) + m + '</button>').join('') +
-      '</div>' +
-      '<div class="amtrow" style="margin-top:8px">' +
-        '<input class="field num" inputmode="decimal" placeholder="' + (total ? fmt(Math.max(0, rest)) : 'Amount') + '" data-payamt="' + i + '" value="' + (p.amt === '' ? '' : p.amt) + '" aria-label="Amount for ' + p.m + '" />' +
-        '<button class="btn secondary sm" style="flex:none" data-fill="' + i + '">' + (isLast && rest > 0 ? 'Rest' : 'Fill') + '</button>' +
-      '</div>' +
-      (isLast && pay.length === 1 ? '<div class="hint">Leave it blank to take the exact amount.</div>' : '') +
-    '</div>';
-  }).join('') + (pay.length < 3 ? '<button class="btn ghost sm" style="margin-top:9px" id="addSplit">' + icon('arrow-right-left', 'sm') + 'Split payment</button>' : '');
+    return '<div class="payline">' +
+      (pay.length > 1
+        ? '<span class="payline__tag">' + esc(p.m) + '</span>'
+        : '') +
+      '<input class="field num" inputmode="decimal" placeholder="' +
+        (total ? fmt(Math.max(0, rest)) : 'Amount') + '" data-payamt="' + i + '" value="' +
+        (p.amt === '' ? '' : p.amt) + '" aria-label="Amount paid by ' + esc(p.m) + '" />' +
+      '<button class="btn secondary sm" type="button" style="flex:none" data-fill="' + i + '">' +
+        (pay.length === 1 ? 'Exact' : 'Rest') + '</button>' +
+      (pay.length > 1
+        ? '<button class="pl__del" type="button" data-delpay="' + i + '" aria-label="Remove this part">' + icon('x', 'sm') + '</button>'
+        : '') +
+      '</div>';
+  }).join('');
+
+  $('#payDetail').innerHTML = parts +
+    (pay.length < 3
+      ? '<button class="btn ghost sm paysplit" type="button" id="addSplit">' +
+        icon('arrow-right-left', 'sm') + 'Split across methods</button>'
+      : '<p class="hint" style="margin-top:8px">Three methods is the maximum on one sale.</p>');
 
   const add = $('#addSplit');
   if (add) add.onclick = () => {
     const used = pay.map(p => p.m);
     const next = PAY_METHODS.map(x => x[0]).find(m => !used.includes(m)) || 'Cash';
-    /* move whatever is still unpaid into the new part */
     const owed = Math.max(0, basketTotal() - sum(pay, p => Number(p.amt) || 0));
-    if (pay.length === 1 && pay[0].amt === '' ) pay[0].amt = '';
     pay.push({ m: next, amt: owed ? String(Math.round(owed)) : '' });
     renderPay(); updateTotals();
   };
@@ -315,18 +362,25 @@ document.addEventListener('input', e => {
     let v = parseInt(q.value.replace(/[^\d]/g, ''), 10);
     if (isNaN(v)) v = 0;
     basket[i].qty = Math.max(1, Math.min(9999, v));
-    updateTotals();
-    $('#basketCount').textContent = sum(basket, it => it.qty) + ' items · ' + fmt(basketTotal());
-    const amtEl = $('.rowcard:nth-child(' + (i + 1) + ') .amt');
+    /* repaint just the line's money and the running total, so the input the
+       cashier is typing in never loses focus */
+    const line = $('#basket .pl:nth-child(' + (i + 1) + ')');
+    const amtEl = line && line.querySelector('.pl__amt');
     if (amtEl) amtEl.textContent = fmt(basket[i].price * basket[i].qty);
+    updateTotals();
+    $('#basketCount').textContent = sum(basket, it => it.qty) +
+      (sum(basket, it => it.qty) === 1 ? ' item' : ' items') + ' · ' + fmt(basketTotal());
   }
 });
 
 document.addEventListener('click', e => {
   const t = e.target;
-  if (t.closest('[data-poscat]')) {
-    renderPOSResults(t.closest('[data-poscat]').dataset.poscat);
-    $$('#posChips .chip').forEach(c => c.setAttribute('aria-pressed', c === t.closest('[data-poscat]')));
+  const cat = t.closest('[data-poscat]');
+  if (cat) {
+    posCat = cat.dataset.poscat;
+    $$('#posChips .chip').forEach(c =>
+      c.setAttribute('aria-pressed', String(c === cat)));
+    renderPOSResults($('#posSearch').value || '');
   }
   const add = t.closest('[data-add]');
   if (add) addToBasket(add.dataset.add);
@@ -343,9 +397,8 @@ document.addEventListener('click', e => {
 
   const md = t.closest('[data-method]');
   if (md) {
-    const [i, m] = md.dataset.method.split(':');
-    pay[Number(i)].m = m;
-    renderPay();
+    pay[pay.length - 1].m = md.dataset.method;
+    renderPay(); updateTotals();
   }
   const fill = t.closest('[data-fill]');
   if (fill) {
@@ -358,6 +411,15 @@ document.addEventListener('click', e => {
   const dl = t.closest('[data-delpay]');
   if (dl) { pay.splice(Number(dl.dataset.delpay), 1); renderPay(); updateTotals(); }
 });
+
+/* On a phone the basket is one summary line; tapping it slides the lines out
+   over the grid so the Charge button never leaves the screen. */
+$('#foldBasket').onclick = () => {
+  const ticket = $('.pos-ticket');
+  const open = ticket.classList.toggle('pos-ticket--open');
+  $('#foldBasket').setAttribute('aria-expanded', String(open));
+  $('#foldBasket').querySelector('.sr-only').textContent = open ? 'Hide the basket' : 'Show the basket';
+};
 
 $('#clearBasket').onclick = () => { basket = []; pay = [{ m: 'Cash', amt: '' }]; renderBasket(); renderPay(); };
 
@@ -386,8 +448,8 @@ function completeSale() {
       title: 'Who is taking the credit?',
       sub: fmt(credit) + ' will be added to their balance. A walk-in cannot hold credit.',
       body: '<div id="creditPick">' + pick.map(c =>
-        '<button class="rowcard" style="width:100%;text-align:left;cursor:pointer;background:var(--paper);border:1px solid ' +
-          (c.id === chosen ? 'var(--syk)' : 'var(--sand)') + '" data-credit="' + c.id + '">' +
+        '<button type="button" class="rowcard creditpick' + (c.id === chosen ? ' creditpick--on' : '') +
+          '" data-credit="' + c.id + '">' +
         '<div class="top"><div><div class="ttl">' + esc(c.name) + (c.id === chosen ? ' · picked' : '') + '</div>' +
         '<div class="meta">' + esc(c.phone || 'no phone') + ' · limit ' + fmt(c.limit) + (c.bal >= c.limit && c.limit ? ' · at limit' : '') + '</div></div>' +
         '<div class="amt">' + fmt(c.bal) + '</div></div></button>').join('') + '</div>',
@@ -462,9 +524,17 @@ function showReceipt(sale, change) {
 }
 
 $('#completeSale').onclick = completeSale;
-$('#walkInBtn').onclick = () => {
+
+/* After a receipt, the till is ready for the next customer in the queue:
+   the ticket clears, the print block folds away, and the cursor is back in
+   the search box. Nothing to scroll, nothing to dismiss. */
+$('#closeReceipt').onclick = () => {
+  $('#receiptCard').hidden = true;
+  basket = []; pay = [{ m: 'Cash', amt: '' }];
   posCustomer = { id: 'c6', name: 'Walk-in', walkin: '', open: false };
-  renderCustomer();
+  renderBasket(); renderPay(); renderCustomer();
+  renderPOSResults($('#posSearch').value || '');
+  focusTill();
 };
 
 /* everything printable goes through the same branded sheet */
