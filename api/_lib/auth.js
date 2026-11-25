@@ -18,9 +18,11 @@
 
 import { env, isProd, requirePepper } from './config.js';
 import * as db from './db.js';
+import * as passwords from './password.js';
+import * as neonAuth from './neon-auth.js';
 import {
   cookie, hmac, randomCode, randomToken, sameHash, sha256,
-  unauthorized, forbidden, tooMany, badRequest,
+  unauthorized, forbidden, notFound, tooMany, badRequest, HttpError,
 } from './http.js';
 
 /* ------------------------------------------------------------------ tokens */
@@ -250,11 +252,26 @@ export async function redeemLink(token) {
 /* Step one: the address is not yet a login. It waits in pending_signups until
    the code (or link) in the email comes back — so two people cannot race to
    register the same address, and an abandoned sign-up leaves no shop behind. */
-export async function startSignup({ email, shopName, personName }) {
+export async function startSignup({ email, shopName, personName, password }) {
   const clean = String(email || '').trim().toLowerCase();
   if (!looksLikeEmail(clean)) throw badRequest('That does not look like an email address.');
   if (!String(shopName || '').trim()) throw badRequest('Give the shop a name.');
   if (!String(personName || '').trim()) throw badRequest('Enter your own name.');
+
+  /* The password is optional so that an account created by SQL — the demo
+     shop, the platform admin — still works with a code and no password. A
+     person signing up through the form has to choose one. */
+  let passwordColumns = {};
+  if (password !== undefined && password !== null && password !== '') {
+    const problem = passwords.checkPassword(password, { email: clean, shopName });
+    if (problem) throw badRequest(problem);
+    const hashed = await passwords.hashPassword(password);
+    passwordColumns = {
+      password_hash: hashed.hash,
+      password_salt: hashed.salt,
+      password_params: hashed.params,
+    };
+  }
 
   const existing = await db.one('select id, shop_id, role, name from logins where email = $1', [clean]);
   if (existing) {
@@ -267,14 +284,27 @@ export async function startSignup({ email, shopName, personName }) {
   /* One live sign-up per address. Re-posting the form replaces it, which is
      what somebody who mistyped the shop name expects. */
   const pending = await db.one(
-    `insert into pending_signups (email, shop_name, person_name, expires_at)
-     values ($1, $2, $3, now() + ($4 || ' minutes')::interval)
+    `insert into pending_signups
+       (email, shop_name, person_name, password_hash, password_salt, password_params, expires_at)
+     values ($1, $2, $3, $4, $5, $6, now() + ($7 || ' minutes')::interval)
      on conflict (email) do update
-       set shop_name   = excluded.shop_name,
-           person_name = excluded.person_name,
-           expires_at  = excluded.expires_at
-     returning id, email::text as email, shop_name, person_name`,
-    [clean, String(shopName).trim(), String(personName).trim(), String(env.SIGNUP_MINUTES)]
+       set shop_name     = excluded.shop_name,
+           person_name   = excluded.person_name,
+           password_hash = excluded.password_hash,
+           password_salt = excluded.password_salt,
+           password_params = excluded.password_params,
+           expires_at    = excluded.expires_at
+     returning id, email::text as email, shop_name, person_name,
+               password_hash, password_salt, password_params`,
+    [
+      clean,
+      String(shopName).trim(),
+      String(personName).trim(),
+      passwordColumns.password_hash || null,
+      passwordColumns.password_salt || null,
+      passwordColumns.password_params || null,
+      String(env.SIGNUP_MINUTES),
+    ]
   );
 
   /* Rate limit per address, before another email goes out. */
@@ -329,13 +359,30 @@ export async function finishSignupWithCode({ email, code }) {
   );
   if (!pending) throw badRequest('That sign-up has expired. Start again — it takes a moment.');
 
-  const row = await db.one(
-    `select id from login_codes
-      where pending_id = $1 and purpose = 'signup'
-        and consumed_at is null and attempts < $2 and expires_at > now()
-        and code_hash = $3`,
-    [pending.id, env.OTP_ATTEMPTS, hmac(requirePepper(), 'pending:' + pending.id + ':' + String(code))]
-  );
+  /* Two places the code could have come from, exactly as when it was sent.
+
+     Neon Auth first: when it is configured the person was emailed ITS code,
+     so our own table holds a code nobody has seen. Checking ours first would
+     make every sign-up fail once.
+
+     If Neon Auth is not configured, or cannot be reached, or says no, the
+     check falls through to our own code. That is what keeps sign-up working
+     when a third party is down — the person may then be typing a code we
+     did not send, which reads as "that code is not right", but they are never
+     locked out of the flow. */
+  const viaNeonAuth = neonAuth.configured()
+    ? await neonAuth.verifySignupCode(pending.email, code)
+    : false;
+
+  const row = viaNeonAuth
+    ? { id: null }
+    : await db.one(
+        `select id from login_codes
+          where pending_id = $1 and purpose = 'signup'
+            and consumed_at is null and attempts < $2 and expires_at > now()
+            and code_hash = $3`,
+        [pending.id, env.OTP_ATTEMPTS, hmac(requirePepper(), 'pending:' + pending.id + ':' + String(code))]
+      );
 
   if (!row) {
     const attempt = await db.one(
@@ -351,7 +398,18 @@ export async function finishSignupWithCode({ email, code }) {
     throw badRequest('That code is not right. Check the newest email.');
   }
 
-  await db.query('update login_codes set consumed_at = now() where id = $1', [row.id]);
+  /* Either way, any code of ours is done with. Consumed rather than deleted,
+     so the rate-limit history stays honest. */
+  if (row.id) {
+    await db.query('update login_codes set consumed_at = now() where id = $1', [row.id]);
+  } else {
+    await db.query(
+      `update login_codes set consumed_at = now()
+        where pending_id = $1 and consumed_at is null`,
+      [pending.id]
+    );
+  }
+
   return provision(pending);
 }
 
@@ -415,10 +473,20 @@ async function provision(pending) {
 
     const login = await db.oneIn(
       client,
-      `insert into logins (shop_id, email, name, role, email_verified_at)
-       values ($1, $2, $3, 'owner', now())
+      `insert into logins
+         (shop_id, email, name, role, email_verified_at,
+          password_hash, password_salt, password_params, password_set_at)
+       values ($1, $2, $3, 'owner', now(), $4, $5, $6,
+               case when $4::text is null then null else now() end)
        returning id, email::text as email, name, role, shop_id, email_verified_at`,
-      [shop.id, pending.email, pending.person_name]
+      [
+        shop.id,
+        pending.email,
+        pending.person_name,
+        pending.password_hash || null,
+        pending.password_salt || null,
+        pending.password_params || null,
+      ]
     );
 
     await db.noneIn(client, 'delete from pending_signups where id = $1', [pending.id]);
@@ -453,3 +521,140 @@ export function linkUrl(path, token) {
 }
 
 export { sha256, sameHash };
+
+/* ---------------------------------------------------- signing in with a password
+
+   The everyday door. Still inside the same rule as everything else: a session
+   is only issued for a login row, which is what ties a person to a shop and
+   what the security rules read.
+
+   Two things this deliberately does NOT do:
+
+   · Say whether the address exists. A wrong password and an unknown address
+     get the same answer, so this cannot be used to list a platform's shops.
+   · Say how far off you were. One message, one status.
+
+   It DOES count failures per address, because a password can be guessed in a
+   way a six-digit code cannot. */
+
+const PASSWORD_MAX_FAILS = 8;
+const PASSWORD_LOCK_MINUTES = 15;
+
+export async function signInWithPassword({ email, password }, meta = {}) {
+  const clean = String(email || '').trim().toLowerCase();
+  const wrong = badRequest('That email and password do not match.');
+
+  if (!looksLikeEmail(clean)) throw wrong;
+
+  const login = await db.one(
+    `select l.id, l.name, l.role, l.shop_id, l.email::text as email,
+            l.password_hash, l.password_salt, l.password_params,
+            l.email_verified_at, sh.name as shop_name,
+            sh.suspended_at as shop_suspended_at
+       from logins l left join shops sh on sh.id = l.shop_id
+      where l.email = $1`,
+    [clean]
+  );
+
+  /* No such account, or one that has never had a password: same answer, and
+     the same amount of work, so timing does not give it away. */
+  if (!login || !login.password_hash) {
+    await passwords.verifyPassword(String(password || ''), {
+      hash: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+      salt: 'AAAAAAAAAAAAAAAAAAAAAA==',
+      params: 'scrypt$16384$8$1$64',
+    });
+    throw wrong;
+  }
+
+  /* Failures are counted from the audit log, which already records every
+     attempt with its time — no second table to keep in sync. */
+  const fails = await db.one(
+    `select count(*)::int as n from audit_entries
+      where at > now() - ($1 || ' minutes')::interval
+        and action = 'signin.password.failed'
+        and detail = $2`,
+    [String(PASSWORD_LOCK_MINUTES), clean]
+  );
+
+  if (fails && fails.n >= PASSWORD_MAX_FAILS) {
+    throw tooMany(
+      `That is ${PASSWORD_MAX_FAILS} wrong passwords in ${PASSWORD_LOCK_MINUTES} minutes. ` +
+        'Wait a few minutes, or sign in with a code by email instead.'
+    );
+  }
+
+  const right = await passwords.verifyPassword(String(password || ''), {
+    hash: login.password_hash,
+    salt: login.password_salt,
+    params: login.password_params,
+  });
+
+  if (!right) {
+    await db.query(
+      `insert into audit_entries (action, detail) values ('signin.password.failed', $1)`,
+      [clean]
+    );
+    throw wrong;
+  }
+
+  if (login.shop_suspended_at) {
+    throw new HttpError(403, 'This shop is paused. Call Shop Yangu on 0722 000 111.');
+  }
+
+  /* Verified by holding a password that only the inbox's owner could set. */
+  if (!login.email_verified_at) {
+    await db.query('update logins set email_verified_at = now() where id = $1', [login.id]);
+  }
+
+  /* Quietly upgrade a password hashed under older, cheaper parameters. The
+     person never learns; the next sign-in is simply stronger. */
+  if (passwords.needsRehash(login.password_params)) {
+    const fresh = await passwords.hashPassword(String(password));
+    await db.query(
+      `update logins set password_hash = $2, password_salt = $3, password_params = $4
+        where id = $1`,
+      [login.id, fresh.hash, fresh.salt, fresh.params]
+    );
+  }
+
+  /* `login` is returned alongside the session because the route needs the
+     name and role for the reply, and re-reading the row would be a second
+     round trip for data we already have. */
+  const session = await createSession(login, meta.req, { shopId: login.shop_id || null });
+  return { ...session, login, shopId: login.shop_id || null };
+}
+
+/* Set or change a password while signed in. The point of entry for an account
+   that was created by SQL (the demo shop, the platform admin) and has never had
+   one. Requires the current password when there is one — a stolen session
+   should not be able to lock the owner out of their own shop. */
+export async function setPassword({ login, currentPassword, newPassword }) {
+  const row = await db.one(
+    'select id, email::text as email, password_hash, password_salt, password_params from logins where id = $1',
+    [login.id]
+  );
+  if (!row) throw notFound('That account no longer exists.');
+
+  if (row.password_hash) {
+    const ok = await passwords.verifyPassword(String(currentPassword || ''), {
+      hash: row.password_hash,
+      salt: row.password_salt,
+      params: row.password_params,
+    });
+    if (!ok) throw badRequest('Your current password is not right.');
+  }
+
+  const problem = passwords.checkPassword(newPassword, { email: row.email });
+  if (problem) throw badRequest(problem);
+
+  const fresh = await passwords.hashPassword(String(newPassword));
+  await db.query(
+    `update logins
+        set password_hash = $2, password_salt = $3, password_params = $4, password_set_at = now()
+      where id = $1`,
+    [row.id, fresh.hash, fresh.salt, fresh.params]
+  );
+
+  return { ok: true };
+}

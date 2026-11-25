@@ -9,21 +9,27 @@ anyone.
 
 ---
 
-## There are no passwords
+## Passwords and codes, and which does what
 
 Worth understanding before you set this up, because it explains everything
 about the step.
 
-Nobody has a password in this shop. A person types their email address, and
-gets either a **six-digit code** or a **link**. Both do the same job.
+**A shop signs up with a password and a code.** The form collects a shop name,
+a person's name, an email address and a password (typed twice). A six-digit code
+then confirms the address, because on day one the inbox is the only proof that
+the address really is theirs.
 
-Why: a shopkeeper who opens the till twice a day will reuse a password they
-already use for their bank, or write it on the counter. Neither is security. A
-code that arrives on the phone in their pocket and dies after ten minutes is
-something an attacker cannot guess, reuse or find in a data breach.
+**After that it is email and password.** No email, no waiting. That is what
+people expect of the tenth sign-in, and it is what a counter with a queue needs.
+
+**The code never goes away.** "Sign in with a code by email", under the sign-in
+button, sends the same six-digit code and gets a person in when the password is
+forgotten. On the Settings screen they then set a new one. There is no reset
+link to expire, and nobody can be locked out of their own shop.
 
 The consequence for you: **email is part of the login system**, not a nicety.
-No working email means nobody can sign in.
+No working email means a new shop cannot be created and a forgotten password
+cannot be recovered.
 
 > **Word to know — SMTP:** the standard way one computer hands an email to
 > another. Every provider speaks it. You will be given four or five settings

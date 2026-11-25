@@ -12,7 +12,8 @@
     "test:sql": "node scripts/build-sql.js && node scripts/sql-check.mjs",
     "start": "npm --workspace api start",
     "check:docs": "node scripts/check-docs.mjs",
-    "test:all": "node scripts/check-docs.mjs && npm --workspace api run test:all && npm run test:sql"
+    "test:all": "node scripts/check-docs.mjs && node scripts/check-auth-layout.mjs && npm --workspace api run test:all && npm run test:sql",
+    "check:auth-layout": "node scripts/check-auth-layout.mjs"
   },
   "engines": {
     "node": ">=20"

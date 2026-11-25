@@ -10,12 +10,12 @@ This repository holds these things:
 | What | Where | Why it is here |
 |---|---|---|
 | **The advert** — headline, what it does, the price, and one way in | `src/content.json` + `src/styles.css` + `build.js` → `dist/` | Generated, so no figure is hand-typed twice |
-| **The door** — `/login/`, `/auth/link/` | `build.js` (`loginPage`, `linkPage`) | Email code or link. No password anywhere. |
+| **The door** — `/login/`, `/auth/link/` | `build.js` (`loginPage`, `linkPage`) | Email and password, plus a code by email for the first sign-up and for a forgotten password. |
 | **The shop** — `/dashboard/`, `/till/`, `/stock/` … | `src/app/` → `dist/<route>/index.html` | A real front end: one shell, real addresses, no `.html` |
 | **The server** — `/api/*` | `api/` | Node + Neon Postgres. Receipts, stock, credit, M-Pesa. |
 | **The database** | `db/001`–`004` | 24 tables, the money-moving functions, row-level security |
 | **The platform console** | `/admin/` (`adminPage()`) | Every shop, who is signed in, pause a shop |
-| **How to run it** | `docs/` | Plain-language guides: Neon, Vercel, email, M-Pesa, eTIMS |
+| **How to run it** | **`docs2/`**, then `docs/` | `docs2/` is the six-guide beginner course. `docs/` is the reference set: Neon, Vercel, email, M-Pesa, eTIMS |
 | **The build spec** — data model, import rules, traps, definition of done | `shop-yangu-kenya.md` | The prompt to hand a coding agent |
 
 **Two pieces, one address.** The site is static files; the data lives in Neon

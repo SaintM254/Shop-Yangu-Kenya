@@ -127,8 +127,17 @@ create table if not exists logins (
   -- exists but cannot hold a session.
   email_verified_at  timestamptz,
   last_seen_at       timestamptz,
-  -- Filled only if a shop ever asks for a password as well as email codes.
+  -- The password, hashed with scrypt. Null until the address confirms its first
+  -- sign-up and chooses one; an account without a password signs in with an
+  -- emailed code instead, so this column can stay empty for ever without
+  -- breaking anything.
+  --
+  -- Two columns, because scrypt's cost is in the salt and the parameters: a
+  -- single string would have to be parsed back apart to verify.
   password_hash      text,
+  password_salt      text,
+  password_params    text,
+  password_set_at    timestamptz,
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now(),
   constraint super_admin_has_no_shop
@@ -144,6 +153,12 @@ create table if not exists pending_signups (
   email        citext      not null unique,
   shop_name    text        not null,
   person_name  text        not null,
+  -- Chosen on the sign-up form, held here until the emailed code proves the
+  -- address is real, then copied onto the login. Never readable: same scrypt
+  -- columns as logins, for the same reason.
+  password_hash text,
+  password_salt text,
+  password_params text,
   expires_at   timestamptz not null,
   created_at   timestamptz not null default now()
 );

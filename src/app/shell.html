@@ -716,6 +716,28 @@
           </p>
         </div>
 
+        <!-- The password. Signing up sets one, but an account made by hand —
+             the demo shop, the platform admin — starts without one, and a
+             password should be changeable without anybody's help. -->
+        <div class="card">
+          <div class="card-head"><div><h2>Password</h2><div class="sub">What you sign in with, every morning</div></div></div>
+          <div class="formrow"><label class="lbl" for="pwNow">Current password</label>
+            <input class="field" id="pwNow" type="password" autocomplete="current-password"
+                   placeholder="Leave empty if you have never set one" /></div>
+          <div class="formrow"><label class="lbl" for="pwNew">New password</label>
+            <input class="field" id="pwNew" type="password" autocomplete="new-password"
+                   placeholder="At least 8 characters" /></div>
+          <div class="formrow"><label class="lbl" for="pwAgain">Type the new one again</label>
+            <input class="field" id="pwAgain" type="password" autocomplete="new-password"
+                   placeholder="The same password" /></div>
+          <p class="hint" id="pwNote" hidden></p>
+          <button class="btn block" style="margin-top:14px" data-save-password>Save password</button>
+          <p class="hint" style="margin-top:10px">
+            A phrase you will remember beats a scramble you will not. And if you do forget it,
+            the sign-in page can email you a six-digit code instead — you will never be locked out.
+          </p>
+        </div>
+
         <div class="card">
           <div class="card-head"><div><h2>Preferences</h2><div class="sub">How the till behaves</div></div></div>
           <div class="setrow">

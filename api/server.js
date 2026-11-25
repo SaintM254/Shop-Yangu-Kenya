@@ -28,6 +28,7 @@ import {
 } from './_lib/http.js';
 import { currentSession } from './_lib/auth.js';
 import { mailHealth, devInbox } from './_lib/mail.js';
+import { authHealth } from './_lib/neon-auth.js';
 
 import authRoutes from './_routes/auth.js';
 import shopRoutes from './_routes/shop.js';
@@ -122,6 +123,10 @@ router.get('/api/health', async () => {
     env: env.NODE_ENV,
     database,
     mail: await mailHealth(),
+    /* "Why did no code arrive" has three possible answers: the mailer is not
+       configured, Neon Auth is not configured, or the message went to spam.
+       This names which. */
+    auth: authHealth(),
     /* Never echo secrets. The presence of a setting is enough to debug a
        deployment. */
     mpesa: {

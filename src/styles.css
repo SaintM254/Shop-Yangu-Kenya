@@ -1593,6 +1593,11 @@ a:hover {
 .authform {
   display: grid;
   gap: 14px;
+  /* A grid item's default min-width is its content, so a long email address or
+     a wide code field can push the form wider than the card and spill past its
+     rounded corner. minmax(0, 1fr) is the one-line fix: children may be
+     narrower than their widest word. */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .authform[hidden] {
@@ -1613,11 +1618,15 @@ a:hover {
 
 /* The input sits inside a bordered shell that draws the focus ring, so the
    icon, the text and the reveal button share one frame. */
+/* min-width: 0 because this is a grid child: without it the shell refuses to
+   be narrower than the input's intrinsic width (which is 20 characters, not
+   the six a code needs), and the whole form grows past the card. */
 .inputwrap {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 12px;
+  min-width: 0;
   min-height: 48px;
   border: 1px solid var(--sand);
   border-radius: var(--r-input);
@@ -1686,6 +1695,46 @@ a:hover {
 .reveal:hover {
   background: var(--cream-deep);
   color: var(--syk-dark);
+}
+
+/* Under a field, not inside it: the rule the password has to satisfy, and why
+   the box is asked for twice. Small enough to read as help, not as an error. */
+.fieldhint {
+  margin-top: 7px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.fieldhint em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+/* A button that reads as a link: "sign in with a code instead". A real button
+   because it does something, styled as a link because it is a way out, not a
+   commitment. */
+.linkish {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.linkish:hover {
+  color: var(--syk-dark);
+}
+
+.linkish:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 .check {
   display: inline-flex;
@@ -1986,6 +2035,8 @@ a:hover {
   padding: 12px 14px;
   border-radius: var(--r-input);
   background: var(--primary-tint);
+  /* A long address may wrap, never stretch the card. */
+  min-width: 0;
 }
 
 .authsent__h {
@@ -2002,8 +2053,21 @@ a:hover {
   overflow-wrap: anywhere;
 }
 
+/* A password field is an ordinary field, with the browser's own dots. The
+   class exists so the reveal button and the build's styling audit can both
+   find it — a class with no rule would fail the build. */
+.field--password {
+  padding-right: 0;
+}
+
 /* A six-digit code is read a digit at a time, so it is set like one. */
+/* The browser gives an input the width of `size` characters — 20 by default,
+   which at 24px with this letter-spacing asks for more room than the card
+   has. The attribute (`size="6"`, set in build.js) narrows the intrinsic
+   width; width:100% then makes it fill the card exactly. `size` is an HTML
+   attribute, not a CSS property, so it must not appear here. */
 .field--code {
+  width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 24px;
   letter-spacing: 0.32em;

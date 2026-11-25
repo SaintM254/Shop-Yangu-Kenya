@@ -66,6 +66,37 @@ const buttonBlock = (href, label) => `
    ------------------------------------------------------------------------- */
 
 export function signupEmail({ code, link, shopName, personName, minutes }) {
+  /* When Neon Auth sends the code, ITS email arrives first and carries the
+     digits. Ours then has no code to show, so it becomes the link — and says
+     which email has the numbers, so two emails in one minute is not confusing.
+     A sign-up email that names a code it does not contain would be worse than
+     no email at all. */
+  if (!code) {
+    const subject = `Open ${shopName} — one click, no code to type`;
+    const text = [
+      `Karibu, ${personName}.`,
+      '',
+      `Your code is on its way in a separate email. This one is the shortcut:`,
+      link,
+      '',
+      'That link opens your shop and confirms your email address at the same time.',
+      'It is good for 30 minutes, once.',
+      '',
+      'If you did not ask to open a shop, ignore both emails and nothing happens.',
+      '',
+      `— ${brand}`,
+    ].join('\n');
+
+    const html = shell(
+      `Karibu, ${personName}`,
+      `Your code is on its way in a separate email. This one skips the typing — it opens <strong>${esc(shopName)}</strong> and confirms your email address in one click.`,
+      buttonBlock(link, 'Open my shop'),
+      'The link is good for 30 minutes, once. After that, ask for a new one on the sign-in page.'
+    );
+
+    return { to: null, subject, text, html };
+  }
+
   const subject = `${code} is your ${brand} code`;
   const text = [
     `Karibu, ${personName}.`,
