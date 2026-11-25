@@ -86,6 +86,21 @@ the fix. It also says how to tell which of the four services is at fault.
 
 ---
 
+## If you arrive with code from somewhere else
+
+Neon's own assistant, or another chatbot, may hand you a snippet like
+[`neon-codes.md`](neon-codes.md). Those snippets are usually right about
+Better Auth and slightly wrong about *this* shop, because this shop's sessions are
+its own and its sign-in client runs on the server, not in the browser.
+
+Read [`neon-codes.md`](neon-codes.md) when you are handed a snippet and want to
+know whether it applies. [Step 4](04-email-and-sign-in.md#about-the-snippet-neon-gave-you)
+explains the one distinction that matters most: `type: 'sign-in'` and
+`type: 'email-verification'` are different jobs, and only one of them can create
+an account.
+
+---
+
 ## The same thing written for a programmer
 
 If somebody who codes is helping you, or is taking this over:

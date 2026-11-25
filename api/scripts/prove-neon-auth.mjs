@@ -3,9 +3,19 @@
 
    Prove Neon Auth works, against the real service, and print no secrets.
 
-   Run it after setting NEON_AUTH_BASE_URL:
+   TWO WAYS TO RUN IT. Use whichever matches how you work.
 
-     cd api && node scripts/prove-neon-auth.mjs you@yourdomain.co.ke
+   1. From GitHub, with no terminal. Actions tab → "Prove Neon Auth" → Run
+      workflow → type your email address → Run. It reports four steps and does
+      not need the code from your inbox: it proves the account, the send, and
+      the password sign-in, which is what breaks.
+
+   2. From a terminal, which also proves the code itself:
+
+        cd api && node scripts/prove-neon-auth.mjs you@yourdomain.co.ke
+
+   With `--no-prompt` (what the workflow uses) it never waits for input, so it
+   can never hang a build.
 
    It does four things, in the order the shop does them:
 
@@ -22,7 +32,13 @@
 import readline from 'node:readline/promises';
 
 const base = String(process.env.NEON_AUTH_BASE_URL || '').replace(/\/+$/, '');
-const email = String(process.argv[2] || '').trim().toLowerCase();
+/* The address comes from the argument, or from an environment variable so a
+   GitHub Actions run can supply it without a terminal. */
+const NO_PROMPT = process.argv.includes('--no-prompt');
+/* The first argument that is not a flag. Taking argv[2] blindly would read
+   `--no-prompt` itself as the email address. */
+const emailArg = process.argv.slice(2).find((a) => !a.startsWith('--'));
+const email = String(emailArg || process.env.PROVE_EMAIL || '').trim().toLowerCase();
 
 const pass = (name, extra = '') => console.log(`  \x1b[32m✓\x1b[0m ${name}${extra ? `  \x1b[90m${extra}\x1b[0m` : ''}`);
 const fail = (name, extra = '') => console.log(`  \x1b[31m✗ ${name}\x1b[0m${extra ? `  ${extra}` : ''}`);
@@ -93,18 +109,27 @@ if (!sent.ok) {
 }
 
 head('3. Check the code');
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
 const wrong = await verifySignupCode(email, '000000');
 ok('a deliberately wrong code is REFUSED', wrong === false);
 
-const typed = String(await rl.question(`\n  Open ${email} and type the six-digit code (or press Enter to skip): `)).trim();
-rl.close();
+if (NO_PROMPT) {
+  console.log(
+    '  \x1b[90mthe real code was not typed in --no-prompt mode.\x1b[0m\n' +
+      '  \x1b[90mThat is the only step left, and it needs a human with the inbox:\x1b[0m\n' +
+      '  \x1b[90mrun this without --no-prompt, or just open the sign-in page.\x1b[0m'
+  );
+}
+const rl = NO_PROMPT ? null : readline.createInterface({ input: process.stdin, output: process.stdout });
+
+const typed = rl
+  ? String(await rl.question(`\n  Open ${email} and type the six-digit code (or press Enter to skip): `)).trim()
+  : '';
+if (rl) rl.close();
 
 if (/^\d{6}$/.test(typed)) {
   const right = await verifySignupCode(email, typed);
   ok('the code from the inbox is ACCEPTED', right === true);
-} else {
+} else if (!NO_PROMPT) {
   console.log('  \x1b[90mskipped — the code step was not proved from this machine\x1b[0m');
 }
 

@@ -1,0 +1,67 @@
+name: Prove Neon Auth
+
+# Runs the Neon Auth proof by hand, from the GitHub website. No terminal, no
+# Node on your computer.
+#
+#   Actions → "Prove Neon Auth" → Run workflow → type your email → Run
+#
+# It proves the three things that actually break:
+#
+#   1. a user can be created with email and password at Neon Auth
+#   2. Neon accepts a request to email a verification code
+#   3. signing in with that password returns the current user
+#
+# What it deliberately does NOT do is type the code from your inbox. That needs
+# a human with the inbox, and it is the one step a robot cannot fake. To prove
+# the code too, run the same script from a terminal, or just open the site and
+# sign in — if step 3 passes, the code is the only thing left and it is the part
+# Neon sends with its own mailer.
+#
+# Nothing secret is printed: not the base URL, not the cookie secret, not the
+# password, which is generated fresh and used once.
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'An email address you can open right now'
+        required: true
+        type: string
+
+jobs:
+  prove:
+    name: Prove Neon Auth
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the API's dependencies
+        working-directory: api
+        run: npm install --no-audit --no-fund
+
+      - name: Ask Neon Auth four questions
+        working-directory: api
+        # --no-prompt means it never waits for input, so this job cannot hang.
+        run: node scripts/prove-neon-auth.mjs --no-prompt
+        env:
+          PROVE_EMAIL: ${{ inputs.email }}
+          # NEON_AUTH_BASE_URL comes from the repository secret below. It ends in
+          # /neondb/auth and is the value `neon deploy` wrote for you.
+          NEON_AUTH_BASE_URL: ${{ secrets.NEON_AUTH_BASE_URL }}
+          # Optional. Needed only if Neon's SDK asks for one; otherwise it is
+          # derived from TOKEN_PEPPER on the server. Supply it if you want the
+          # proof to run with exactly the settings the site uses.
+          NEON_AUTH_COOKIE_SECRET: ${{ secrets.NEON_AUTH_COOKIE_SECRET }}
+          TOKEN_PEPPER: ${{ secrets.TOKEN_PEPPER }}
+          # This is the Origin Neon Auth checks against its trusted domains.
+          # If the proof fails with "Invalid origin", this is the value to add
+          # in Neon: project → Auth → Trusted domains.
+          SITE_URL: ${{ vars.SITE_URL || secrets.SITE_URL }}
