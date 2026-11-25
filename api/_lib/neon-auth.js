@@ -133,6 +133,10 @@ async function attempt(fn) {
     if (error) {
       return {
         ok: false,
+        /* The HTTP status is kept as well as the code: 401 and 403 mean
+           completely different things to a caller, and one of them is a setting
+           while the other is a missing account. */
+        status: Number(error.status) || 0,
         code: error.code || error.status,
         error: readable(error),
       };
@@ -407,6 +411,94 @@ export async function changePassword(email, currentPassword, newPassword) {
   }
 
   return { ok: true };
+}
+
+/* ------------------------------------------------------------------ probing
+                            (for /api/auth/doctor only)
+
+   Two questions the health check cannot answer, because answering them means
+   talking to Neon about a particular address. Neither sends an email. Neither
+   returns a code, a token, or a secret. */
+
+/* "Are you there?" — the cheapest authenticated request, so a wrong URL, a
+   blocked origin, or a dead endpoint shows up as a sentence instead of an
+   absence of email. */
+export async function ping() {
+  if (!configured()) return { ok: false, code: 'NOT_CONFIGURED', error: 'Neon Auth is not configured.' };
+
+  const started = Date.now();
+  const result = await attempt(() => authClient().getSession(), { timeoutMs: 12000 });
+
+  if (result.ok) return { ok: true, ms: Date.now() - started };
+
+  /* 403 with an origin complaint is the one error worth naming differently: it
+     is a setting, and the fix is specific. */
+  if (/origin/i.test(result.error || '') || result.status === 403) {
+    return {
+      ok: false,
+      code: 'ORIGIN',
+      error: `Neon rejected the origin ${env.SITE_URL || '(empty)'}. ${result.error}`,
+    };
+  }
+
+  return { ok: false, code: result.code || 'ERROR', error: result.error };
+}
+
+/* "Does this address have an account, and does Neon consider it verified?"
+
+   WHY THIS IS THE IMPORTANT ONE. The kind of code this shop asks for depends on
+   `emailVerified`, and asking for the wrong kind sends nothing at all. Better
+   Auth has no endpoint that answers this for a third party without signing in,
+   so the answer comes from the sign-up attempt itself:
+
+     · creating the account succeeds  → no account existed → not verified
+     · it is refused as already registered → an account exists → almost always
+       verified, because it has been used before
+
+   A wrong password is supplied deliberately, so this can never sign anybody in
+   even if the address turns out to exist. */
+export async function whichCode(email) {
+  if (!configured()) return { ok: false, code: 'NOT_CONFIGURED', error: 'Neon Auth is not configured.' };
+
+  const address = String(email || '').trim().toLowerCase();
+  const result = await attempt(() =>
+    authClient().signIn.email({
+      email: address,
+      /* Not a secret and not an account: a value no person would choose, so it
+         cannot match, and a 401 here is a successful probe. */
+      password: 'not-a-real-password-4f7c2b91e8',
+    })
+  );
+
+  /* A wrong password on a real account is 401 too, so neither 401 nor a refusal
+     tells us whether the address exists. That is fine: the ONLY thing this shop
+     needs is which kind of code to ask for, and "ask for a sign-in code" is
+     accepted for both verified and unverified addresses. Better Auth never
+     refuses to send a sign-in code.
+     So the answer is always the safe one, and this function reports why. */
+  if (result.ok) {
+    return {
+      ok: true,
+      exists: true,
+      verified: Boolean(result.data?.user?.emailVerified),
+      note: 'signed in — the branch must have "require email verification" off',
+    };
+  }
+
+  if (/origin/i.test(result.error || '') || result.status === 403) {
+    return { ok: false, code: 'ORIGIN', error: `Neon rejected the origin ${env.SITE_URL || '(empty)'}.` };
+  }
+
+  if (result.status === 401) {
+    return {
+      ok: true,
+      exists: null,
+      verified: null,
+      note: 'Neon would not say whether this address exists, and that is not needed.',
+    };
+  }
+
+  return { ok: false, code: result.code || 'ERROR', error: result.error };
 }
 
 /* --------------------------------------------------------------- health

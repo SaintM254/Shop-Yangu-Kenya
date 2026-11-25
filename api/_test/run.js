@@ -1074,6 +1074,40 @@ group('Neon Auth: the first code, sent and checked by Neon');
   console_.verifyAtSignup = false;
   jar = { ...ownerCookie };
 
+  /* -------------------------------------------------- the doctor's report
+     The route exists for one situation: the owner cannot see a log and needs to
+     be told which of six things is wrong. So the test is that it always answers,
+     names a real finding, and never leaks a setting that is a secret. */
+  jar = {};
+  const doc = await call('GET', '/api/auth/doctor');
+  ok('GET /api/auth/doctor answers without signing in', doc.status === 200, `status ${doc.status}`);
+  ok('and gives a one-sentence verdict', typeof doc.body.verdict === 'string' && doc.body.verdict.length > 10);
+  ok('and a list of findings with levels', Array.isArray(doc.body.findings) && doc.body.findings.every((f) => ['ok', 'warn', 'fail'].includes(f.level)));
+  ok(
+    'and says whether Neon is in play at all',
+    ['none', 'neon-auth'].includes(doc.body.findings[0].level === 'warn' && /not configured/.test(doc.body.findings[0].what) ? 'none' : 'neon-auth')
+  );
+
+  const docWithEmail = await call('GET', '/api/auth/doctor?email=someone%40jaribu.co.ke');
+  ok('it accepts an address to check', docWithEmail.status === 200, `status ${docWithEmail.status}`);
+
+  /* The whole point: no secret may ever appear in it. */
+  const docText = JSON.stringify(docWithEmail.body);
+  const leaks = ['TOKEN_PEPPER', 'NEON_AUTH_COOKIE_SECRET', 'neon_cookie_secret'].filter((k) => docText.includes(k));
+  ok('and never echoes a secret', leaks.length === 0, leaks.join(', '));
+
+  /* The page itself, not the route: the whole reason the doctor exists is that
+     the owner cannot read a JSON response on a phone. If the page is not served,
+     or its script does not call the route, the diagnosis never reaches anybody.
+     The layout suite proves it renders; this proves it is reachable and wired. */
+  const { execFileSync } = await import('node:child_process');
+  execFileSync(process.execPath, ['build.js'], { cwd: path.resolve('.', '..'), stdio: 'ignore' });
+  const pageHtml = (await import('node:fs')).readFileSync(path.resolve('.', '../dist/auth/doctor/index.html'), 'utf8');
+  ok('the doctor has a page, so no URL has to be typed', /id="doctorForm"/.test(pageHtml));
+  ok('and the page calls the doctor route', /\/api\/auth\/doctor/.test(pageHtml));
+  ok('and offers the code-sign-in way out', /\/login\//.test(pageHtml));
+  ok('and shows no secret of any kind', !/TOKEN_PEPPER|COOKIE_SECRET|database-url/i.test(pageHtml));
+
   /* A dead Neon must not stop a shop being created. */
   await new Promise((r) => neonServer.close(r));
   const email2 = 'neon-down@jaribu.co.ke';

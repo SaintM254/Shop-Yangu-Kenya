@@ -339,7 +339,7 @@ const CANON = (process.env.SITE_URL
 /* How far a page sits from the site root. /login/ is one folder down;
    /auth/link/ and /admin/link/ are two, and every relative URL in their heads
    has to know it. */
-const DEPTHS = { link: 2, 'admin-link': 2 };
+const DEPTHS = { link: 2, 'admin-link': 2, doctor: 2 };
 const depth = (page) => (page === 'index' || page === '404' ? 0 : DEPTHS[page] || 1);
 const rel = (page, path) => '../'.repeat(depth(page)) + path;
 
@@ -415,7 +415,7 @@ function siteHeader(current) {
   const isNav = (href) => href === current;
   return `<header class="hdr">
   <div class="wrap hdr__in">
-    <a class="brand" href="${current === '404' ? siteUrl('') : current === 'index' ? './' : '../'}" aria-label="${escapeHtml(content.brand.name)} — home">
+    <a class="brand" href="${current === '404' ? siteUrl('') : current === 'index' ? './' : rel(current, '')}" aria-label="${escapeHtml(content.brand.name)} — home">
       ${brandMark('brand__mark')}
       <span class="brand__text">
         <span class="brand__name">${escapeHtml(content.brand.name)}</span>
@@ -797,6 +797,138 @@ function writeRoute(route) {
 /* empty for same-origin, an absolute URL otherwise.                  */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* auth/doctor — the report that says what is wrong                     */
+/* ------------------------------------------------------------------ */
+
+/* Three facts make this page worth having:
+
+     · "nothing works" is unhelpful, and a server log is not reachable from a
+       phone;
+     · the mailer being unset is invisible and explains every missing email;
+     · an already-verified address is never sent a sign-up code.
+
+   So the page asks for the address being used, calls /api/auth/doctor, and
+   prints every finding as a plain sentence with the fix under it. No terminal,
+   no query string to type, no secret anywhere in the response. */
+function doctorPage() {
+  const body = `<main id="main" class="auth">
+  <div class="authcard">
+    <header class="authcard__head">
+      <h1 class="authcard__shop">Why is no email arriving?</h1>
+    </header>
+
+    <p class="authnote">
+      This page asks the server what it knows: whether Neon Auth is set up,
+      whether the mailer is set up, and what Neon will do for a particular
+      address. It sends no email and shows no secrets.
+    </p>
+
+    <form class="authform" id="doctorForm" novalidate>
+      <div class="field">
+        <label for="doctorEmail">The email address you are using</label>
+        <input id="doctorEmail" name="email" type="email" autocomplete="email"
+               inputmode="email" spellcheck="false" placeholder="you@example.com" />
+        <p class="hint">Optional, but it is what turns "something is wrong" into one sentence.</p>
+      </div>
+      <button class="btn btn--primary btn--block" type="submit" id="doctorGo">Check</button>
+    </form>
+
+    <p class="authmsg" id="doctorError" role="alert" hidden></p>
+
+    <div id="doctorOut" hidden>
+      <p class="doctorverdict" id="doctorVerdict"></p>
+      <ol class="doctorlist" id="doctorList"></ol>
+    </div>
+
+    <p class="authnote authnote--last">
+      Still stuck? <a href="/login/">Sign in with a code instead</a> — that path
+      uses this shop's own code and does not depend on Neon at all.
+    </p>
+  </div>
+</main>
+${doctorScript()}`;
+  return document({
+    title: 'Why is no email arriving? — Shop Yangu Kenya',
+    description: 'A plain-language report of what is wrong with sign-in email, and what to change.',
+    page: 'doctor',
+    body,
+    bodyClass: 'page-auth',
+  });
+}
+
+function doctorScript() {
+  return `
+<script>
+(function () {
+  'use strict';
+  var form = document.getElementById('doctorForm');
+  var out = document.getElementById('doctorOut');
+  var list = document.getElementById('doctorList');
+  var verdict = document.getElementById('doctorVerdict');
+  var errBox = document.getElementById('doctorError');
+
+  function fail(msg) {
+    errBox.textContent = msg;
+    errBox.hidden = false;
+  }
+
+  function line(f) {
+    var li = document.createElement('li');
+    li.className = 'doctoritem doctoritem--' + f.level;
+    var what = document.createElement('p');
+    what.className = 'doctoritem__what';
+    what.textContent = f.what;
+    li.appendChild(what);
+    if (f.why) {
+      var why = document.createElement('p');
+      why.className = 'doctoritem__why';
+      why.textContent = f.why;
+      li.appendChild(why);
+    }
+    if (f.fix) {
+      var fix = document.createElement('p');
+      fix.className = 'doctoritem__fix';
+      fix.textContent = 'What to do: ' + f.fix;
+      li.appendChild(fix);
+    }
+    return li;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errBox.hidden = true;
+    var btn = document.getElementById('doctorGo');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+
+    var email = document.getElementById('doctorEmail').value.trim();
+    var url = '/api/auth/doctor' + (email ? '?email=' + encodeURIComponent(email) : '');
+
+    fetch(url, { headers: { accept: 'application/json' } })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (!res.j || !res.j.findings) {
+          throw new Error((res.j && res.j.error) || 'The server did not answer properly.');
+        }
+        verdict.textContent = res.j.verdict;
+        verdict.className = 'doctorverdict doctorverdict--' + (res.j.ok ? 'ok' : 'warn');
+        list.innerHTML = '';
+        res.j.findings.forEach(function (f) { list.appendChild(line(f)); });
+        out.hidden = false;
+      })
+      .catch(function (err) {
+        fail('Could not check: ' + err.message);
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Check';
+      });
+  });
+})();
+</script>`;
+}
+
 function loginPage() {
   const markD = /\sd="([^"]+)"/.exec(read('src/logo/mark-syk.svg'))[1];
   /* The app's own icon, the one the home screen gets. This is the page that
@@ -851,6 +983,12 @@ function loginPage() {
       <p class="authfine">Forgot it? You do not need it —
         <button class="linkish" type="button" id="useCodeBtn">sign in with a code by email</button>
         instead. The same link gets you back in and lets you set a new password.</p>
+
+      <p class="authfine authfine--last">
+        No email arriving at all?
+        <a class="linkish" href="../auth/doctor/">Open the email health check</a>
+        — it says what is wrong and what to change.
+      </p>
     </form>
 
     <!-- step 1: a new shop ---------------------------------------------- -->
@@ -2026,6 +2164,15 @@ write(
     body: indexBody,
   })
 );
+
+/* A page, not a curl command.
+
+   The doctor exists for the moment when nothing works and the owner has no
+   terminal and no log. Telling that person to visit an API URL with a query
+   string would be the same mistake in a new place, so the report gets a page:
+   /auth/doctor/ asks for the address, calls the route, and prints every finding
+   as a sentence with the fix underneath. */
+write('auth/doctor/index.html', doctorPage());
 
 write('spec/index.html', specPage());
 write('login/index.html', loginPage());
